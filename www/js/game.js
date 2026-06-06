@@ -31,6 +31,13 @@ const Game = {
       stage: 0,             // minor stage index within the current realm
       stagesCleared: 0,     // lifetime count of minor breakthroughs (Cultivation Base 修为)
       daoComprehension: 0,  // prestige currency (permanent multiplier)
+
+      // -- RPG systems --------------------------------------------------
+      spiritStones: 0,      // 灵石 — combat currency (level pets, sect shop)
+      beastEggs: 0,         // 兽蛋 — tame spirit beasts
+      sect: null,           // { id, contribution, joinedAt } or null
+      pets: { owned: {}, active: [] },           // owned: {id:{level}}, active:[ids]
+      combat: { zone: 1, wave: 1, highestZone: 1, playerHp: null, paused: false },
       lastSaved: TimeService.now(),
       createdAt: TimeService.now(),
       // Anti-cheat audit fields:
@@ -50,6 +57,11 @@ const Game = {
     if (this.state.stagesCleared === undefined) this.state.stagesCleared = 0;
     if (this.state.characterCreated === undefined) this.state.characterCreated = false;
     if (!this.state.spiritualRoot) this.state.spiritualRoot = GameData.spiritualRoots[0];
+    if (this.state.spiritStones === undefined) this.state.spiritStones = 0;
+    if (this.state.beastEggs === undefined) this.state.beastEggs = 0;
+    if (this.state.sect === undefined) this.state.sect = null;
+    if (!this.state.pets) this.state.pets = { owned: {}, active: [] };
+    if (!this.state.combat) this.state.combat = { zone: 1, wave: 1, highestZone: 1, playerHp: null, paused: false };
     this._lastTickMono = TimeService.monotonicNow();
   },
 
@@ -72,17 +84,19 @@ const Game = {
     GameData.upgrades.forEach(u => {
       if (this.state.upgrades[u.id]) u.effect(m);
     });
-    // Three permanent power vectors:
+    // Permanent power vectors:
     m.root  = this.state.spiritualRoot ? this.state.spiritualRoot.mult : 1;   // Spiritual Root 灵根
     m.stage = 1 + this.state.stagesCleared * GameData.stageBonusPerStage;      // Cultivation Base 修为
     m.dao   = 1 + this.state.daoComprehension * GameData.daoBonusPerPoint;     // Dao Comprehension 道韵
+    m.sect  = (window.Sect && Sect.qiMult) ? Sect.qiMult() : 1;                // Sect 宗门 bonus
+    m.pet   = (window.Pets && Pets.qiMult) ? Pets.qiMult() : 1;                // Spirit Beast 灵兽 bond
     return m;
   },
 
-  /** Combined permanent global multiplier (root × cultivation base × dao). */
+  /** Combined permanent global multiplier. */
   globalMult() {
     const m = this.multipliers();
-    return m.root * m.stage * m.dao;
+    return m.root * m.stage * m.dao * m.sect * m.pet;
   },
 
   /** Qi per second from all generators, with all multipliers applied. */
@@ -92,13 +106,13 @@ const Game = {
     GameData.generators.forEach(g => {
       base += g.baseProd * this.state.owned[g.id];
     });
-    return base * m.allMult * m.root * m.stage * m.dao;
+    return base * m.allMult * m.root * m.stage * m.dao * m.sect * m.pet;
   },
 
   /** Qi gained per manual meditate tap. */
   qiPerTap() {
     const m = this.multipliers();
-    return GameData.tap.baseGain * m.tapMult * m.root * m.stage * m.dao;
+    return GameData.tap.baseGain * m.tapMult * m.root * m.stage * m.dao * m.sect * m.pet;
   },
 
   generatorCost(g, count = 1) {
@@ -251,6 +265,14 @@ const Game = {
 
     this._addQi(this.qiPerSecond() * dtSec);
 
+    // Idle combat advances while the app is open.
+    if (window.Combat) Combat.tick(dtSec);
+
+    // Passive sect contribution, scaled to cultivation pace.
+    if (window.Sect && this.state.sect) {
+      Sect.addContribution(Math.max(1, Math.sqrt(this.qiPerSecond())) * dtSec);
+    }
+
     // Track the highest wall-clock time we've seen (anti-cheat baseline).
     const wall = TimeService.now();
     if (wall > this.state.maxSeenTime) this.state.maxSeenTime = wall;
@@ -294,7 +316,8 @@ const Game = {
     const effective = Math.min(elapsed, cap);
 
     const m = this.multipliers();
-    const efficiency = Math.min(1, GameData.offline.efficiency + m.offlineBonus);
+    const sectOffline = (window.Sect && Sect.offlineBonus) ? Sect.offlineBonus() : 0;
+    const efficiency = Math.min(1, GameData.offline.efficiency + m.offlineBonus + sectOffline);
     const gained = this.qiPerSecond() * effective * efficiency;
 
     this._addQi(gained);

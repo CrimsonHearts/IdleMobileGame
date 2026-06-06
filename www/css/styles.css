@@ -293,3 +293,137 @@ body::after {
   border: 1px dashed rgba(200,162,74,0.5); background: rgba(0,0,0,0.25);
   color: var(--gold-2); font-family: inherit; font-size: 13px; cursor: pointer;
 }
+
+/* =========================================================================
+ * v2 — Sect / Beasts / Trials redesign
+ * ====================================================================== */
+
+#app { height: 100%; }
+#content { flex: 1; overflow-y: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
+
+/* Currency strip */
+#status-strip {
+  display: flex; justify-content: space-around; align-items: center; gap: 8px;
+  padding: 8px 6px; margin: 4px 0;
+  border-top: 1px solid rgba(200,162,74,0.2); border-bottom: 1px solid rgba(200,162,74,0.2);
+  background: rgba(0,0,0,0.25);
+}
+#status-strip .cur { font-size: 13px; color: var(--paper-2); white-space: nowrap; }
+#status-strip .cur b { color: #f3ecdc; font-size: 15px; }
+#status-strip .cur-qi b { color: var(--jade-2); }
+#status-strip .cur small { display: block; font-size: 10px; color: var(--jade-2); opacity: 0.8; }
+
+.section-title {
+  font-size: 15px; color: var(--gold-2); font-weight: 700; letter-spacing: 1px;
+  margin: 14px 2px 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(200,162,74,0.2);
+}
+.section-title small { color: var(--paper-2); font-weight: 400; font-size: 12px; float: right; }
+.hint { font-size: 12px; color: var(--paper-2); opacity: 0.8; margin: 6px 2px; line-height: 1.5; }
+
+/* Tab panels */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Bottom navigation */
+#bottom-nav {
+  display: flex; border-top: 1px solid rgba(200,162,74,0.3);
+  background: linear-gradient(180deg, rgba(34,28,22,0.96), rgba(20,14,8,0.98));
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-btn {
+  flex: 1; padding: 8px 2px 7px; border: none; background: none; cursor: pointer;
+  color: var(--paper-2); font-family: inherit; display: flex; flex-direction: column;
+  align-items: center; gap: 2px; transition: color 0.15s; opacity: 0.7;
+}
+.nav-btn .nav-ico { font-size: 20px; line-height: 1; }
+.nav-btn span span, .nav-btn small { font-size: 12px; }
+.nav-btn small { display: block; font-size: 9px; opacity: 0.7; }
+.nav-btn.active { color: var(--gold-2); opacity: 1; }
+.nav-btn.active .nav-ico { filter: drop-shadow(0 0 6px rgba(200,162,74,0.5)); }
+
+/* Sect cards */
+.sect-card, .beast-card {
+  display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 10px;
+  border: 1px solid; border-radius: 12px;
+  background: linear-gradient(180deg, rgba(58,49,40,0.5), rgba(34,28,22,0.5));
+}
+.sect-seal {
+  width: 52px; height: 52px; flex-shrink: 0; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px; color: #15110c; font-weight: 700;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.4); font-family: "Songti SC","STSong",serif;
+}
+.sect-seal.big { width: 84px; height: 84px; font-size: 50px; border-radius: 14px; margin: 0 auto 10px; }
+.sect-body { flex: 1; min-width: 0; }
+.sect-name { font-size: 16px; font-weight: 700; }
+.sect-name em { font-style: normal; font-size: 12px; color: var(--paper-2); font-weight: 400; display: block; }
+.sect-desc { font-size: 12px; color: var(--paper-2); opacity: 0.85; margin: 4px 0; line-height: 1.4; }
+.sect-bonus { font-size: 12.5px; color: var(--gold-2); }
+.sect-join {
+  flex-shrink: 0; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--gold);
+  background: var(--gold); color: var(--ink); font-family: inherit; font-weight: 700; cursor: pointer;
+}
+.sect-hall { text-align: center; padding: 14px; border: 1px solid rgba(200,162,74,0.3);
+  border-radius: 14px; background: rgba(0,0,0,0.25); margin-top: 8px; }
+.sect-rank { font-size: 14px; color: var(--gold-2); margin: 6px 0; }
+.progress-track.small { height: 8px; margin: 10px auto 4px; max-width: 80%; }
+.progress-track.small .fill { height: 100%; border-radius: 8px; transition: width 0.3s; }
+.members { font-size: 13px; }
+.member { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px;
+  background: rgba(0,0,0,0.2); margin-bottom: 5px; color: var(--paper-2); }
+.member em { font-style: normal; color: var(--jade-2); font-size: 11px; }
+.member.you { border: 1px solid var(--gold); color: var(--gold-2); }
+.danger-btn { width: 100%; margin-top: 14px; padding: 10px; border-radius: 10px;
+  border: 1px solid var(--cinnabar); background: rgba(168,54,42,0.2); color: var(--cinnabar-2);
+  font-family: inherit; font-size: 14px; cursor: pointer; }
+
+/* Beasts */
+.tame-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 12px; border: 1px solid rgba(200,162,74,0.3); border-radius: 12px;
+  background: rgba(0,0,0,0.25); font-size: 13px; color: var(--paper-2); }
+.tame-bar b { color: var(--gold-2); }
+#tame-btn { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--jade-2);
+  background: linear-gradient(180deg, var(--jade-2), var(--jade)); color: #0f0b07;
+  font-family: inherit; font-weight: 700; font-size: 13px; cursor: pointer; }
+#tame-btn:disabled { opacity: 0.5; }
+.beast-card.locked { opacity: 0.7; }
+.beast-card.active { box-shadow: 0 0 12px rgba(111,181,148,0.35); }
+.beast-icon { width: 50px; height: 50px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; border: 1.5px solid currentColor; background: radial-gradient(circle at 50% 35%, rgba(255,255,255,0.06), rgba(20,14,8,0.7) 70%); }
+.beast-svg, .mob-svg { width: 34px; height: 34px; }
+.beast-main { flex: 1; min-width: 0; }
+.beast-name { font-size: 14.5px; font-weight: 700; }
+.beast-name em { font-style: normal; font-size: 11px; color: var(--paper-2); font-weight: 400; }
+.beast-name .rar { font-size: 10px; padding: 1px 6px; border: 1px solid currentColor; border-radius: 6px; margin-left: 4px; }
+.beast-stats { font-size: 11.5px; color: var(--paper-2); opacity: 0.85; margin-top: 3px; line-height: 1.4; }
+.beast-actions { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+.beast-active-btn, .beast-lvl-btn { padding: 6px 9px; border-radius: 8px; font-family: inherit;
+  font-size: 11px; cursor: pointer; border: 1px solid rgba(200,162,74,0.4);
+  background: rgba(0,0,0,0.3); color: var(--paper-2); white-space: nowrap; }
+.beast-active-btn.on { background: var(--jade); color: #0f0b07; border-color: var(--jade-2); font-weight: 700; }
+.beast-lvl-btn:disabled { opacity: 0.45; }
+.locked-tag { font-size: 11px; color: #8a8278; }
+
+/* Trials / combat */
+.battle { display: flex; align-items: stretch; gap: 8px; margin: 8px 0; }
+.battle .fighter { flex: 1; text-align: center; padding: 12px 8px; border: 1px solid rgba(200,162,74,0.2);
+  border-radius: 12px; background: rgba(0,0,0,0.25); }
+.battle .vs { display: flex; align-items: center; color: var(--cinnabar-2); font-size: 20px; }
+.fighter-name { font-size: 13px; color: var(--gold-2); font-weight: 700; margin-bottom: 8px; }
+.fighter-name em { font-style: normal; font-size: 11px; color: var(--jade-2); font-weight: 400; }
+.mob-icon { width: 60px; height: 60px; margin: 0 auto 6px; color: var(--cinnabar-2); }
+.mob-icon.boss { color: #e0533f; filter: drop-shadow(0 0 8px rgba(224,83,63,0.6)); }
+.hp-track { height: 12px; border-radius: 8px; overflow: hidden; background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.1); }
+.hp { height: 100%; transition: width 0.18s linear; }
+.hp.player { background: linear-gradient(90deg, var(--jade), var(--jade-2)); }
+.hp.mob { background: linear-gradient(90deg, var(--cinnabar), var(--cinnabar-2)); }
+.fighter-stats { font-size: 11px; color: var(--paper-2); margin-top: 5px; }
+.boss-tag { font-size: 9px; background: var(--cinnabar); color: #fff; padding: 1px 5px; border-radius: 5px; }
+.trial-controls { display: flex; gap: 8px; margin: 8px 0; }
+.trial-controls button { flex: 1; padding: 9px; border-radius: 10px; border: 1px solid rgba(200,162,74,0.4);
+  background: rgba(0,0,0,0.3); color: var(--paper-2); font-family: inherit; font-size: 13px; cursor: pointer; }
+.trial-controls button:disabled { opacity: 0.4; }
+.trial-log { font-size: 11.5px; color: var(--paper-2); opacity: 0.9; line-height: 1.7;
+  background: rgba(0,0,0,0.22); border-radius: 10px; padding: 8px 12px; min-height: 60px; }
+.trial-log div { border-bottom: 1px solid rgba(255,255,255,0.04); padding: 1px 0; }

@@ -9,6 +9,9 @@
   // 2. Init monetization (ads/IAP — simulated on web, native via Capacitor).
   await Monetization.init();
 
+  // 2b. Enable online sects if a backend config is supplied (docs/SECT-ONLINE.md).
+  if (window.SECT_ONLINE_CONFIG && window.Sect) Sect.goOnline(window.SECT_ONLINE_CONFIG);
+
   // 3. Load save (or start fresh) and initialise the engine.
   const saved = Storage.load();
   Game.init(saved);
@@ -27,17 +30,14 @@
     // Throttle DOM updates to ~10fps for battery; game math runs every frame.
     if (ts - lastRender > 100) {
       lastRender = ts;
-      UI.renderResources();
-      UI.renderShop();
-      UI.renderUpgrades();
-      UI.renderRealm();
+      UI.tickRender();
     }
     requestAnimationFrame(frame);
   }
   if (typeof requestAnimationFrame !== 'undefined') {
     requestAnimationFrame(frame);
   } else {
-    setInterval(() => { Game.tick(); UI.renderAll(); }, 200);
+    setInterval(() => { Game.tick(); UI.tickRender(); }, 200);
   }
 
   // 6. Save when the app is backgrounded / closed (mobile-critical).

@@ -131,9 +131,14 @@ See **`docs/STORE-CHECKLIST.md`** for the full publishing walkthrough.
 - [x] Upgrades / techniques
 - [x] Save system + autosave
 - [x] Illustrated ink-wash xianxia art (landscape, cultivator emblems, icons)
-- [x] Ads + IAP hooks (simulated)
+- [x] Sect system 宗门 (join, unique bonuses, ranks, contribution) + online-ready backend
+- [x] Spirit Beasts 灵兽 (collect, level, deploy; boost cultivation + fight)
+- [x] Trials 历练 — idle auto-battle vs demonic beasts (zones, waves, bosses, loot)
+- [x] Redesigned tabbed UI (Cultivate / Sect / Beasts / Trials / Arts)
+- [x] Real AdMob IDs wired (App ID + Rewarded unit) behind dev/live switch
+- [ ] Online sects backend (Firebase/Supabase — see docs/SECT-ONLINE.md, needs your project)
+- [ ] In-app purchases (Play Billing) — products defined, needs Console setup
 - [ ] Deeper "Reincarnation 转世" meta-prestige + skill tree (optional 4th layer)
-- [ ] Real AdMob + Play Billing integration (needs your accounts)
 - [ ] Cloud save (Play Games / Game Center)
 - [ ] More content: sub-realms, alchemy minigame, sect/disciples, events
 - [ ] Illustrated art assets, sound, music
