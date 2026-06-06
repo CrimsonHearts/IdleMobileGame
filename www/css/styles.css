@@ -175,10 +175,11 @@ body::after {
   display: flex; align-items: center; justify-content: center;
   border-radius: 50%;
   border: 1.5px solid var(--gold);
-  background: radial-gradient(circle at 50% 35%, rgba(111,181,148,0.22), rgba(20,14,8,0.7) 70%);
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.6), 0 0 6px rgba(200,162,74,0.2);
+  background:
+    radial-gradient(circle at 50% 30%, rgba(231,200,120,0.22), rgba(111,181,148,0.12) 46%, rgba(12,9,6,0.92) 82%);
+  box-shadow: inset 0 1px 0 rgba(255,247,223,0.18), inset 0 0 12px rgba(0,0,0,0.6), 0 0 10px rgba(200,162,74,0.28);
 }
-.gen-icon-svg { width: 34px; height: 34px; color: var(--gold-2); }
+.gen-icon-svg { width: 34px; height: 34px; color: var(--gold-2); filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55)); }
 .shop-item.affordable .gen-icon-svg { color: var(--jade-2); }
 .upg-icon { font-size: 30px; width: 40px; text-align: center; flex-shrink: 0; }
 .gen-main, .upg-main { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
@@ -389,8 +390,11 @@ body::after {
 .beast-card.locked { opacity: 0.7; }
 .beast-card.active { box-shadow: 0 0 12px rgba(111,181,148,0.35); }
 .beast-icon { width: 50px; height: 50px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-  border-radius: 50%; border: 1.5px solid currentColor; background: radial-gradient(circle at 50% 35%, rgba(255,255,255,0.06), rgba(20,14,8,0.7) 70%); }
-.beast-svg, .mob-svg { width: 34px; height: 34px; }
+  border-radius: 50%; border: 1.5px solid currentColor;
+  background: radial-gradient(circle at 50% 30%, rgba(255,255,255,0.10), rgba(255,255,255,0.04) 45%, rgba(12,9,6,0.9) 82%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 0 12px rgba(0,0,0,0.55), 0 0 9px currentColor; }
+.beast-card.locked .beast-icon { box-shadow: inset 0 0 12px rgba(0,0,0,0.55); }
+.beast-svg, .mob-svg { width: 34px; height: 34px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
 .beast-main { flex: 1; min-width: 0; }
 .beast-name { font-size: 14.5px; font-weight: 700; }
 .beast-name em { font-style: normal; font-size: 11px; color: var(--paper-2); font-weight: 400; }

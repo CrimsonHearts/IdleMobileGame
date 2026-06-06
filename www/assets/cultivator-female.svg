@@ -1,90 +1,94 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="360" height="360" viewBox="0 0 360 360">
   <defs>
     <radialGradient id="auraF" cx="0.5" cy="0.46" r="0.5">
-      <stop offset="0" stop-color="#e9b6c9" stop-opacity="0.5"/>
-      <stop offset="0.45" stop-color="#9fe3c2" stop-opacity="0.22"/>
+      <stop offset="0" stop-color="#f3c6d8" stop-opacity="0.55"/>
+      <stop offset="0.5" stop-color="#9fe3c2" stop-opacity="0.2"/>
       <stop offset="1" stop-color="#9fe3c2" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="robeF" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#46594f"/>
-      <stop offset="1" stop-color="#283a33"/>
+    <linearGradient id="robeF" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#52685c"/>
+      <stop offset="0.5" stop-color="#384f45"/>
+      <stop offset="1" stop-color="#243630"/>
     </linearGradient>
     <linearGradient id="ringF" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#e7c878"/>
-      <stop offset="0.5" stop-color="#c8a24a"/>
-      <stop offset="1" stop-color="#9a7a32"/>
+      <stop offset="0" stop-color="#f3dea0"/><stop offset="0.5" stop-color="#c8a24a"/><stop offset="1" stop-color="#8a6c2c"/>
     </linearGradient>
     <radialGradient id="dantianF" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#fff7df"/>
-      <stop offset="0.5" stop-color="#e7c878"/>
-      <stop offset="1" stop-color="#c8a24a" stop-opacity="0"/>
+      <stop offset="0" stop-color="#ffffff"/><stop offset="0.35" stop-color="#fff2c4"/><stop offset="0.7" stop-color="#e7c878"/><stop offset="1" stop-color="#c8a24a" stop-opacity="0"/>
     </radialGradient>
+    <radialGradient id="moteF" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff3f7"/><stop offset="0.5" stop-color="#e9b6c9" stop-opacity="0.9"/><stop offset="1" stop-color="#e9b6c9" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glowF" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.5"/></filter>
   </defs>
 
-  <!-- Aura -->
-  <circle cx="180" cy="172" r="170" fill="url(#auraF)"/>
+  <circle cx="180" cy="172" r="172" fill="url(#auraF)"/>
 
-  <!-- Radiating qi rays -->
-  <g stroke="#e9b6c9" stroke-width="2" opacity="0.4" stroke-linecap="round">
-    <line x1="180" y1="20"  x2="180" y2="55"/>
-    <line x1="180" y1="290" x2="180" y2="325"/>
-    <line x1="40"  y1="172" x2="72"  y2="172"/>
-    <line x1="288" y1="172" x2="320" y2="172"/>
-    <line x1="78"  y1="70"  x2="100" y2="92"/>
-    <line x1="282" y1="70"  x2="260" y2="92"/>
-    <line x1="78"  y1="274" x2="100" y2="252"/>
-    <line x1="282" y1="274" x2="260" y2="252"/>
+  <!-- Orbiting motes -->
+  <g filter="url(#glowF)">
+    <circle cx="338" cy="172" r="7" fill="url(#moteF)"/><circle cx="22" cy="172" r="7" fill="url(#moteF)"/>
+    <circle cx="180" cy="16" r="6" fill="url(#moteF)"/><circle cx="180" cy="328" r="6" fill="url(#moteF)"/>
+    <circle cx="292" cy="62" r="5" fill="url(#moteF)"/><circle cx="68" cy="62" r="5" fill="url(#moteF)"/>
+    <circle cx="292" cy="282" r="5" fill="url(#moteF)"/><circle cx="68" cy="282" r="5" fill="url(#moteF)"/>
   </g>
 
-  <!-- Gold ring -->
-  <circle cx="180" cy="172" r="150" fill="none" stroke="url(#ringF)" stroke-width="6"/>
-  <circle cx="180" cy="172" r="138" fill="none" stroke="#c8a24a" stroke-width="1.5" opacity="0.5"/>
-  <g fill="#c8a24a">
-    <circle cx="180" cy="22"  r="5"/><circle cx="180" cy="322" r="5"/>
-    <circle cx="30"  cy="172" r="5"/><circle cx="330" cy="172" r="5"/>
+  <g stroke="#e9b6c9" stroke-width="2" opacity="0.35" stroke-linecap="round">
+    <line x1="180" y1="34" x2="180" y2="58"/><line x1="180" y1="286" x2="180" y2="310"/>
+    <line x1="50" y1="172" x2="74" y2="172"/><line x1="286" y1="172" x2="310" y2="172"/>
+    <line x1="88" y1="80" x2="104" y2="96"/><line x1="272" y1="80" x2="256" y2="96"/>
+    <line x1="88" y1="264" x2="104" y2="248"/><line x1="272" y1="264" x2="256" y2="248"/>
   </g>
+
+  <!-- Ornate ring -->
+  <circle cx="180" cy="172" r="150" fill="none" stroke="url(#ringF)" stroke-width="7"/>
+  <circle cx="180" cy="172" r="138" fill="none" stroke="#e7c878" stroke-width="1.5" opacity="0.55"/>
+  <circle cx="180" cy="172" r="160" fill="none" stroke="#c8a24a" stroke-width="1" opacity="0.4" stroke-dasharray="3 9"/>
+  <g fill="#e7c878">
+    <g transform="translate(180 22)"><path d="M-12 0 q4 -8 12 -8 q8 0 12 8 q-6 -3 -12 1 q-6 -4 -12 -1 Z"/></g>
+    <g transform="translate(180 322) rotate(180)"><path d="M-12 0 q4 -8 12 -8 q8 0 12 8 q-6 -3 -12 1 q-6 -4 -12 -1 Z"/></g>
+    <g transform="translate(30 172) rotate(-90)"><path d="M-12 0 q4 -8 12 -8 q8 0 12 8 q-6 -3 -12 1 q-6 -4 -12 -1 Z"/></g>
+    <g transform="translate(330 172) rotate(90)"><path d="M-12 0 q4 -8 12 -8 q8 0 12 8 q-6 -3 -12 1 q-6 -4 -12 -1 Z"/></g>
+  </g>
+  <g fill="#c8a24a"><circle cx="291" cy="63" r="3.4"/><circle cx="69" cy="63" r="3.4"/><circle cx="291" cy="281" r="3.4"/><circle cx="69" cy="281" r="3.4"/></g>
 
   <!-- Lotus base -->
-  <g fill="#6fb594" opacity="0.9">
-    <path d="M180 286 q-46 -6 -78 14 q40 24 78 8 q38 16 78 -8 q-32 -20 -78 -14 Z"/>
-    <path d="M180 280 q-26 -4 -44 10 q22 14 44 6 q22 8 44 -6 q-18 -14 -44 -10 Z" fill="#8fd0ad"/>
+  <g opacity="0.95">
+    <ellipse cx="180" cy="292" rx="92" ry="14" fill="#4a8a6f" opacity="0.5" filter="url(#glowF)"/>
+    <g fill="#6fb594"><path d="M180 290 q-50 -6 -84 16 q44 24 84 8 q40 16 84 -8 q-34 -22 -84 -16 Z"/></g>
+    <g fill="#8fd0ad"><path d="M180 284 q-28 -4 -48 12 q24 14 48 6 q24 8 48 -6 q-20 -16 -48 -12 Z"/></g>
+    <path d="M180 286 q-10 -16 0 -30 q10 14 0 30 Z" fill="#f3c6d8"/>
   </g>
 
   <!-- Long flowing hair behind shoulders -->
   <g fill="#2a221b">
-    <path d="M150 120 Q120 180 132 250 Q140 270 150 250 Q146 190 162 140 Z"/>
-    <path d="M210 120 Q240 180 228 250 Q220 270 210 250 Q214 190 198 140 Z"/>
+    <path d="M150 118 Q116 184 130 256 Q140 276 150 254 Q144 192 162 138 Z"/>
+    <path d="M210 118 Q244 184 230 256 Q220 276 210 254 Q216 192 198 138 Z"/>
   </g>
 
-  <!-- Seated cultivator silhouette (slimmer robe) -->
-  <g fill="url(#robeF)" stroke="#1a241f" stroke-width="1.5">
-    <path d="M118 270 Q126 234 180 228 Q234 234 242 270 Q230 284 180 286 Q130 284 118 270 Z"/>
-    <path d="M142 248 Q138 180 180 152 Q222 180 218 248 Q200 262 180 262 Q160 262 142 248 Z"/>
-    <!-- crossed sleeves in meditation mudra -->
+  <!-- Seated cultivator (slimmer robe) -->
+  <g fill="url(#robeF)" stroke="#16201b" stroke-width="1.5">
+    <path d="M116 272 Q124 234 180 228 Q236 234 244 272 Q230 286 180 288 Q130 286 116 272 Z"/>
+    <path d="M142 250 Q138 178 180 150 Q222 178 218 250 Q200 264 180 264 Q160 264 142 250 Z"/>
     <path d="M142 234 Q156 254 180 252 Q204 254 218 234 Q204 248 180 248 Q156 248 142 234 Z" fill="#30443c"/>
-    <!-- flowing hanfu collar (crossed) -->
-    <path d="M156 180 L180 168 L204 180 L194 200 L180 190 L166 200 Z" fill="#5a6f63"/>
   </g>
+  <path d="M150 178 Q160 222 156 252" stroke="#6e8a78" stroke-width="3" fill="none" opacity="0.6"/>
+  <path d="M150 240 Q180 250 210 240 L206 254 Q180 262 154 254 Z" fill="#c8a24a" opacity="0.7"/>
+  <path d="M156 180 L180 168 L204 180 L194 200 L180 190 L166 200 Z" fill="#5e7468"/>
 
-  <!-- Head -->
-  <circle cx="180" cy="134" r="25" fill="#efe3cc" stroke="#1a241f" stroke-width="1.5"/>
-  <!-- Hair framing the face + bun -->
-  <path d="M155 134 Q152 104 180 100 Q208 104 205 134 Q200 116 180 114 Q160 116 155 134 Z" fill="#2a221b"/>
-  <ellipse cx="180" cy="102" rx="13" ry="9" fill="#2a221b"/>
-  <!-- Gold hairpin -->
-  <g stroke="#e7c878" stroke-width="3" stroke-linecap="round">
-    <line x1="196" y1="100" x2="214" y2="92"/>
-  </g>
-  <circle cx="214" cy="92" r="3.5" fill="#e9b6c9"/>
-  <!-- Calm closed eyes -->
-  <g stroke="#3a3128" stroke-width="2" stroke-linecap="round">
-    <path d="M168 134 q5 4 10 0"/>
-    <path d="M182 134 q5 4 10 0"/>
-  </g>
-  <!-- forehead mark (huadian) -->
-  <circle cx="180" cy="122" r="2.5" fill="#c8503f"/>
+  <!-- Head + long hair framing + hairpin -->
+  <circle cx="180" cy="132" r="25" fill="#efe3cc" stroke="#16201b" stroke-width="1.5"/>
+  <path d="M155 132 Q152 102 180 98 Q208 102 205 132 Q200 114 180 112 Q160 114 155 132 Z" fill="#2a221b"/>
+  <ellipse cx="180" cy="100" rx="13" ry="9" fill="#2a221b"/>
+  <g stroke="#e7c878" stroke-width="3" stroke-linecap="round"><line x1="196" y1="98" x2="216" y2="90"/></g>
+  <circle cx="216" cy="90" r="4" fill="#e9b6c9"/>
+  <g stroke="#3a3128" stroke-width="2" stroke-linecap="round"><path d="M168 132 q5 4 10 0"/><path d="M182 132 q5 4 10 0"/></g>
+  <circle cx="180" cy="120" r="2.6" fill="#c8503f"/>
 
   <!-- Glowing dantian -->
-  <circle cx="180" cy="218" r="22" fill="url(#dantianF)"/>
-  <circle cx="180" cy="218" r="7" fill="#fff7df"/>
+  <circle cx="180" cy="216" r="30" fill="url(#dantianF)"/>
+  <circle cx="180" cy="216" r="9" fill="#ffffff"/>
+  <g stroke="#fff2c4" stroke-width="2" opacity="0.7" stroke-linecap="round">
+    <line x1="180" y1="192" x2="180" y2="200"/><line x1="180" y1="232" x2="180" y2="240"/>
+    <line x1="156" y1="216" x2="164" y2="216"/><line x1="196" y1="216" x2="204" y2="216"/>
+  </g>
 </svg>

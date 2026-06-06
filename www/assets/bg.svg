@@ -1,151 +1,185 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMid slice">
   <defs>
-    <!-- Night sky -->
+    <!-- Rich night sky: indigo → teal → warm horizon -->
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0"   stop-color="#0c0a07"/>
-      <stop offset="0.35" stop-color="#15110c"/>
-      <stop offset="0.7" stop-color="#1c1610"/>
-      <stop offset="1"   stop-color="#241c14"/>
+      <stop offset="0"    stop-color="#161334"/>
+      <stop offset="0.32" stop-color="#1b2742"/>
+      <stop offset="0.6"  stop-color="#1d2c34"/>
+      <stop offset="0.82" stop-color="#28281f"/>
+      <stop offset="1"    stop-color="#1a140e"/>
     </linearGradient>
-    <!-- Moon glow -->
     <radialGradient id="moonGlow" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0"   stop-color="#f3e8c6" stop-opacity="0.9"/>
-      <stop offset="0.35" stop-color="#e7d4a0" stop-opacity="0.35"/>
-      <stop offset="1"   stop-color="#e7d4a0" stop-opacity="0"/>
+      <stop offset="0"    stop-color="#fff4d2" stop-opacity="0.95"/>
+      <stop offset="0.3"  stop-color="#f1d79e" stop-opacity="0.45"/>
+      <stop offset="0.7"  stop-color="#caa9d8" stop-opacity="0.12"/>
+      <stop offset="1"    stop-color="#caa9d8" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="moonBody" cx="0.42" cy="0.4" r="0.62">
-      <stop offset="0" stop-color="#f6efd9"/>
-      <stop offset="0.8" stop-color="#e6d6ac"/>
-      <stop offset="1" stop-color="#d8c596"/>
+    <radialGradient id="moonBody" cx="0.4" cy="0.38" r="0.65">
+      <stop offset="0" stop-color="#fbf6e6"/>
+      <stop offset="0.78" stop-color="#ecdcb1"/>
+      <stop offset="1" stop-color="#dcc794"/>
     </radialGradient>
-    <!-- Soft mist -->
-    <filter id="blur" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="26"/>
-    </filter>
-    <filter id="blurSoft" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="12"/>
-    </filter>
+    <radialGradient id="horizonGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#caa05a" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#caa05a" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Atmospheric mist gradient -->
     <linearGradient id="mist" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#d9e2dc" stop-opacity="0"/>
-      <stop offset="0.5" stop-color="#d9e2dc" stop-opacity="0.5"/>
-      <stop offset="1" stop-color="#d9e2dc" stop-opacity="0"/>
+      <stop offset="0" stop-color="#cfe0e6" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#cfe0e6" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#cfe0e6" stop-opacity="0"/>
     </linearGradient>
+    <!-- Peak fills -->
+    <linearGradient id="peakFar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6f93a0"/><stop offset="1" stop-color="#4a6b72"/>
+    </linearGradient>
+    <linearGradient id="peakMid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3f5b56"/><stop offset="1" stop-color="#2b423d"/>
+    </linearGradient>
+    <linearGradient id="peakNear" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#243a33"/><stop offset="1" stop-color="#172620"/>
+    </linearGradient>
+    <radialGradient id="moteJade" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#bff7da"/><stop offset="0.4" stop-color="#6fb594" stop-opacity="0.8"/><stop offset="1" stop-color="#6fb594" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="moteGold" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff0c4"/><stop offset="0.4" stop-color="#e7c878" stop-opacity="0.8"/><stop offset="1" stop-color="#e7c878" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lantern" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffd98a"/><stop offset="0.5" stop-color="#ff9a3c" stop-opacity="0.7"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blurBig"  x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="30"/></filter>
+    <filter id="blurMid"  x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="14"/></filter>
+    <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="6"/></filter>
   </defs>
 
   <!-- Sky -->
   <rect width="1080" height="1920" fill="url(#sky)"/>
+  <ellipse cx="540" cy="1500" rx="900" ry="420" fill="url(#horizonGlow)"/>
 
   <!-- Stars -->
-  <g fill="#f3e8c6">
-    <circle cx="140" cy="180" r="2" opacity="0.7"/>
-    <circle cx="300" cy="120" r="1.5" opacity="0.5"/>
-    <circle cx="520" cy="240" r="2" opacity="0.6"/>
-    <circle cx="940" cy="160" r="1.6" opacity="0.6"/>
-    <circle cx="1000" cy="320" r="2.2" opacity="0.5"/>
-    <circle cx="220" cy="360" r="1.4" opacity="0.45"/>
-    <circle cx="680" cy="90" r="1.6" opacity="0.5"/>
-    <circle cx="430" cy="60" r="1.3" opacity="0.4"/>
+  <g fill="#f3ecd6">
+    <circle cx="120" cy="160" r="2.4" opacity="0.8"/><circle cx="300" cy="110" r="1.5" opacity="0.5"/>
+    <circle cx="520" cy="220" r="2" opacity="0.65"/><circle cx="170" cy="360" r="1.6" opacity="0.5"/>
+    <circle cx="960" cy="150" r="2.2" opacity="0.7"/><circle cx="1010" cy="330" r="1.8" opacity="0.55"/>
+    <circle cx="680" cy="80" r="1.7" opacity="0.6"/><circle cx="430" cy="60" r="1.4" opacity="0.45"/>
+    <circle cx="860" cy="260" r="1.5" opacity="0.5"/><circle cx="240" cy="240" r="1.3" opacity="0.45"/>
+  </g>
+  <g fill="#fff7e2">
+    <circle cx="150" cy="200" r="3.6" opacity="0.9"/><circle cx="970" cy="200" r="3.2" opacity="0.85"/>
   </g>
 
-  <!-- Moon -->
-  <circle cx="770" cy="380" r="300" fill="url(#moonGlow)"/>
-  <circle cx="770" cy="380" r="135" fill="url(#moonBody)"/>
-  <circle cx="730" cy="345" r="22" fill="#d8c596" opacity="0.35"/>
-  <circle cx="800" cy="420" r="14" fill="#d8c596" opacity="0.3"/>
-  <circle cx="812" cy="350" r="10" fill="#d8c596" opacity="0.25"/>
-
-  <!-- Cranes near the moon -->
-  <g stroke="#efe6cf" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8">
-    <path d="M560 300 q22 -18 44 0 q22 -18 44 0"/>
-    <path d="M620 250 q16 -13 32 0 q16 -13 32 0"/>
-    <path d="M512 360 q13 -11 26 0 q13 -11 26 0"/>
+  <!-- Moon with halo rings -->
+  <circle cx="772" cy="372" r="320" fill="url(#moonGlow)"/>
+  <g fill="none" stroke="#f1d79e" opacity="0.18">
+    <circle cx="772" cy="372" r="190" stroke-width="2"/>
+    <circle cx="772" cy="372" r="232" stroke-width="1.5"/>
+  </g>
+  <circle cx="772" cy="372" r="140" fill="url(#moonBody)"/>
+  <g fill="#d3bd8c" opacity="0.4"><circle cx="730" cy="338" r="22"/><circle cx="804" cy="412" r="15"/><circle cx="816" cy="344" r="10"/><circle cx="742" cy="400" r="8"/></g>
+  <!-- thin cloud band across the moon -->
+  <g fill="#20283a" opacity="0.5" filter="url(#blurMid)">
+    <ellipse cx="800" cy="392" rx="170" ry="13"/><ellipse cx="700" cy="360" rx="120" ry="9"/>
   </g>
 
-  <!-- Mountain range: far (misty, light) -->
-  <path d="M0 760
-           C 120 700, 220 730, 320 690
-           C 430 645, 520 705, 640 670
-           C 760 635, 880 700, 1000 660
-           C 1040 648, 1060 660, 1080 655
-           L1080 1920 L0 1920 Z"
-        fill="#46544f" opacity="0.32"/>
-
-  <!-- mist band 1 -->
-  <ellipse cx="540" cy="800" rx="760" ry="60" fill="url(#mist)" filter="url(#blur)" opacity="0.7"/>
-
-  <!-- Mountain range: mid-far -->
-  <path d="M0 950
-           C 140 870, 260 910, 360 850
-           C 470 785, 560 860, 680 815
-           C 790 775, 900 850, 1010 800
-           C 1045 785, 1065 800, 1080 795
-           L1080 1920 L0 1920 Z"
-        fill="#3a4842" opacity="0.5"/>
-
-  <!-- Pagoda on the mid-far ridge -->
-  <g transform="translate(835 768)" fill="#2a3530" opacity="0.85">
-    <rect x="-4" y="-70" width="8" height="70"/>
-    <polygon points="-30,-58 30,-58 20,-70 -20,-70"/>
-    <rect x="-18" y="-58" width="36" height="16"/>
-    <polygon points="-34,-40 34,-40 22,-58 -22,-58"/>
-    <rect x="-22" y="-40" width="44" height="18"/>
-    <polygon points="-40,-20 40,-20 26,-40 -26,-40"/>
-    <rect x="-26" y="-20" width="52" height="20"/>
-    <circle cx="0" cy="-78" r="5"/>
+  <!-- Coiling cloud-dragon arcing through the sky -->
+  <g opacity="0.16" fill="#d9e6ee">
+    <path d="M70 540
+             C 240 470, 300 600, 470 560
+             C 560 538, 600 470, 700 500
+             C 760 518, 770 575, 700 590
+             C 760 600, 820 560, 884 588
+             Q 860 560, 884 540
+             Q 900 566, 922 560
+             C 870 540, 800 560, 740 548
+             C 650 530, 640 470, 540 486
+             C 420 506, 380 560, 300 548
+             C 200 532, 180 500, 70 540 Z"/>
+    <!-- whiskers + horn near the head -->
+    <path d="M884 540 q26 -16 44 -8 M884 588 q24 14 44 10 M900 540 q4 -16 18 -22" stroke="#d9e6ee" stroke-width="3" fill="none" opacity="0.7"/>
+    <circle cx="906" cy="556" r="3" fill="#fff"/>
   </g>
 
-  <!-- mist band 2 -->
-  <ellipse cx="540" cy="1000" rx="820" ry="70" fill="url(#mist)" filter="url(#blur)" opacity="0.65"/>
+  <!-- FAR peaks (misty blue, atmospheric) -->
+  <g filter="url(#blurMid)" opacity="0.55">
+    <path d="M0 820 C 90 700, 150 760, 210 660 C 250 596, 300 700, 360 640
+             C 430 568, 470 700, 560 650 C 640 606, 690 720, 770 660
+             C 850 600, 900 720, 1000 670 C 1040 652, 1060 672, 1080 666
+             L1080 1100 L0 1100 Z" fill="url(#peakFar)"/>
+  </g>
+  <ellipse cx="520" cy="860" rx="820" ry="64" fill="url(#mist)" filter="url(#blurBig)" opacity="0.7"/>
 
-  <!-- Mountain range: mid (taller jagged peaks) -->
-  <path d="M0 1230
-           C 110 1130, 180 1180, 250 1060
-           C 320 940, 380 1110, 470 1030
-           C 560 950, 610 1140, 720 1050
-           C 820 970, 880 1150, 980 1070
-           C 1030 1030, 1060 1090, 1080 1075
-           L1080 1920 L0 1920 Z"
-        fill="#2c3830" opacity="0.7"/>
+  <!-- MID peaks (jagged karst spires) with pagoda -->
+  <path d="M0 1140
+           C 70 1040, 110 1080, 150 940 C 180 840, 210 1010, 270 920
+           C 320 846, 350 1030, 430 960 C 470 924, 500 1010, 560 940
+           C 600 892, 628 1050, 700 980 C 760 924, 790 1040, 860 980
+           C 920 928, 960 1020, 1010 980 C 1040 956, 1062 992, 1080 984
+           L1080 1300 L0 1300 Z" fill="url(#peakMid)"/>
 
-  <!-- mist band 3 -->
-  <ellipse cx="520" cy="1290" rx="900" ry="80" fill="url(#mist)" filter="url(#blur)" opacity="0.6"/>
+  <!-- Pagoda silhouette with a lit window on the mid ridge -->
+  <g transform="translate(300 952)">
+    <circle cx="0" cy="-30" r="46" fill="url(#lantern)" opacity="0.85"/>
+    <g fill="#1b2a26" stroke="#0f1714" stroke-width="1">
+      <rect x="-5" y="-86" width="10" height="86"/>
+      <polygon points="-34,-72 34,-72 22,-86 -22,-86"/>
+      <rect x="-20" y="-72" width="40" height="16"/>
+      <polygon points="-40,-52 40,-52 24,-72 -24,-72"/>
+      <rect x="-24" y="-52" width="48" height="18"/>
+      <polygon points="-48,-30 48,-30 28,-52 -28,-52"/>
+      <rect x="-30" y="-30" width="60" height="22"/>
+      <circle cx="0" cy="-96" r="5"/>
+    </g>
+    <rect x="-7" y="-26" width="14" height="14" rx="2" fill="#ffcf7a"/>
+  </g>
 
-  <!-- Mountain range: near -->
-  <path d="M0 1560
-           C 120 1440, 220 1520, 330 1400
-           C 430 1290, 520 1500, 650 1410
-           C 770 1330, 860 1520, 980 1430
-           C 1030 1395, 1060 1450, 1080 1440
-           L1080 1920 L0 1920 Z"
-        fill="#202a24" opacity="0.86"/>
+  <ellipse cx="560" cy="1210" rx="900" ry="78" fill="url(#mist)" filter="url(#blurBig)" opacity="0.62"/>
+
+  <!-- NEAR peaks with a thin waterfall -->
+  <path d="M0 1520
+           C 80 1380, 140 1470, 220 1320 C 280 1212, 330 1450, 430 1360
+           C 520 1280, 560 1460, 660 1370 C 760 1290, 830 1470, 940 1380
+           C 1000 1342, 1050 1410, 1080 1396
+           L1080 1920 L0 1920 Z" fill="url(#peakNear)"/>
+  <path d="M300 1360 q-4 60 2 120 q-8 40 0 80" stroke="#cfe0e6" stroke-width="5" fill="none" opacity="0.45" filter="url(#softGlow)"/>
+
+  <!-- Temple roofs nestled on the near ridge -->
+  <g transform="translate(720 1372)" fill="#101a16">
+    <polygon points="-46,0 46,0 30,-20 -30,-20"/><rect x="-30" y="-20" width="60" height="4"/>
+    <polygon points="-30,-22 30,-22 18,-40 -18,-40"/>
+  </g>
 
   <!-- Pine trees on the near ridge -->
-  <g fill="#161d18">
-    <g transform="translate(150 1470)">
-      <rect x="-3" y="0" width="6" height="60"/>
-      <polygon points="0,-70 -34,10 34,10"/>
-      <polygon points="0,-40 -26,30 26,30"/>
-    </g>
-    <g transform="translate(235 1500) scale(0.8)">
-      <rect x="-3" y="0" width="6" height="60"/>
-      <polygon points="0,-70 -34,10 34,10"/>
-      <polygon points="0,-40 -26,30 26,30"/>
-    </g>
-    <g transform="translate(905 1455) scale(1.1)">
-      <rect x="-3" y="0" width="6" height="60"/>
-      <polygon points="0,-70 -34,10 34,10"/>
-      <polygon points="0,-40 -26,30 26,30"/>
-    </g>
+  <g fill="#0f1714">
+    <g transform="translate(140 1430)"><rect x="-3" y="0" width="6" height="62"/><polygon points="0,-74 -34,12 34,12"/><polygon points="0,-44 -26,32 26,32"/></g>
+    <g transform="translate(225 1462) scale(0.8)"><rect x="-3" y="0" width="6" height="62"/><polygon points="0,-74 -34,12 34,12"/><polygon points="0,-44 -26,32 26,32"/></g>
+    <g transform="translate(930 1420) scale(1.05)"><rect x="-3" y="0" width="6" height="62"/><polygon points="0,-74 -34,12 34,12"/><polygon points="0,-44 -26,32 26,32"/></g>
   </g>
 
-  <!-- Foreground darkest mass -->
-  <path d="M0 1760
-           C 160 1690, 320 1740, 480 1700
-           C 640 1660, 800 1740, 960 1700
-           C 1010 1688, 1050 1710, 1080 1705
-           L1080 1920 L0 1920 Z"
-        fill="#12100b"/>
+  <!-- FOREGROUND cliff with a lone cultivator gazing at the moon -->
+  <path d="M0 1700 C 160 1632, 320 1690, 480 1648 C 640 1606, 800 1690, 960 1650
+           C 1010 1638, 1050 1662, 1080 1656 L1080 1920 L0 1920 Z" fill="#0c0a07"/>
+  <g transform="translate(470 1648)" fill="#0a0806">
+    <ellipse cx="0" cy="6" rx="40" ry="10"/>
+    <path d="M-9 4 Q-12 -34 0 -44 Q12 -34 9 4 Z"/>
+    <circle cx="0" cy="-52" r="9"/>
+    <path d="M-9 -6 q-14 6 -18 22 M9 -6 q14 6 18 22"/>
+  </g>
+
+  <!-- Drifting spirit motes -->
+  <g>
+    <circle cx="180" cy="980" r="10" fill="url(#moteJade)"/>
+    <circle cx="430" cy="1120" r="7" fill="url(#moteGold)"/>
+    <circle cx="640" cy="1040" r="9" fill="url(#moteJade)"/>
+    <circle cx="880" cy="1180" r="8" fill="url(#moteGold)"/>
+    <circle cx="250" cy="1260" r="6" fill="url(#moteJade)"/>
+    <circle cx="560" cy="1330" r="11" fill="url(#moteGold)"/>
+    <circle cx="930" cy="1320" r="7" fill="url(#moteJade)"/>
+    <circle cx="120" cy="1180" r="6" fill="url(#moteGold)"/>
+    <circle cx="760" cy="1260" r="6" fill="url(#moteJade)"/>
+    <circle cx="380" cy="980" r="5" fill="url(#moteGold)"/>
+  </g>
 
   <!-- low foreground mist -->
-  <ellipse cx="540" cy="1620" rx="950" ry="80" fill="url(#mist)" filter="url(#blurSoft)" opacity="0.4"/>
+  <ellipse cx="540" cy="1640" rx="960" ry="70" fill="url(#mist)" filter="url(#blurBig)" opacity="0.4"/>
 </svg>
