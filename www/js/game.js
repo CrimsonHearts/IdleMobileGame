@@ -88,15 +88,17 @@ const Game = {
     m.root  = this.state.spiritualRoot ? this.state.spiritualRoot.mult : 1;   // Spiritual Root
     m.stage = 1 + this.state.stagesCleared * GameData.stageBonusPerStage;      // Cultivation Base
     m.dao   = 1 + this.state.daoComprehension * GameData.daoBonusPerPoint;     // Dao Comprehension
-    m.sect  = (window.Sect && Sect.qiMult) ? Sect.qiMult() : 1;                // Sect bonus
-    m.pet   = (window.Pets && Pets.qiMult) ? Pets.qiMult() : 1;                // Spirit Beast bond
+    m.sect  = (window.Sect && Sect.qiMult) ? Sect.qiMult() : 1;                // Sect bonus (legacy)
+    m.pet   = (window.Pets && Pets.qiMult) ? Pets.qiMult() : 1;                // Spirit Beast bond (legacy)
+    m.talent= (window.Life && this.state.life) ? Life.talentMult() : 1;        // Study → Talent
+    m.family= (window.Family && this.state.family) ? Family.familyMult() : 1;  // Spouse + children
     return m;
   },
 
   /** Combined permanent global multiplier. */
   globalMult() {
     const m = this.multipliers();
-    return m.root * m.stage * m.dao * m.sect * m.pet;
+    return m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family;
   },
 
   /** Qi per second from all generators, with all multipliers applied. */
@@ -106,13 +108,13 @@ const Game = {
     GameData.generators.forEach(g => {
       base += g.baseProd * this.state.owned[g.id];
     });
-    return base * m.allMult * m.root * m.stage * m.dao * m.sect * m.pet;
+    return base * m.allMult * m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family;
   },
 
   /** Qi gained per manual meditate tap. */
   qiPerTap() {
     const m = this.multipliers();
-    return GameData.tap.baseGain * m.tapMult * m.root * m.stage * m.dao * m.sect * m.pet;
+    return GameData.tap.baseGain * m.tapMult * m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family;
   },
 
   generatorCost(g, count = 1) {
@@ -264,13 +266,9 @@ const Game = {
 
     this._addQi(this.qiPerSecond() * dtSec);
 
-    // Idle combat advances while the app is open.
-    if (window.Combat) Combat.tick(dtSec);
-
-    // Passive sect contribution, scaled to cultivation pace.
-    if (window.Sect && this.state.sect) {
-      Sect.addContribution(Math.max(1, Math.sqrt(this.qiPerSecond())) * dtSec);
-    }
+    // Life-sim systems advance while the app is open.
+    if (window.Life && this.state.life) Life.tick(dtSec);
+    if (window.Family && this.state.family) Family.tick(dtSec);
 
     // Track the highest wall-clock time we've seen (anti-cheat baseline).
     const wall = TimeService.now();

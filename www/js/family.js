@@ -1,0 +1,180 @@
+/* ===========================================================================
+ * family.js — Romance & Family.
+ *   • Meet candidates, build Affinity by chatting / dating / gifting (Charm + ¥).
+ *   • Marry your chosen partner, then raise children who inherit a Spiritual
+ *     Root from their parents — each child boosts the household's cultivation.
+ * ========================================================================= */
+
+const FIRST_NAMES = ['Lin','Mu','Bai','Ye','Su','Yun','Han','Xia','Jiang','Wen','Qin','Lu','An','Shen','Tang','Rou','Xue','Chen'];
+const LAST_NAMES  = ['Wan','Yu','Chen','Feng','Qing','Hong','Lan','Jian','Mo','Xing','Yao','Ruo','Zhi','Ke','Ning'];
+const PROFESSIONS = ['Doctor','Pilot','Artist','Engineer','Alchemist','Swordmaster','Scholar','Investor','Musician','Talisman Artist'];
+const TRAITS      = ['Gentle','Ambitious','Witty','Loyal','Mysterious','Cheerful','Diligent','Proud','Kind'];
+
+const MAX_CHILDREN = 6;
+
+const Family = {
+  s() { return Game.state.family; },
+  fresh() { return { candidates: [], spouse: null, children: [], childCooldown: 0 }; },
+  init() {
+    if (!Game.state.family) Game.state.family = this.fresh();
+    if (!this.s().candidates.length && !this.s().spouse) this._seed();
+  },
+
+  _name() { return FIRST_NAMES[Math.floor(Math.random()*FIRST_NAMES.length)] + ' ' + LAST_NAMES[Math.floor(Math.random()*LAST_NAMES.length)]; },
+  _seed() {
+    const list = [];
+    for (let i = 0; i < 4; i++) {
+      const root = GameData.rollSpiritualRoot();
+      list.push({
+        id: 'c' + Date.now() + '_' + i,
+        name: this._name(),
+        gender: Math.random() < 0.5 ? 'female' : 'male',
+        root, charm: 20 + Math.floor(Math.random()*80),
+        profession: PROFESSIONS[Math.floor(Math.random()*PROFESSIONS.length)],
+        trait: TRAITS[Math.floor(Math.random()*TRAITS.length)],
+        affinity: 0,
+      });
+    }
+    this.s().candidates = list;
+  },
+  refreshCandidates() { this._seed(); Game.persist(); },
+
+  // -- Bonuses (read by Game.multipliers) ----------------------------------
+  /** Household cultivation multiplier: spouse + children. */
+  familyMult() {
+    const s = this.s();
+    let m = 1;
+    if (s.spouse) m += 0.10 + (s.spouse.root.mult - 1) * 0.05; // partner shares dao
+    m += (s.children.length) * 0.05;
+    return m;
+  },
+
+  // -- Romance actions ------------------------------------------------------
+  _gain(cand, base) {
+    const charm = (Game.state.life && Game.state.life.charm) || 0;
+    cand.affinity = Math.min(100, cand.affinity + base * (1 + charm * 0.01));
+  },
+  chat(id) { const c = this._find(id); if (c) { this._gain(c, 4); Game.persist(); } return c; },
+  date(id) { const c = this._find(id); if (c && Life.s().money >= 200) { Life.s().money -= 200; this._gain(c, 14); Game.persist(); } return c; },
+  gift(id) { const c = this._find(id); if (c && Life.s().money >= 1000) { Life.s().money -= 1000; this._gain(c, 30); Game.persist(); } return c; },
+  _find(id) { return this.s().candidates.find(c => c.id === id); },
+
+  marry(id) {
+    const c = this._find(id);
+    if (!c || c.affinity < 100 || this.s().spouse) return false;
+    this.s().spouse = c;
+    this.s().candidates = [];
+    Game.persist();
+    return true;
+  },
+
+  // -- Children -------------------------------------------------------------
+  canHaveChild() {
+    const s = this.s();
+    return !!s.spouse && s.children.length < MAX_CHILDREN && s.childCooldown <= 0 && (Game.state.life.money >= 2000);
+  },
+  haveChild() {
+    if (!this.canHaveChild()) return null;
+    const s = this.s();
+    Game.state.life.money -= 2000;
+    // Inherit the better parental root, with a chance to ascend a tier.
+    const roots = GameData.spiritualRoots;
+    const pIdx = roots.findIndex(r => r.key === Game.state.spiritualRoot.key);
+    const sIdx = roots.findIndex(r => r.key === s.spouse.root.key);
+    let idx = Math.max(pIdx, sIdx);
+    if (Math.random() < 0.25 && idx < roots.length - 1) idx += 1; // talented child!
+    const child = {
+      name: this._name().split(' ')[1] + ' ' + this._name().split(' ')[0],
+      gender: Math.random() < 0.5 ? 'female' : 'male',
+      root: roots[idx], age: 0,
+    };
+    s.children.push(child);
+    s.childCooldown = 60; // seconds before next child
+    Game.persist();
+    return child;
+  },
+  ageUp() { this.s().children.forEach(c => c.age += 1); },
+
+  // ======================================================================
+  // RENDER — Life tab (romance + family)
+  // ======================================================================
+  render(el) {
+    const s = this.s();
+    if (!s.spouse) return this._renderRomance(el);
+    return this._renderFamily(el);
+  },
+
+  _renderRomance(el) {
+    const s = this.s();
+    el.innerHTML = `
+      <div class="section-title">Romance</div>
+      <div class="hint">Build Affinity by spending time and ¥. Higher Charm makes you more endearing. Reach 100 Affinity to propose.</div>
+      <div id="cand-list"></div>
+      <button class="btn-ghost" id="meet-new">↻ Meet New People</button>`;
+    const list = el.querySelector('#cand-list');
+    s.candidates.forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'card candidate';
+      card.innerHTML = `
+        <div class="cand-head">
+          <span class="cand-avatar" style="background:${c.root.color}">${c.gender==='female'?'♀':'♂'}</span>
+          <div class="cand-id"><div class="cand-name">${c.name}</div>
+            <div class="cand-meta">${c.trait} · ${c.profession} · <span style="color:${c.root.color}">${c.root.name}</span></div></div>
+        </div>
+        <div class="progress-track heart"><div class="progress-fill" style="width:${c.affinity}%"></div></div>
+        <div class="row-between"><span class="muted">Affinity ${Math.floor(c.affinity)}/100</span></div>
+        <div class="btn-row">
+          <button class="btn-mini" data-a="chat">Chat</button>
+          <button class="btn-mini" data-a="date" ${Life.s().money>=200?'':'disabled'}>Date ¥200</button>
+          <button class="btn-mini" data-a="gift" ${Life.s().money>=1000?'':'disabled'}>Gift ¥1K</button>
+          <button class="btn-primary sm" data-a="marry" ${c.affinity>=100?'':'disabled'}>Propose 💍</button>
+        </div>`;
+      card.querySelectorAll('button[data-a]').forEach(b => b.addEventListener('click', () => {
+        const a = b.dataset.a;
+        if (a === 'marry') { if (this.marry(c.id)) { UI.toast(`💍 You married ${c.name}!`); this.render(el); UI.renderResources(); } return; }
+        this[a](c.id); this.render(el); UI.renderResources();
+      }));
+      list.appendChild(card);
+    });
+    el.querySelector('#meet-new').addEventListener('click', () => { this.refreshCandidates(); this.render(el); });
+  },
+
+  _renderFamily(el) {
+    const s = this.s();
+    const sp = s.spouse;
+    el.innerHTML = `
+      <div class="section-title">Family</div>
+      <div class="card spouse">
+        <div class="cand-head">
+          <span class="cand-avatar" style="background:${sp.root.color}">${sp.gender==='female'?'♀':'♂'}</span>
+          <div class="cand-id"><div class="cand-name">${sp.name} <span class="badge">Spouse</span></div>
+            <div class="cand-meta">${sp.trait} · ${sp.profession} · <span style="color:${sp.root.color}">${sp.root.name}</span></div></div>
+        </div>
+        <div class="hint">Household cultivation bonus: <b>+${((this.familyMult()-1)*100).toFixed(0)}%</b> Qi</div>
+      </div>
+      <div class="section-title small">Children (${s.children.length}/${MAX_CHILDREN})</div>
+      <div id="kids"></div>
+      <button class="btn-primary" id="have-child" ${this.canHaveChild()?'':'disabled'}>
+        ${s.children.length>=MAX_CHILDREN ? 'Family Complete' : (s.childCooldown>0 ? `Resting… ${Math.ceil(s.childCooldown)}s` : 'Have a Child (¥2K)')}
+      </button>`;
+    const kids = el.querySelector('#kids');
+    if (!s.children.length) kids.innerHTML = `<div class="hint">No children yet. Each child adds +5% cultivation and inherits a Spiritual Root.</div>`;
+    s.children.forEach(ch => {
+      const d = document.createElement('div');
+      d.className = 'list-item';
+      d.innerHTML = `<span class="li-icon" style="color:${ch.root.color}">${ch.gender==='female'?'👧':'👦'}</span>
+        <span class="li-main"><span class="li-name">${ch.name}</span>
+          <span class="li-sub">Age ${ch.age} · <span style="color:${ch.root.color}">${ch.root.name}</span></span></span>`;
+      kids.appendChild(d);
+    });
+    const hc = el.querySelector('#have-child');
+    if (hc && this.canHaveChild()) hc.addEventListener('click', () => {
+      const ch = this.haveChild();
+      if (ch) { UI.toast(`👶 ${ch.name} was born with a ${ch.root.name}!`); this.render(el); UI.renderResources(); }
+    });
+  },
+
+  tick(dt) { if (this.s().childCooldown > 0) this.s().childCooldown = Math.max(0, this.s().childCooldown - dt); },
+};
+
+window.Family = Family;

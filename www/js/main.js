@@ -15,6 +15,8 @@
   // 3. Load save (or start fresh) and initialise the engine.
   const saved = Storage.load();
   Game.init(saved);
+  if (window.Life) Life.init();
+  if (window.Family) Family.init();
 
   // 3. Apply offline progress with anti-cheat checks.
   const offline = Game.applyOffline();

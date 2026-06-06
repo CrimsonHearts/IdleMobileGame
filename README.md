@@ -1,14 +1,20 @@
-# 仙途 · Path to Immortality
+# Path to Immortality
 
-A **Chinese cultivation (xianxia) idle game** built with web tech and wrapped
-for **Android & iOS** via [Capacitor](https://capacitorjs.com/). Meditate to
-gather **Qi (气)**, build a cultivation sect, ascend through the **cultivation
-realms** (Qi Condensation → Foundation → Core Formation → … → Immortal
-Ascension), and grow stronger each life through **Dao Comprehension (道韵)**.
+A **futuristic urban-cultivation life-sim** built with web tech and wrapped for
+**Android & iOS** via [Capacitor](https://capacitorjs.com/). Play a modern
+cultivator who must **Cultivate** (gather Qi, ascend the cultivation realms),
+**Study** (academy courses that raise Talent/Intellect/Charm), **Work** (a
+career that earns money), and build a **Life** — date a partner, marry, and
+raise children who inherit Spiritual Roots. Clean modern (light) UI.
 
-> Status: **playable prototype**. Core loop, generators, upgrades, prestige
-> (breakthrough), offline progress with anti-cheat, save system, and
-> ads/IAP hooks (simulated) are all in place.
+> Status: **playable**. Cultivation core (meditate, generators, realms,
+> breakthrough, spiritual root, character creation), plus the life-sim systems
+> (Study, Work, Romance, Family), offline progress + clock anti-cheat, save
+> system, and AdMob hooks are all in place.
+>
+> Earlier systems (Sect, Spirit Beasts, Trials/combat) are kept in the repo
+> (`js/sect.js`, `js/pets.js`, `js/combat.js`) but unlinked for now — they can
+> be re-enabled later.
 
 ---
 

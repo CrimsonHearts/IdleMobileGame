@@ -110,25 +110,22 @@
 
     <!-- Top status bar -->
     <header id="topbar">
-      <div class="realm-block">
-        <div class="char-line"><span id="char-name">Cultivator</span> · <span id="char-root">Mortal Root</span></div>
-        <div class="realm-names">
-          <span id="realm-name">Mortal</span>
-        </div>
-        <div class="stage-line"><span id="stage-name">Mortal Body</span></div>
+      <img class="avatar" id="avatar-img" src="assets/cultivator.svg" alt="" draggable="false" />
+      <div class="topbar-id">
+        <div class="char-name-row"><span id="char-name">Cultivator</span><span class="root-chip" id="char-root">Mortal Root</span></div>
+        <div class="realm-line"><span id="realm-name">Mortal</span> · <span id="stage-name">Mortal Body</span></div>
       </div>
-      <div class="dao-block">
-        <div class="dao-label">Dao</div>
-        <div class="dao-value"><span id="dao-amount">0</span> ☯</div>
-        <div class="cb-line">Cultivation +<span id="cb-bonus">0</span>%</div>
+      <div class="topbar-meta">
+        <div class="meta-pill">Age <b id="age-val">18</b></div>
+        <div class="meta-pill gold"><b id="dao-amount">0</b> Dao</div>
       </div>
     </header>
 
     <!-- Currency strip (always visible) -->
     <section id="status-strip">
-      <span class="cur cur-qi"><b id="qi-amount">0</b> Qi<small id="qps">0/s</small></span>
-      <span class="cur cur-stone"><b id="stone-amount">0</b> Stones</span>
-      <span class="cur cur-egg"><b id="egg-amount">0</b> Eggs</span>
+      <span class="cur"><b id="qi-amount">0</b> Qi <small id="qps">0/s</small></span>
+      <span class="cur"><b id="money-amount">0</b> ¥</span>
+      <span class="cur">Cultivation <b>+<span id="cb-bonus">0</span>%</b></span>
     </section>
 
     <!-- Tab content -->
@@ -162,14 +159,14 @@
         <div id="shop-list"></div>
       </section>
 
-      <!-- ===== SECT ===== -->
-      <section class="tab-panel" id="tab-sect"></section>
+      <!-- ===== STUDY ===== -->
+      <section class="tab-panel" id="tab-study"></section>
 
-      <!-- ===== BEASTS ===== -->
-      <section class="tab-panel" id="tab-beasts"></section>
+      <!-- ===== WORK ===== -->
+      <section class="tab-panel" id="tab-work"></section>
 
-      <!-- ===== TRIALS (combat) ===== -->
-      <section class="tab-panel" id="tab-trials"></section>
+      <!-- ===== LIFE (romance + family) ===== -->
+      <section class="tab-panel" id="tab-life"></section>
 
       <!-- ===== TECHNIQUES ===== -->
       <section class="tab-panel" id="tab-techniques">
@@ -181,10 +178,10 @@
 
     <!-- Bottom navigation -->
     <nav id="bottom-nav">
-      <button class="nav-btn active" data-tab="cultivate"><span class="nav-ico">☯</span><span>Cultivate</span></button>
-      <button class="nav-btn" data-tab="sect"><span class="nav-ico">⛩</span><span>Sect</span></button>
-      <button class="nav-btn" data-tab="beasts"><span class="nav-ico">🐾</span><span>Beasts</span></button>
-      <button class="nav-btn" data-tab="trials"><span class="nav-ico">⚔</span><span>Trials</span></button>
+      <button class="nav-btn active" data-tab="cultivate"><span class="nav-ico">🧘</span><span>Cultivate</span></button>
+      <button class="nav-btn" data-tab="study"><span class="nav-ico">🎓</span><span>Study</span></button>
+      <button class="nav-btn" data-tab="work"><span class="nav-ico">💼</span><span>Work</span></button>
+      <button class="nav-btn" data-tab="life"><span class="nav-ico">❤️</span><span>Life</span></button>
       <button class="nav-btn" data-tab="techniques"><span class="nav-ico">📜</span><span>Arts</span></button>
     </nav>
 
@@ -195,9 +192,8 @@
   <script src="js/gameData.js"></script>
   <script src="js/time.js"></script>
   <script src="js/storage.js"></script>
-  <script src="js/sect.js"></script>
-  <script src="js/pets.js"></script>
-  <script src="js/combat.js"></script>
+  <script src="js/life.js"></script>
+  <script src="js/family.js"></script>
   <script src="js/game.js"></script>
   <script src="js/monetization.js"></script>
   <script src="js/ui.js"></script>
