@@ -29,21 +29,19 @@ html, body {
   -webkit-user-select: none;
 }
 
-/* Misty mountain backdrop, painted with gradients. */
+/* Illustrated ink-wash mountain landscape. */
 body::before {
   content: "";
   position: fixed; inset: 0; z-index: -2;
-  background:
-    radial-gradient(120% 80% at 50% -10%, #2c2419 0%, #1a140e 55%, #0f0b07 100%);
+  background: #15110c url("../assets/bg.svg") center bottom / cover no-repeat;
 }
+/* Atmospheric tint + readability vignette over the artwork. */
 body::after {
   content: "";
-  position: fixed; inset: 0; z-index: -1; opacity: 0.5;
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(60% 30% at 20% 85%, rgba(74,138,111,0.18), transparent 70%),
-    radial-gradient(50% 25% at 85% 80%, rgba(200,162,74,0.12), transparent 70%),
-    radial-gradient(80% 40% at 50% 110%, rgba(60,49,40,0.6), transparent 70%);
-  pointer-events: none;
+    radial-gradient(70% 40% at 50% 96%, rgba(10,7,4,0.75), transparent 70%),
+    linear-gradient(180deg, rgba(10,7,4,0.35) 0%, transparent 22%, transparent 60%, rgba(10,7,4,0.55) 100%);
 }
 
 #app {
@@ -124,9 +122,15 @@ body::after {
   transition: transform 0.06s;
 }
 #meditate-btn:active { transform: scale(0.95); }
-.tap-symbol { font-size: 58px; line-height: 1; }
-.tap-label { font-size: 14px; letter-spacing: 1px; }
-.tap-gain { font-size: 13px; color: var(--jade-2); }
+.tap-emblem { width: 150px; height: 150px; pointer-events: none;
+  filter: drop-shadow(0 0 10px rgba(111,181,148,0.35)); }
+#meditate-btn .tap-label, #meditate-btn .tap-gain {
+  position: absolute; left: 0; right: 0; text-align: center;
+  text-shadow: 0 1px 4px #000;
+}
+.tap-label { bottom: 30px; font-size: 13px; letter-spacing: 1px; color: var(--gold-2); }
+.tap-gain { bottom: 14px; font-size: 12px; color: var(--jade-2); }
+#meditate-btn { position: relative; }
 
 /* -- Tabs ----------------------------------------------------------------- */
 #tabs { display: flex; gap: 8px; }
@@ -165,7 +169,18 @@ body::after {
 }
 .shop-item.affordable:active { transform: scale(0.99); }
 
-.gen-icon, .upg-icon { font-size: 30px; width: 40px; text-align: center; flex-shrink: 0; }
+/* Jade medallion frame around each generator icon. */
+.gen-icon {
+  width: 52px; height: 52px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold);
+  background: radial-gradient(circle at 50% 35%, rgba(111,181,148,0.22), rgba(20,14,8,0.7) 70%);
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.6), 0 0 6px rgba(200,162,74,0.2);
+}
+.gen-icon-svg { width: 34px; height: 34px; color: var(--gold-2); }
+.shop-item.affordable .gen-icon-svg { color: var(--jade-2); }
+.upg-icon { font-size: 30px; width: 40px; text-align: center; flex-shrink: 0; }
 .gen-main, .upg-main { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .gen-name, .upg-name { font-size: 15px; font-weight: 700; color: var(--gold-2); }
 .gen-name em, .upg-name em { font-style: normal; font-size: 13px; color: var(--jade-2); font-weight: 400; }

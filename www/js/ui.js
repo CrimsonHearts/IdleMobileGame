@@ -70,7 +70,7 @@ const UI = {
       row.className = 'shop-item';
       row.id = 'gen-' + g.id;
       row.innerHTML = `
-        <span class="gen-icon">${g.icon}</span>
+        <span class="gen-icon"><svg class="gen-icon-svg" viewBox="0 0 100 100"><use href="#ic-${g.id}"/></svg></span>
         <span class="gen-main">
           <span class="gen-name">${g.name} <em>${g.nameCN}</em></span>
           <span class="gen-sub" id="gen-sub-${g.id}"></span>

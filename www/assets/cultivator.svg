@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="360" viewBox="0 0 360 360">
+  <defs>
+    <radialGradient id="aura" cx="0.5" cy="0.46" r="0.5">
+      <stop offset="0" stop-color="#9fe3c2" stop-opacity="0.55"/>
+      <stop offset="0.45" stop-color="#6fb594" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#6fb594" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="robe" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a4f47"/>
+      <stop offset="1" stop-color="#22312b"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e7c878"/>
+      <stop offset="0.5" stop-color="#c8a24a"/>
+      <stop offset="1" stop-color="#9a7a32"/>
+    </linearGradient>
+    <radialGradient id="dantian" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff7df"/>
+      <stop offset="0.5" stop-color="#e7c878"/>
+      <stop offset="1" stop-color="#c8a24a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Outer glowing aura -->
+  <circle cx="180" cy="172" r="170" fill="url(#aura)"/>
+
+  <!-- Radiating qi rays -->
+  <g stroke="#9fe3c2" stroke-width="2" opacity="0.4" stroke-linecap="round">
+    <line x1="180" y1="20"  x2="180" y2="55"/>
+    <line x1="180" y1="290" x2="180" y2="325"/>
+    <line x1="40"  y1="172" x2="72"  y2="172"/>
+    <line x1="288" y1="172" x2="320" y2="172"/>
+    <line x1="78"  y1="70"  x2="100" y2="92"/>
+    <line x1="282" y1="70"  x2="260" y2="92"/>
+    <line x1="78"  y1="274" x2="100" y2="252"/>
+    <line x1="282" y1="274" x2="260" y2="252"/>
+  </g>
+
+  <!-- Decorative gold ring with cloud notches -->
+  <circle cx="180" cy="172" r="150" fill="none" stroke="url(#ring)" stroke-width="6"/>
+  <circle cx="180" cy="172" r="138" fill="none" stroke="#c8a24a" stroke-width="1.5" opacity="0.5"/>
+  <g fill="#c8a24a">
+    <circle cx="180" cy="22"  r="5"/>
+    <circle cx="180" cy="322" r="5"/>
+    <circle cx="30"  cy="172" r="5"/>
+    <circle cx="330" cy="172" r="5"/>
+  </g>
+
+  <!-- Lotus base -->
+  <g fill="#6fb594" opacity="0.9">
+    <path d="M180 286 q-46 -6 -78 14 q40 24 78 8 q38 16 78 -8 q-32 -20 -78 -14 Z"/>
+    <path d="M180 280 q-26 -4 -44 10 q22 14 44 6 q22 8 44 -6 q-18 -14 -44 -10 Z" fill="#8fd0ad"/>
+  </g>
+
+  <!-- Seated cultivator silhouette -->
+  <g fill="url(#robe)" stroke="#1a241f" stroke-width="1.5">
+    <!-- crossed legs / robe skirt -->
+    <path d="M112 270
+             Q120 232 180 226
+             Q240 232 248 270
+             Q236 284 180 286
+             Q124 284 112 270 Z"/>
+    <!-- torso / robe body -->
+    <path d="M138 246
+             Q132 176 180 150
+             Q228 176 222 246
+             Q200 262 180 262
+             Q160 262 138 246 Z"/>
+    <!-- arms resting (meditation mudra) -->
+    <path d="M138 232 Q150 252 180 250 Q210 252 222 232 Q210 246 180 246 Q150 246 138 232 Z" fill="#2c3d36"/>
+    <!-- shoulders / collar -->
+    <path d="M150 178 Q180 160 210 178 Q196 168 180 168 Q164 168 150 178 Z" fill="#46594f"/>
+  </g>
+
+  <!-- Head -->
+  <circle cx="180" cy="132" r="26" fill="#e9dcc2" stroke="#1a241f" stroke-width="1.5"/>
+  <!-- Topknot (cultivator hair bun) -->
+  <path d="M168 112 Q180 92 192 112 Q186 104 180 104 Q174 104 168 112 Z" fill="#2a221b"/>
+  <ellipse cx="180" cy="106" rx="10" ry="8" fill="#2a221b"/>
+  <!-- calm closed eyes -->
+  <g stroke="#3a3128" stroke-width="2" stroke-linecap="round">
+    <path d="M168 132 q5 4 10 0"/>
+    <path d="M182 132 q5 4 10 0"/>
+  </g>
+
+  <!-- Glowing dantian (energy core) -->
+  <circle cx="180" cy="216" r="22" fill="url(#dantian)"/>
+  <circle cx="180" cy="216" r="7" fill="#fff7df"/>
+</svg>
