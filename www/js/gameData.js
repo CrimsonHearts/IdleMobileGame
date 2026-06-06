@@ -102,12 +102,16 @@ const GameData = {
    * Rolled (weighted) at character creation; the player may re-divine freely.
    */
   spiritualRoots: [
-    { key: 'mortal', name: 'Mortal Spirit Root',   mult: 1.0, weight: 50, color: '#9c9488', desc: 'Common roots. The road is long, but diligence overcomes talent.' },
-    { key: 'true',   name: 'True Spirit Root',      mult: 1.6, weight: 28, color: '#6fb594', desc: 'Pure single-element roots — a solid foundation for cultivation.' },
-    { key: 'heaven', name: 'Heavenly Spirit Root',  mult: 2.6, weight: 14, color: '#5aa9e6', desc: 'A rare gift of the heavens; Qi flows to you with ease.' },
-    { key: 'saint',  name: 'Saint Spirit Root',     mult: 4.5, weight: 6,  color: '#e7c878', desc: 'The mark of a born sage — destined for greatness.' },
-    { key: 'chaos',  name: 'Chaos Spirit Root',     mult: 8.0, weight: 2,  color: '#c8503f', desc: 'A legendary root said to appear once in ten thousand years.' },
+    { key: 'mortal', name: 'Mortal Spirit Root',   element: 'Azure',   mult: 1.0, weight: 50, color: '#7f94a8', desc: 'Common roots. The road is long, but diligence overcomes talent.' },
+    { key: 'true',   name: 'True Spirit Root',      element: 'Verdant', mult: 1.6, weight: 28, color: '#6fb594', desc: 'Pure single-element roots — a solid foundation for cultivation.' },
+    { key: 'heaven', name: 'Heavenly Spirit Root',  element: 'Lunar',   mult: 2.6, weight: 14, color: '#5aa9e6', desc: 'A rare gift of the heavens; Qi flows to you with ease.' },
+    { key: 'saint',  name: 'Saint Spirit Root',     element: 'Radiant', mult: 4.5, weight: 6,  color: '#e7c878', desc: 'The mark of a born sage — destined for greatness.' },
+    { key: 'chaos',  name: 'Chaos Spirit Root',     element: 'Phoenix', mult: 8.0, weight: 2,  color: '#c8503f', desc: 'A legendary root said to appear once in ten thousand years.' },
   ],
+
+  // Painted character portraits drop in here as <gender>-<rootKey>.jpg (see
+  // docs/CHARACTER-ART.md). If a file is missing, the vector emblem is used.
+  portraitDir: 'assets/portraits/',
 
   rollSpiritualRoot() {
     const total = this.spiritualRoots.reduce((s, r) => s + r.weight, 0);

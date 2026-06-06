@@ -76,6 +76,11 @@ const Game = {
 
   genderInfo() { return GameData.genders[this.state.gender] || GameData.genders.male; },
 
+  /** Painted portrait path for a character (falls back to the vector emblem). */
+  portraitSrc(gender, rootKey) {
+    return GameData.portraitDir + (gender || this.state.gender) + '-' + (rootKey || (this.state.spiritualRoot && this.state.spiritualRoot.key)) + '.jpg';
+  },
+
   // -------------------------------------------------------------------------
   // Derived values
   // -------------------------------------------------------------------------

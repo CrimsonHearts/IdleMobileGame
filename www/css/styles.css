@@ -158,7 +158,7 @@ small { font-weight:400; }
   box-shadow:0 10px 30px rgba(22,182,122,0.22), inset 0 0 0 1px var(--line);
   display:flex; flex-direction:column; align-items:center; justify-content:center; transition:transform .06s; }
 #meditate-btn:active { transform:scale(.96); }
-.tap-emblem { width:150px; height:150px; pointer-events:none; }
+.tap-emblem { width:154px; height:154px; pointer-events:none; border-radius:50%; object-fit:cover; object-position:center top; }
 #meditate-btn .tap-label, #meditate-btn .tap-gain { position:absolute; left:0; right:0; text-align:center; }
 .tap-label { bottom:30px; font-size:13px; font-weight:700; color:var(--jade-d); }
 .tap-gain { bottom:14px; font-size:12px; color:var(--muted); }
@@ -216,7 +216,7 @@ small { font-weight:400; }
 /* -- Character creation --------------------------------------------------- */
 .modal.creation { text-align:center; }
 .creation-sub { color:var(--jade-d); font-size:13px; margin-bottom:14px; }
-.creation-emblem img { width:120px; height:120px; }
+.creation-emblem img { width:120px; height:120px; border-radius:50%; object-fit:cover; object-position:center top; border:3px solid var(--jade-soft); box-shadow:var(--shadow-sm); }
 .creation-field { text-align:left; margin:14px 0; }
 .creation-field > label { display:block; font-size:11px; letter-spacing:1px; text-transform:uppercase;
   color:var(--muted); font-weight:700; margin-bottom:7px; }

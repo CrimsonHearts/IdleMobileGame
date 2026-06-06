@@ -82,9 +82,16 @@ const UI = {
   },
 
   applyGenderEmblem() {
-    const src = Game.genderInfo().emblem;
-    if (this.el.tapEmblem) this.el.tapEmblem.src = src;
-    if (this.el.avatar) this.el.avatar.src = src;
+    const fallback = Game.genderInfo().emblem;
+    const painted = Game.portraitSrc(Game.state.gender, Game.state.spiritualRoot && Game.state.spiritualRoot.key);
+    [this.el.tapEmblem, this.el.avatar].forEach(img => this.setPortrait(img, painted, fallback));
+  },
+
+  /** Try a painted portrait; if it isn't present yet, fall back to the vector art. */
+  setPortrait(img, painted, fallback) {
+    if (!img) return;
+    img.onerror = () => { img.onerror = null; img.src = fallback; };
+    img.src = painted;
   },
 
   // -- Build static-ish lists once -----------------------------------------
@@ -339,7 +346,7 @@ const UI = {
           <h2>Begin Your Cultivation</h2>
           <p class="creation-sub">Forge your path to immortality.</p>
 
-          <div class="creation-emblem"><img src="${g.emblem}" alt="cultivator"/></div>
+          <div class="creation-emblem"><img id="creation-portrait" src="${g.emblem}" alt="cultivator"/></div>
 
           <div class="creation-field">
             <label>Dao Name</label>
@@ -386,6 +393,8 @@ const UI = {
         overlay.remove();
         this.toast(`☯ Welcome, ${Game.state.name}. Your ${root.name} awaits its destiny.`);
       });
+      // Painted portrait for the rolled root, with vector fallback.
+      this.setPortrait(overlay.querySelector('#creation-portrait'), Game.portraitSrc(gender, root.key), g.emblem);
     };
 
     render();
