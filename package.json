@@ -1,0 +1,17 @@
+{
+  "name": "xianxia-idle",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Path to Immortality — a Chinese cultivation (xianxia) idle game for Android & iOS.",
+  "scripts": {
+    "serve": "npx --yes serve www -l 8080",
+    "cap:init": "npx --yes @capacitor/cli init \"Path to Immortality\" com.crimsonhearts.xianxiaidle --web-dir=www",
+    "cap:add:android": "npm i @capacitor/core @capacitor/android && npx cap add android",
+    "cap:add:ios": "npm i @capacitor/core @capacitor/ios && npx cap add ios",
+    "cap:sync": "npx cap sync",
+    "open:android": "npx cap open android",
+    "open:ios": "npx cap open ios"
+  },
+  "keywords": ["idle", "incremental", "cultivation", "xianxia", "capacitor", "mobile"],
+  "license": "UNLICENSED"
+}

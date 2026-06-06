@@ -1,0 +1,12 @@
+{
+  "appId": "com.crimsonhearts.xianxiaidle",
+  "appName": "Path to Immortality",
+  "webDir": "www",
+  "backgroundColor": "#15110c",
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "contentInset": "always"
+  }
+}

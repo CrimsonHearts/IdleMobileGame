@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1410" />
+  <title>仙途 · Path to Immortality</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- Top status bar -->
+    <header id="topbar">
+      <div class="realm-block">
+        <div class="realm-label">Realm</div>
+        <div class="realm-names">
+          <span id="realm-name">Mortal</span>
+          <span id="realm-name-cn">凡人</span>
+        </div>
+      </div>
+      <div class="dao-block">
+        <div class="dao-label">道韵 Dao</div>
+        <div class="dao-value"><span id="dao-amount">0</span> ☯</div>
+      </div>
+    </header>
+
+    <!-- Primary resource -->
+    <section id="resource-bar">
+      <div class="qi-amount"><span id="qi-amount">0</span> <span class="qi-icon">☯</span></div>
+      <div class="qi-rate"><span id="qps">0/s</span></div>
+    </section>
+
+    <!-- Realm progress -->
+    <section id="realm-progress">
+      <div class="progress-track"><div id="realm-progress-fill"></div></div>
+      <div id="realm-progress-label">0 / 1.00K Qi</div>
+      <p id="breakthrough-info"></p>
+      <button id="breakthrough-btn" disabled>⚡ Break Through (天劫)</button>
+    </section>
+
+    <!-- Meditate tap -->
+    <section id="tap-zone">
+      <button id="meditate-btn">
+        <span class="tap-symbol">☯</span>
+        <span class="tap-label">Meditate 打坐</span>
+        <span class="tap-gain" id="tap-gain">+1</span>
+      </button>
+    </section>
+
+    <!-- Tabs -->
+    <nav id="tabs">
+      <button class="tab-btn active" data-tab="shop">⛩ Cultivate</button>
+      <button class="tab-btn" data-tab="upgrades">📜 Techniques</button>
+    </nav>
+
+    <!-- Panels -->
+    <main id="panels">
+      <section class="panel active" id="panel-shop">
+        <div class="buy-amount-row">
+          <span>Buy:</span>
+          <button class="buy-amount-btn active" data-amount="1">×1</button>
+          <button class="buy-amount-btn" data-amount="10">×10</button>
+          <button class="buy-amount-btn" data-amount="max">MAX</button>
+        </div>
+        <div id="shop-list"></div>
+      </section>
+
+      <section class="panel" id="panel-upgrades">
+        <div id="upgrade-list"></div>
+      </section>
+    </main>
+
+  </div>
+
+  <!-- Scripts: order matters -->
+  <script src="js/numbers.js"></script>
+  <script src="js/gameData.js"></script>
+  <script src="js/time.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/monetization.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

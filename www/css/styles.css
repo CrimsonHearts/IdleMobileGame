@@ -1,0 +1,226 @@
+/* ===========================================================================
+ * styles.css — Ink-wash (水墨) xianxia theme.
+ * Palette: rice paper, ink black, jade green, gold, cinnabar red.
+ * ========================================================================= */
+
+:root {
+  --paper:   #ece3d0;
+  --paper-2: #e3d8bf;
+  --ink:     #221c16;
+  --ink-2:   #3a3128;
+  --gold:    #c8a24a;
+  --gold-2:  #e7c878;
+  --jade:    #4a8a6f;
+  --jade-2:  #6fb594;
+  --cinnabar:#a8362a;
+  --cinnabar-2:#c8503f;
+  --shadow:  rgba(20, 14, 8, 0.35);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  font-family: "Noto Serif SC", "Songti SC", "STSong", Georgia, serif;
+  color: var(--paper);
+  background: #15110c;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Misty mountain backdrop, painted with gradients. */
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -2;
+  background:
+    radial-gradient(120% 80% at 50% -10%, #2c2419 0%, #1a140e 55%, #0f0b07 100%);
+}
+body::after {
+  content: "";
+  position: fixed; inset: 0; z-index: -1; opacity: 0.5;
+  background:
+    radial-gradient(60% 30% at 20% 85%, rgba(74,138,111,0.18), transparent 70%),
+    radial-gradient(50% 25% at 85% 80%, rgba(200,162,74,0.12), transparent 70%),
+    radial-gradient(80% 40% at 50% 110%, rgba(60,49,40,0.6), transparent 70%);
+  pointer-events: none;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) 14px env(safe-area-inset-bottom);
+  gap: 12px;
+}
+
+/* -- Top bar -------------------------------------------------------------- */
+#topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 4px 6px;
+  border-bottom: 1px solid rgba(200,162,74,0.25);
+}
+.realm-label, .dao-label {
+  font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--gold); opacity: 0.8;
+}
+.realm-names { display: flex; align-items: baseline; gap: 8px; }
+#realm-name { font-size: 20px; font-weight: 700; color: var(--gold-2); }
+#realm-name-cn { font-size: 15px; color: var(--jade-2); }
+.dao-block { text-align: right; }
+.dao-value { font-size: 18px; color: var(--gold-2); font-weight: 700; }
+
+/* -- Resource bar --------------------------------------------------------- */
+#resource-bar { text-align: center; padding: 8px 0 2px; }
+.qi-amount { font-size: 40px; font-weight: 800; color: #f3ecdc; text-shadow: 0 2px 10px var(--shadow); }
+.qi-icon { color: var(--jade-2); }
+.qi-rate { font-size: 15px; color: var(--jade-2); margin-top: 2px; }
+
+/* -- Realm progress ------------------------------------------------------- */
+#realm-progress { text-align: center; }
+.progress-track {
+  height: 12px; border-radius: 8px; overflow: hidden;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(200,162,74,0.3);
+}
+#realm-progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--jade), var(--gold-2));
+  transition: width 0.25s ease;
+}
+#realm-progress-label { font-size: 12px; color: var(--paper-2); opacity: 0.85; margin-top: 4px; }
+#breakthrough-info { font-size: 12.5px; color: var(--paper-2); margin: 6px 4px; line-height: 1.5; min-height: 32px; }
+#breakthrough-info b { color: var(--gold-2); }
+
+#breakthrough-btn {
+  width: 100%; padding: 12px; border-radius: 12px;
+  border: 1px solid rgba(200,162,74,0.4);
+  background: linear-gradient(180deg, #3a3128, #2a221b);
+  color: var(--paper); font-family: inherit; font-size: 16px; font-weight: 700;
+  letter-spacing: 1px; transition: all 0.15s; cursor: pointer;
+}
+#breakthrough-btn:disabled { opacity: 0.4; }
+#breakthrough-btn.ready {
+  background: linear-gradient(180deg, var(--cinnabar-2), var(--cinnabar));
+  border-color: var(--gold-2);
+  box-shadow: 0 0 18px rgba(200,80,63,0.5);
+  animation: pulse 1.6s infinite;
+}
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+/* -- Meditate tap --------------------------------------------------------- */
+#tap-zone { display: flex; justify-content: center; padding: 6px 0; }
+#meditate-btn {
+  width: 168px; height: 168px; border-radius: 50%;
+  border: 2px solid var(--gold);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(111,181,148,0.35), transparent 60%),
+    radial-gradient(circle at 50% 50%, #2c2419, #1a140e 70%);
+  color: var(--gold-2); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  box-shadow: 0 0 30px rgba(200,162,74,0.25), inset 0 0 30px rgba(0,0,0,0.5);
+  transition: transform 0.06s;
+}
+#meditate-btn:active { transform: scale(0.95); }
+.tap-symbol { font-size: 58px; line-height: 1; }
+.tap-label { font-size: 14px; letter-spacing: 1px; }
+.tap-gain { font-size: 13px; color: var(--jade-2); }
+
+/* -- Tabs ----------------------------------------------------------------- */
+#tabs { display: flex; gap: 8px; }
+.tab-btn {
+  flex: 1; padding: 10px; border-radius: 10px 10px 0 0;
+  border: 1px solid rgba(200,162,74,0.2); border-bottom: none;
+  background: rgba(0,0,0,0.25); color: var(--paper-2);
+  font-family: inherit; font-size: 14px; cursor: pointer; transition: all 0.15s;
+}
+.tab-btn.active { background: rgba(200,162,74,0.16); color: var(--gold-2); font-weight: 700; }
+
+/* -- Panels --------------------------------------------------------------- */
+#panels { flex: 1; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.buy-amount-row { display: flex; align-items: center; gap: 8px; padding: 10px 2px; font-size: 13px; color: var(--paper-2); }
+.buy-amount-btn {
+  padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(200,162,74,0.3);
+  background: rgba(0,0,0,0.25); color: var(--paper-2); font-family: inherit; cursor: pointer; font-size: 13px;
+}
+.buy-amount-btn.active { background: var(--gold); color: var(--ink); font-weight: 700; }
+
+/* -- Shop items ----------------------------------------------------------- */
+.shop-item, .upgrade-item {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 12px; margin-bottom: 8px; border-radius: 12px;
+  border: 1px solid rgba(200,162,74,0.18);
+  background: linear-gradient(180deg, rgba(58,49,40,0.55), rgba(34,28,22,0.55));
+  color: var(--paper); font-family: inherit; text-align: left; cursor: pointer;
+  transition: all 0.12s;
+}
+.shop-item:disabled, .upgrade-item:disabled { opacity: 0.55; cursor: default; }
+.shop-item.affordable, .upgrade-item.affordable {
+  border-color: var(--gold); box-shadow: 0 0 12px rgba(200,162,74,0.18);
+}
+.shop-item.affordable:active { transform: scale(0.99); }
+
+.gen-icon, .upg-icon { font-size: 30px; width: 40px; text-align: center; flex-shrink: 0; }
+.gen-main, .upg-main { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.gen-name, .upg-name { font-size: 15px; font-weight: 700; color: var(--gold-2); }
+.gen-name em, .upg-name em { font-style: normal; font-size: 13px; color: var(--jade-2); font-weight: 400; }
+.gen-sub, .upg-desc { font-size: 11.5px; color: var(--paper-2); opacity: 0.8; line-height: 1.4; }
+.gen-buy { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; gap: 3px; }
+.gen-cost { font-size: 14px; font-weight: 700; color: #f3ecdc; }
+.gen-owned { font-size: 11px; color: var(--jade-2); }
+.upg-cost { font-size: 13px; font-weight: 700; color: #f3ecdc; flex-shrink: 0; }
+.upgrade-item.owned { opacity: 0.6; border-color: var(--jade); }
+.upgrade-item.owned .upg-cost { color: var(--jade-2); }
+
+/* -- Floating tap text ---------------------------------------------------- */
+.float-text {
+  position: fixed; transform: translate(-50%, -50%);
+  font-size: 18px; font-weight: 700; color: var(--gold-2);
+  pointer-events: none; z-index: 50; text-shadow: 0 1px 4px #000;
+  animation: floatUp 1s ease-out forwards;
+}
+@keyframes floatUp {
+  0% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -130%); }
+}
+
+/* -- Toast & modal -------------------------------------------------------- */
+.toast {
+  position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%) translateY(20px);
+  background: rgba(34,28,22,0.96); border: 1px solid var(--gold);
+  color: var(--gold-2); padding: 12px 18px; border-radius: 12px;
+  font-size: 14px; max-width: 90%; text-align: center; z-index: 100;
+  opacity: 0; transition: all 0.35s; box-shadow: 0 6px 20px var(--shadow);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(10,7,4,0.72); backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.modal {
+  max-width: 360px; width: 100%; text-align: center;
+  background: linear-gradient(180deg, #2c2419, #1a140e);
+  border: 1px solid var(--gold); border-radius: 16px; padding: 24px;
+  box-shadow: 0 10px 40px var(--shadow);
+}
+.modal h2 { color: var(--gold-2); font-size: 20px; margin-bottom: 12px; }
+.modal p { color: var(--paper-2); font-size: 14px; line-height: 1.6; margin-bottom: 18px; }
+.modal p b { color: var(--gold-2); }
+.modal-close {
+  padding: 11px 20px; border-radius: 10px; border: 1px solid var(--gold);
+  background: var(--gold); color: var(--ink); font-family: inherit;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.modal-reward {
+  display: block; width: 100%; margin-bottom: 10px;
+  padding: 12px; border-radius: 10px; border: 1px solid var(--jade-2);
+  background: linear-gradient(180deg, var(--jade-2), var(--jade));
+  color: #0f0b07; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
