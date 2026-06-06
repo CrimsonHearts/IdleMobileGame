@@ -13,14 +13,46 @@
  * Replace these TEST ids with your real ones before publishing:
  * ------------------------------------------------------------------------- */
 const AD_CONFIG = {
-  // Google's official TEST ad unit ids (safe to use during development).
-  rewardedAndroid:    'ca-app-pub-3940256099942544/5224354917',
-  rewardediOS:        'ca-app-pub-3940256099942544/1712485313',
-  interstitialAndroid:'ca-app-pub-3940256099942544/1033173712',
-  interstitialiOS:    'ca-app-pub-3940256099942544/4411468910',
-  bannerAndroid:      'ca-app-pub-3940256099942544/6300978111',
-  banneriOS:          'ca-app-pub-3940256099942544/2934735716',
-  testMode: true, // set false when shipping with your own ids
+  // Your AdMob App ID (the "~" one). NOTE: this also has to be declared in the
+  // native projects — see docs/ADMOB-SETUP.md. It is not secret.
+  appIdAndroid: 'ca-app-pub-9713010573550006~4519454223',
+  appIdiOS:     '', // create an iOS app in AdMob and paste its App ID (~) here
+
+  /* ⚠️ SAFETY SWITCH ⚠️
+   * Keep this FALSE during all development/testing. Tapping your own LIVE ads
+   * is the #1 cause of AdMob bans. It should only ever be true in a real
+   * release build (and even then, register your phone as a test device).
+   * When false, Google's official TEST ad units are used instead. */
+  useLiveAds: false,
+
+  // Your real ad units (the "/" ones). Fill these in as you create them.
+  live: {
+    rewardedAndroid:     'ca-app-pub-9713010573550006/7400082676', // ← your Rewarded unit
+    rewardediOS:         '', // create an iOS rewarded unit and paste here
+    interstitialAndroid: '', // create in AdMob, then paste
+    interstitialiOS:     '',
+    bannerAndroid:       '',
+    banneriOS:           '',
+  },
+
+  // Google's official TEST ad units — always safe to click, used when !useLiveAds.
+  test: {
+    rewardedAndroid:     'ca-app-pub-3940256099942544/5224354917',
+    rewardediOS:         'ca-app-pub-3940256099942544/1712485313',
+    interstitialAndroid: 'ca-app-pub-3940256099942544/1033173712',
+    interstitialiOS:     'ca-app-pub-3940256099942544/4411468910',
+    bannerAndroid:       'ca-app-pub-3940256099942544/6300978111',
+    banneriOS:           'ca-app-pub-3940256099942544/2934735716',
+  },
+
+  /** Resolve the right ad-unit id for a format on the current platform. */
+  unit(format, isIOS) {
+    const set = this.useLiveAds ? this.live : this.test;
+    const key = format + (isIOS ? 'iOS' : 'Android');
+    // Fall back to a test unit if a live id hasn't been filled in yet, so the
+    // app never crashes from an empty id.
+    return set[key] || this.test[key];
+  },
 };
 
 const IAP_PRODUCTS = {
@@ -32,20 +64,30 @@ const IAP_PRODUCTS = {
 const Monetization = {
   adsRemoved: false,         // flips true after the "remove ads" purchase
   _isNative: false,
+  _isIOS: false,
+  _admob: null,              // the AdMob plugin, if installed
 
   async init() {
-    // Detect Capacitor native runtime.
-    this._isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    // Detect Capacitor native runtime + platform.
+    const cap = window.Capacitor;
+    this._isNative = !!(cap && cap.isNativePlatform && cap.isNativePlatform());
+    this._isIOS = !!(cap && cap.getPlatform && cap.getPlatform() === 'ios');
     this.adsRemoved = localStorage.getItem('ads_removed') === '1';
 
-    if (this._isNative) {
-      // --- REAL SETUP (uncomment once the plugin is installed) ------------
-      // const { AdMob } = window.Capacitor.Plugins;
-      // await AdMob.initialize({ initializeForTesting: AD_CONFIG.testMode });
-      // await this.showBanner();
-      // await Purchases.configure(...) // for IAP
+    if (this._isNative && cap.Plugins && cap.Plugins.AdMob) {
+      this._admob = cap.Plugins.AdMob;
+      try {
+        await this._admob.initialize({
+          // When not shipping live ads, run the SDK in test mode.
+          initializeForTesting: !AD_CONFIG.useLiveAds,
+        });
+        await this.showBanner();
+      } catch (e) {
+        console.warn('AdMob init failed', e);
+      }
+      // IAP: configure your purchase plugin here (see docs/ADMOB-SETUP.md).
     }
-    // In simulated mode there's nothing to initialise.
+    // If the plugin isn't present (e.g. browser), we run in simulated mode.
   },
 
   /**
@@ -54,13 +96,16 @@ const Monetization = {
    * @param {string} reason  label for analytics, e.g. 'offline_double'
    */
   async showRewardedAd(reason = 'reward') {
-    if (this._isNative) {
-      // --- REAL ----------------------------------------------------------
-      // const { AdMob } = window.Capacitor.Plugins;
-      // const id = isIOS ? AD_CONFIG.rewardediOS : AD_CONFIG.rewardedAndroid;
-      // await AdMob.prepareRewardVideoAd({ adId: id });
-      // const result = await AdMob.showRewardVideoAd();
-      // return !!result; // reward granted
+    if (this._admob) {
+      try {
+        const adId = AD_CONFIG.unit('rewarded', this._isIOS);
+        await this._admob.prepareRewardVideoAd({ adId });
+        const reward = await this._admob.showRewardVideoAd();
+        return !!reward; // truthy reward object => watched to completion
+      } catch (e) {
+        console.warn('Rewarded ad failed', e);
+        return false;
+      }
     }
     // --- SIMULATED: confirm dialog stands in for the video ---------------
     return new Promise(resolve => {
@@ -72,20 +117,27 @@ const Monetization = {
   /** Full-screen ad shown at natural breaks (e.g. after a breakthrough). */
   async showInterstitial() {
     if (this.adsRemoved) return;
-    if (this._isNative) {
-      // const { AdMob } = window.Capacitor.Plugins;
-      // const id = isIOS ? AD_CONFIG.interstitialiOS : AD_CONFIG.interstitialAndroid;
-      // await AdMob.prepareInterstitial({ adId: id });
-      // await AdMob.showInterstitial();
+    if (this._admob) {
+      try {
+        const adId = AD_CONFIG.unit('interstitial', this._isIOS);
+        await this._admob.prepareInterstitial({ adId });
+        await this._admob.showInterstitial();
+      } catch (e) {
+        console.warn('Interstitial failed', e);
+      }
       return;
     }
     console.log('[SIM] interstitial ad shown');
   },
 
   async showBanner() {
-    if (this.adsRemoved || !this._isNative) return;
-    // const { AdMob } = window.Capacitor.Plugins;
-    // await AdMob.showBanner({ adId: isIOS ? AD_CONFIG.banneriOS : AD_CONFIG.bannerAndroid, position: 'BOTTOM_CENTER' });
+    if (this.adsRemoved || !this._admob) return;
+    try {
+      const adId = AD_CONFIG.unit('banner', this._isIOS);
+      await this._admob.showBanner({ adId, position: 'BOTTOM_CENTER', margin: 0 });
+    } catch (e) {
+      console.warn('Banner failed', e);
+    }
   },
 
   /**

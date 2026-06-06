@@ -79,15 +79,21 @@ offline earnings. Defenses (in `time.js` + `game.js`):
 - **Banner ads** — bottom of screen on native.
 - **In-app purchases** — `remove_ads`, `qi_pouch_small`, `permanent_double`.
 
-It currently uses **Google's official test ad IDs** and simulated purchase
-dialogs, so everything works in the browser with no accounts. To go live:
+**Your real AdMob IDs are already wired in** (App ID + Rewarded unit), behind a
+safety switch (`AD_CONFIG.useLiveAds`) that keeps **test ads** on during
+development. The native AdMob plugin calls are live in code and activate
+automatically once the plugin is installed. Full walkthrough:
+**[`docs/ADMOB-SETUP.md`](docs/ADMOB-SETUP.md)**.
 
-1. `npm i @capacitor-community/admob` (ads) and an IAP plugin
+Remaining to go fully live:
+
+1. `npm i @capacitor-community/admob` + an IAP plugin
    (`@capacitor-community/in-app-purchases` or RevenueCat).
-2. Uncomment the `// --- REAL ---` blocks in `monetization.js`.
-3. Replace the test IDs in `AD_CONFIG` with your **AdMob** unit IDs.
-4. Define the IAP products in the Play Console / App Store Connect using the
-   IDs in `IAP_PRODUCTS`.
+2. Declare the App ID in `AndroidManifest.xml` (see the setup doc).
+3. Create Interstitial/Banner ad units and paste them into `AD_CONFIG.live`
+   (until then they fall back to test ads automatically).
+4. Define the IAP products in the Play Console using the IDs in `IAP_PRODUCTS`.
+5. Flip `useLiveAds: true` only for the production release.
 
 ---
 
