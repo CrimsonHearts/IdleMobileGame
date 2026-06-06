@@ -29,12 +29,12 @@ const Game = {
       upgrades: {},         // id -> true
       realm: 0,             // major realm index into GameData.realms
       stage: 0,             // minor stage index within the current realm
-      stagesCleared: 0,     // lifetime count of minor breakthroughs (Cultivation Base 修为)
+      stagesCleared: 0,     // lifetime count of minor breakthroughs (Cultivation Base)
       daoComprehension: 0,  // prestige currency (permanent multiplier)
 
       // -- RPG systems --------------------------------------------------
-      spiritStones: 0,      // 灵石 — combat currency (level pets, sect shop)
-      beastEggs: 0,         // 兽蛋 — tame spirit beasts
+      spiritStones: 0,      // combat currency (level pets, sect shop)
+      beastEggs: 0,         // tame spirit beasts
       sect: null,           // { id, contribution, joinedAt } or null
       pets: { owned: {}, active: [] },           // owned: {id:{level}}, active:[ids]
       combat: { zone: 1, wave: 1, highestZone: 1, playerHp: null, paused: false },
@@ -85,11 +85,11 @@ const Game = {
       if (this.state.upgrades[u.id]) u.effect(m);
     });
     // Permanent power vectors:
-    m.root  = this.state.spiritualRoot ? this.state.spiritualRoot.mult : 1;   // Spiritual Root 灵根
-    m.stage = 1 + this.state.stagesCleared * GameData.stageBonusPerStage;      // Cultivation Base 修为
-    m.dao   = 1 + this.state.daoComprehension * GameData.daoBonusPerPoint;     // Dao Comprehension 道韵
-    m.sect  = (window.Sect && Sect.qiMult) ? Sect.qiMult() : 1;                // Sect 宗门 bonus
-    m.pet   = (window.Pets && Pets.qiMult) ? Pets.qiMult() : 1;                // Spirit Beast 灵兽 bond
+    m.root  = this.state.spiritualRoot ? this.state.spiritualRoot.mult : 1;   // Spiritual Root
+    m.stage = 1 + this.state.stagesCleared * GameData.stageBonusPerStage;      // Cultivation Base
+    m.dao   = 1 + this.state.daoComprehension * GameData.daoBonusPerPoint;     // Dao Comprehension
+    m.sect  = (window.Sect && Sect.qiMult) ? Sect.qiMult() : 1;                // Sect bonus
+    m.pet   = (window.Pets && Pets.qiMult) ? Pets.qiMult() : 1;                // Spirit Beast bond
     return m;
   },
 
@@ -211,9 +211,8 @@ const Game = {
     const idx = Math.min(this.state.stage, realm.stages.length - 1);
     const done = this.realmComplete();
     return {
-      realm: realm.name, realmCN: realm.nameCN,
+      realm: realm.name,
       stage: done ? 'Great Perfection' : realm.stages[idx],
-      stageCN: done ? '大圆满' : realm.stagesCN[idx],
       complete: done,
     };
   },

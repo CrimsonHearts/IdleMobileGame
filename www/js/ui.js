@@ -19,9 +19,7 @@ const UI = {
       beastsPanel: $('tab-beasts'),
       trialsPanel: $('tab-trials'),
       realm: $('realm-name'),
-      realmCN: $('realm-name-cn'),
       stageName: $('stage-name'),
-      stageNameCN: $('stage-name-cn'),
       charName: $('char-name'),
       charRoot: $('char-root'),
       cbBonus: $('cb-bonus'),
@@ -96,7 +94,7 @@ const UI = {
       row.innerHTML = `
         <span class="gen-icon"><svg class="gen-icon-svg" viewBox="0 0 100 100"><use href="#ic-${g.id}"/></svg></span>
         <span class="gen-main">
-          <span class="gen-name">${g.name} <em>${g.nameCN}</em></span>
+          <span class="gen-name">${g.name}</span>
           <span class="gen-sub" id="gen-sub-${g.id}"></span>
         </span>
         <span class="gen-buy">
@@ -119,7 +117,7 @@ const UI = {
       row.innerHTML = `
         <span class="upg-icon">${u.icon}</span>
         <span class="upg-main">
-          <span class="upg-name">${u.name} <em>${u.nameCN}</em></span>
+          <span class="upg-name">${u.name}</span>
           <span class="upg-desc">${u.desc}</span>
         </span>
         <span class="upg-cost" id="upg-cost-${u.id}">${GameNumbers.formatNumber(u.cost)} ${cur}</span>`;
@@ -146,8 +144,8 @@ const UI = {
     const gain = Game.pendingDaoGain();
     const ok = confirm(
       `⚡ Heavenly Tribulation ⚡\n\n` +
-      `Ascend to ${next.name} (${next.nameCN})?\n\n` +
-      `You will gain ${GameNumbers.formatNumber(gain)} Dao Comprehension (道韵), ` +
+      `Ascend to ${next.name}?\n\n` +
+      `You will gain ${GameNumbers.formatNumber(gain)} Dao Comprehension, ` +
       `granting +${(gain * GameData.daoBonusPerPoint * 100).toFixed(0)}% permanent production.\n\n` +
       `Your Qi and all generators will reset.`
     );
@@ -156,7 +154,7 @@ const UI = {
     if (result) {
       Game.persist();
       this.renderAll();
-      this.toast(`☯ Ascended to ${result.realm.name}! +${GameNumbers.formatNumber(result.gain)} 道韵`);
+      this.toast(`☯ Ascended to ${result.realm.name}! +${GameNumbers.formatNumber(result.gain)} Dao`);
       // Interstitial ad at a natural break point (skipped if ads removed).
       Monetization.showInterstitial();
     }
@@ -252,16 +250,14 @@ const UI = {
     const g = Game.genderInfo();
     const root = Game.state.spiritualRoot;
     this.el.charName.textContent = Game.state.name;
-    this.el.charRoot.textContent = root.nameCN;
+    this.el.charRoot.textContent = root.name;
     this.el.charRoot.style.color = root.color;
     this.el.cbBonus.textContent = (Game.state.stagesCleared * GameData.stageBonusPerStage * 100).toFixed(0);
 
     // -- Realm + stage labels ---------------------------------------------
     const tier = Game.tierLabel();
     this.el.realm.textContent = tier.realm;
-    this.el.realmCN.textContent = tier.realmCN;
     this.el.stageName.textContent = tier.stage;
-    this.el.stageNameCN.textContent = tier.stageCN;
 
     const next = Game.nextRealm();
     const realmComplete = Game.realmComplete();
@@ -286,9 +282,8 @@ const UI = {
     if (!realmComplete) {
       const realm = Game.currentRealm();
       const nextStage = realm.stages[Game.state.stage];
-      const nextStageCN = realm.stagesCN[Game.state.stage];
       this.el.advanceBtn.textContent = canAdvance
-        ? `⬆ Breakthrough → ${nextStage} (${nextStageCN})`
+        ? `⬆ Breakthrough → ${nextStage}`
         : `Need ${GameNumbers.formatNumber(Game.nextStageReq())} Qi → ${nextStage}`;
     }
 
@@ -304,7 +299,7 @@ const UI = {
       this.el.breakBtn.classList.toggle('ready', canBreak);
       const gain = Game.pendingDaoGain();
       this.el.breakInfo.innerHTML = realmComplete
-        ? `⚡ Face the Heavenly Tribulation to ascend to <b>${next.name} (${next.nameCN})</b> for <b>+${GameNumbers.formatNumber(gain)}</b> 道韵.`
+        ? `⚡ Face the Heavenly Tribulation to ascend to <b>${next.name}</b> for <b>+${GameNumbers.formatNumber(gain)}</b> Dao.`
         : `Advance through all stages of <b>${tier.realm}</b>, then face Tribulation to ascend to <b>${next.name}</b>.`;
     }
   },
@@ -325,7 +320,7 @@ const UI = {
     const cur = Sect.current();
     if (!cur) {
       el.innerHTML = `
-        <div class="section-title">⛩ Choose Your Sect 选择宗门</div>
+        <div class="section-title">⛩ Choose Your Sect</div>
         <p class="hint">Join one of the great cultivation orders for a permanent bonus.
           ${Sect.isOnline() ? 'Other cultivators share your sect online.' : 'Online sects with real members can be enabled later.'}</p>
         <div id="sect-grid"></div>`;
@@ -337,15 +332,15 @@ const UI = {
         card.innerHTML = `
           <div class="sect-seal" style="background:${s.color}">${s.seal}</div>
           <div class="sect-body">
-            <div class="sect-name" style="color:${s.color}">${s.nameCN} <em>${s.name}</em></div>
+            <div class="sect-name" style="color:${s.color}">${s.name}</div>
             <div class="sect-desc">${s.desc}</div>
             <div class="sect-bonus">✦ ${s.bonusDesc}</div>
           </div>
-          <button class="sect-join">Join 加入</button>`;
+          <button class="sect-join">Join</button>`;
         card.querySelector('.sect-join').addEventListener('click', async () => {
           await Sect.join(s.id);
           this.renderSect(); this.renderResources();
-          this.toast(`⛩ You have joined ${s.nameCN}!`);
+          this.toast(`⛩ You have joined the ${s.name}!`);
         });
         grid.appendChild(card);
       });
@@ -359,25 +354,25 @@ const UI = {
     el.innerHTML = `
       <div class="sect-hall">
         <div class="sect-seal big" style="background:${cur.color}">${cur.seal}</div>
-        <div class="sect-name" style="color:${cur.color}">${cur.nameCN} <em>${cur.name}</em></div>
-        <div class="sect-rank">${rank.nameCN} · ${rank.name}</div>
+        <div class="sect-name" style="color:${cur.color}">${cur.name}</div>
+        <div class="sect-rank">${rank.name}</div>
         <div class="sect-bonus">✦ ${cur.bonusDesc}</div>
         <div class="progress-track small"><div class="fill" style="width:${(prog*100).toFixed(1)}%;background:${cur.color}"></div></div>
-        <div class="hint">贡献 Contribution: ${GameNumbers.formatNumber(contrib)}${nextR ? ' / ' + GameNumbers.formatNumber(nextR.req) + ' → ' + nextR.nameCN : ' (max rank)'}</div>
+        <div class="hint">Contribution: ${GameNumbers.formatNumber(contrib)}${nextR ? ' / ' + GameNumbers.formatNumber(nextR.req) + ' → ' + nextR.name : ' (max rank)'}</div>
       </div>
-      <div class="section-title">Disciples 同门 ${Sect.isOnline() ? '' : '<small>(local)</small>'}</div>
+      <div class="section-title">Disciples ${Sect.isOnline() ? '' : '<small>(local)</small>'}</div>
       <div id="sect-members" class="members"></div>
-      <button id="sect-leave" class="danger-btn">Leave Sect 退出宗门</button>`;
+      <button id="sect-leave" class="danger-btn">Leave Sect</button>`;
     el.querySelector('#sect-leave').addEventListener('click', async () => {
-      if (confirm('Leave your sect? You will forfeit all Contribution (贡献).')) {
+      if (confirm('Leave your sect? You will forfeit all Contribution.')) {
         await Sect.leave(); this.renderSect(); this.toast('You have left the sect.');
       }
     });
     Sect.backend.members(cur.id).then(members => {
       const box = el.querySelector('#sect-members');
       if (!box) return;
-      box.innerHTML = `<div class="member you"><span>You · ${Game.state.name}</span><span>${rank.nameCN}</span></div>` +
-        members.map(m => `<div class="member"><span>${m.name} <em>${m.realm.nameCN}</em></span><span>${m.rank.nameCN}</span></div>`).join('');
+      box.innerHTML = `<div class="member you"><span>You · ${Game.state.name}</span><span>${rank.name}</span></div>` +
+        members.map(m => `<div class="member"><span>${m.name} <em>${m.realm.name}</em></span><span>${m.rank.name}</span></div>`).join('');
     });
   },
 
@@ -388,10 +383,10 @@ const UI = {
     const el = this.el.beastsPanel;
     const active = Pets.active();
     el.innerHTML = `
-      <div class="section-title">🐾 Spirit Beasts 灵兽阁</div>
+      <div class="section-title">🐾 Spirit Beasts</div>
       <div class="tame-bar">
-        <div>兽蛋 Beast Eggs: <b>${GameNumbers.formatNumber(Game.state.beastEggs)}</b></div>
-        <button id="tame-btn" ${Game.state.beastEggs < 1 ? 'disabled' : ''}>✦ Tame a Beast (1 兽蛋)</button>
+        <div>Beast Eggs: <b>${GameNumbers.formatNumber(Game.state.beastEggs)}</b></div>
+        <button id="tame-btn" ${Game.state.beastEggs < 1 ? 'disabled' : ''}>✦ Tame a Beast (1 Egg)</button>
       </div>
       <div class="hint">Active beasts (${active.length}/${Pets.MAX_ACTIVE}) fight in Trials. All owned beasts boost cultivation.</div>
       <div id="beast-grid"></div>`;
@@ -399,7 +394,7 @@ const UI = {
       const r = Pets.tame();
       if (r) {
         const rar = PET_RARITY[r.pet.rarity];
-        this.toast(`${r.duplicate ? '★ Duplicate! ' + r.pet.nameCN + ' levelled up' : 'Tamed ' + rar.nameCN + ' ' + r.pet.nameCN + ' ' + r.pet.name + '!'}`);
+        this.toast(`${r.duplicate ? '★ Duplicate! ' + r.pet.name + ' levelled up' : 'Tamed a ' + rar.name + '-grade ' + r.pet.name + '!'}`);
         this.renderBeasts(); this.renderResources();
       }
     });
@@ -414,16 +409,16 @@ const UI = {
       card.innerHTML = `
         <div class="beast-icon" style="color:${owned ? rar.color : '#5a5248'}">${this.iconSvg(p.icon, 'beast-svg')}</div>
         <div class="beast-main">
-          <div class="beast-name" style="color:${owned ? rar.color : '#8a8278'}">${p.nameCN} <em>${p.name}</em>
-            <span class="rar" style="color:${rar.color}">${rar.nameCN}</span></div>
+          <div class="beast-name" style="color:${owned ? rar.color : '#8a8278'}">${p.name}
+            <span class="rar" style="color:${rar.color}">${rar.name}</span></div>
           ${owned ? `<div class="beast-stats">Lv.${lvl} · +${(Pets.qiBonusOf(p.id)*100).toFixed(1)}% Qi · ⚔${GameNumbers.formatNumber(Pets.atkOf(p.id))} · ♥${GameNumbers.formatNumber(Pets.hpOf(p.id))}</div>`
                   : `<div class="beast-stats">${p.desc}</div>`}
         </div>
         <div class="beast-actions">
           ${owned ? `
             <button class="beast-active-btn ${Pets.isActive(p.id)?'on':''}">${Pets.isActive(p.id)?'Active':'Deploy'}</button>
-            <button class="beast-lvl-btn" ${Game.state.spiritStones < Pets.levelUpCost(p.id) ? 'disabled':''}>Lv↑ ${GameNumbers.formatNumber(Pets.levelUpCost(p.id))}灵石</button>`
-            : `<span class="locked-tag">未捕获</span>`}
+            <button class="beast-lvl-btn" ${Game.state.spiritStones < Pets.levelUpCost(p.id) ? 'disabled':''}>Lv↑ ${GameNumbers.formatNumber(Pets.levelUpCost(p.id))} Stones</button>`
+            : `<span class="locked-tag">Not Tamed</span>`}
         </div>`;
       if (owned) {
         card.querySelector('.beast-active-btn').addEventListener('click', () => { Pets.toggleActive(p.id); this.renderBeasts(); });
@@ -441,10 +436,10 @@ const UI = {
     Combat.ensurePlayerHp(); Combat.mob();
     const c = Game.state.combat;
     el.innerHTML = `
-      <div class="section-title">⚔ Trials 历练 <small>Zone <b id="trial-zone">${c.zone}</b> · Wave <b id="trial-wave">${c.wave}</b></small></div>
+      <div class="section-title">⚔ Trials <small>Zone <b id="trial-zone">${c.zone}</b> · Wave <b id="trial-wave">${c.wave}</b></small></div>
       <div class="battle">
         <div class="fighter">
-          <div class="fighter-name">${Game.state.name} <em>${Game.tierLabel().realmCN}</em></div>
+          <div class="fighter-name">${Game.state.name} <em>${Game.tierLabel().realm}</em></div>
           <div class="hp-track"><div id="p-hp" class="hp player"></div></div>
           <div class="fighter-stats"><span id="p-hp-text"></span> · ⚔<span id="p-atk"></span></div>
         </div>
@@ -480,7 +475,7 @@ const UI = {
     const mIcon = el.querySelector('#m-icon');
     mIcon.innerHTML = this.iconSvg(mob.icon, 'mob-svg');
     mIcon.classList.toggle('boss', !!mob.boss);
-    el.querySelector('#m-name').innerHTML = `${mob.nameCN} <em>${mob.name}</em>${mob.boss?' <span class="boss-tag">BOSS</span>':''}`;
+    el.querySelector('#m-name').innerHTML = `${mob.name}${mob.boss?' <span class="boss-tag">BOSS</span>':''}`;
     el.querySelector('#m-hp').style.width = (Math.max(0, mob.hp) / mob.maxHp * 100).toFixed(1) + '%';
     el.querySelector('#m-hp-text').textContent = GameNumbers.formatNumber(Math.max(0, mob.hp)) + '/' + GameNumbers.formatNumber(mob.maxHp) + ' ♥';
     el.querySelector('#m-atk').textContent = GameNumbers.formatNumber(mob.atk);
@@ -494,7 +489,7 @@ const UI = {
       Game.persist();
       this.renderAll();
       const tier = Game.tierLabel();
-      this.toast(`修为精进 · Advanced to ${tier.realm} · ${tier.stage} (+${(GameData.stageBonusPerStage*100).toFixed(0)}% power)`);
+      this.toast(`Cultivation deepened · Advanced to ${tier.realm} · ${tier.stage} (+${(GameData.stageBonusPerStage*100).toFixed(0)}% power)`);
     }
   },
 
@@ -512,27 +507,27 @@ const UI = {
       overlay.innerHTML = `
         <div class="modal creation">
           <h2>Begin Your Cultivation</h2>
-          <p class="creation-sub">踏上仙途 · Forge your path to immortality.</p>
+          <p class="creation-sub">Forge your path to immortality.</p>
 
           <div class="creation-emblem"><img src="${g.emblem}" alt="cultivator"/></div>
 
           <div class="creation-field">
-            <label>Dao Name 道号</label>
+            <label>Dao Name</label>
             <input id="creation-name" type="text" maxlength="20" placeholder="Enter a name…" value="${this._creationName || ''}"/>
           </div>
 
           <div class="creation-field">
-            <label>Body 身</label>
+            <label>Body</label>
             <div class="gender-row">
-              <button class="gender-btn ${gender==='male'?'active':''}" data-g="male">男 Male</button>
-              <button class="gender-btn ${gender==='female'?'active':''}" data-g="female">女 Female</button>
+              <button class="gender-btn ${gender==='male'?'active':''}" data-g="male">Male</button>
+              <button class="gender-btn ${gender==='female'?'active':''}" data-g="female">Female</button>
             </div>
           </div>
 
           <div class="creation-field">
-            <label>Spiritual Root 灵根</label>
+            <label>Spiritual Root</label>
             <div class="root-display" style="border-color:${root.color}">
-              <div class="root-name" style="color:${root.color}">${root.nameCN} · ${root.name}</div>
+              <div class="root-name" style="color:${root.color}">${root.name}</div>
               <div class="root-mult">Production ×${root.mult.toFixed(1)}</div>
               <div class="root-desc">${root.desc}</div>
             </div>
@@ -559,7 +554,7 @@ const UI = {
         this.applyGenderEmblem();
         this.renderAll();
         overlay.remove();
-        this.toast(`☯ Welcome, ${Game.state.name}. Your ${root.nameCN} awaits its destiny.`);
+        this.toast(`☯ Welcome, ${Game.state.name}. Your ${root.name} awaits its destiny.`);
       });
     };
 

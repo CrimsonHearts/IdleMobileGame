@@ -1,20 +1,20 @@
 /* ===========================================================================
- * combat.js — Trials (历练): idle auto-battler.
+ * combat.js — Trials: idle auto-battler.
  * Your cultivator + active spirit beasts fight waves of demonic beasts.
- * Kills drop Spirit Stones (灵石), Qi, and occasionally Beast Eggs (兽蛋).
+ * Kills drop Spirit Stones, Qi, and occasionally Beast Eggs.
  * Every 10th wave is a Boss. Clearing a boss unlocks the next Zone.
  * Combat advances in the main game loop (while the app is open).
  * ========================================================================= */
 
 const MOB_NAMES = [
-  { name: 'Demonic Wolf',   nameCN: '妖狼',   icon: 'ic-mob-wolf' },
-  { name: 'Corpse Ghoul',   nameCN: '尸傀',   icon: 'ic-mob-ghoul' },
-  { name: 'Venom Scorpion', nameCN: '毒蝎',   icon: 'ic-mob-scorpion' },
-  { name: 'Blood Bat',      nameCN: '血蝠',   icon: 'ic-mob-wolf' },
+  { name: 'Demonic Wolf',   icon: 'ic-mob-wolf' },
+  { name: 'Corpse Ghoul',   icon: 'ic-mob-ghoul' },
+  { name: 'Venom Scorpion', icon: 'ic-mob-scorpion' },
+  { name: 'Blood Bat',      icon: 'ic-mob-wolf' },
 ];
 const BOSS_NAMES = [
-  { name: 'Demon General', nameCN: '魔将', icon: 'ic-mob-demon' },
-  { name: 'Ghost King',    nameCN: '鬼王', icon: 'ic-mob-demon' },
+  { name: 'Demon General', icon: 'ic-mob-demon' },
+  { name: 'Ghost King',    icon: 'ic-mob-demon' },
 ];
 
 const Combat = {
@@ -46,7 +46,7 @@ const Combat = {
     let hp  = 40 * z * Math.pow(1.22, w);
     let atk = 6  * z * (1 + 0.12 * w);
     if (boss) { hp *= 6; atk *= 2.2; }
-    this._mob = { name: pick.name, nameCN: pick.nameCN, icon: pick.icon, maxHp: hp, hp, atk, boss };
+    this._mob = { name: pick.name, icon: pick.icon, maxHp: hp, hp, atk, boss };
     return this._mob;
   },
 
@@ -72,7 +72,7 @@ const Combat = {
     let egg = false;
     const eggChance = mob.boss ? 1 : 0.04;
     if (Math.random() < eggChance) { Game.state.beastEggs += 1; egg = true; }
-    this._pushLog(`Slew ${mob.nameCN} ${mob.name} · +${GameNumbers.formatNumber(stones)} 灵石${egg ? ' · +1 兽蛋!' : ''}`);
+    this._pushLog(`Defeated ${mob.name} · +${GameNumbers.formatNumber(stones)} Stones${egg ? ' · +1 Beast Egg!' : ''}`);
   },
 
   _pushLog(line) {
@@ -121,7 +121,7 @@ const Combat = {
       c.playerHp = Math.min(this.playerHpMax(), c.playerHp + this.playerHpMax() * 0.25);
     } else if (c.playerHp <= 0) {
       // Defeat: fall back to wave 1 of the current zone, fully heal.
-      this._pushLog(`✖ Defeated by ${mob.nameCN}. Retreating to Zone ${c.zone} Wave 1.`);
+      this._pushLog(`✖ Defeated by ${mob.name}. Retreating to Zone ${c.zone} Wave 1.`);
       c.wave = 1;
       c.playerHp = this.playerHpMax();
       this.spawnMob();

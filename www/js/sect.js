@@ -1,6 +1,6 @@
 /* ===========================================================================
- * sect.js — Sects (宗门). Join one of the great cultivation orders for a
- * permanent bonus, earn Contribution (贡献), and rise through the ranks.
+ * sect.js — Sects. Join one of the great cultivation orders for a
+ * permanent bonus, earn Contribution, and rise through the ranks.
  *
  * ── Online architecture ──────────────────────────────────────────────────
  * Cross-player sects (real users joining the same sect) require a backend.
@@ -11,23 +11,23 @@
  * ========================================================================= */
 
 const SECTS_DATA = [
-  { id: 'sword',   name: 'Azure Cloud Sword Sect', nameCN: '青云剑宗', seal: '剑', color: '#6fb594',
+  { id: 'sword',   name: 'Azure Cloud Sword Sect', seal: 'S', color: '#6fb594',
     desc: 'Disciples temper flying swords and sword-intent. Masters of combat.',
     bonusDesc: '+30% combat power, +10% Qi production',
     qiMult: 1.10, combatMult: 1.30, petMult: 1.0, offlineBonus: 0 },
-  { id: 'pill',    name: 'Cinnabar Pill Sect',     nameCN: '丹霞丹宗', seal: '丹', color: '#e7c878',
+  { id: 'pill',    name: 'Cinnabar Pill Sect',     seal: 'P', color: '#e7c878',
     desc: 'Alchemists who refine Qi into pills. Renowned for steady cultivation.',
     bonusDesc: '+15% Qi production, +25% offline efficiency',
     qiMult: 1.15, combatMult: 1.0, petMult: 1.0, offlineBonus: 0.25 },
-  { id: 'beast',   name: 'Myriad Beast Sect',      nameCN: '万兽御兽宗', seal: '兽', color: '#5aa9e6',
+  { id: 'beast',   name: 'Myriad Beast Sect',      seal: 'B', color: '#5aa9e6',
     desc: 'Beast-tamers who bond with spirit beasts. Their companions are peerless.',
     bonusDesc: '+35% spirit-beast bonuses, +15% combat power',
     qiMult: 1.0, combatMult: 1.15, petMult: 1.35, offlineBonus: 0 },
-  { id: 'talisman',name: 'Grand Void Talisman Sect', nameCN: '太虚符宗', seal: '符', color: '#b48ee0',
+  { id: 'talisman',name: 'Grand Void Talisman Sect', seal: 'T', color: '#b48ee0',
     desc: 'Scholars who inscribe the Dao onto talismans. Balanced and wise.',
     bonusDesc: '+25% Qi production',
     qiMult: 1.25, combatMult: 1.0, petMult: 1.0, offlineBonus: 0 },
-  { id: 'demon',   name: 'Blood Demon Sect',       nameCN: '血煞魔宗', seal: '魔', color: '#c8503f',
+  { id: 'demon',   name: 'Blood Demon Sect',       seal: 'D', color: '#c8503f',
     desc: 'A heterodox path of slaughter. Immense power at a price.',
     bonusDesc: '+50% combat power, +30% Spirit Stone drops, −10% Qi production',
     qiMult: 0.90, combatMult: 1.50, petMult: 1.0, offlineBonus: 0, lootMult: 1.30 },
@@ -35,12 +35,12 @@ const SECTS_DATA = [
 
 // Contribution thresholds → rank.
 const SECT_RANKS = [
-  { name: 'Outer Disciple', nameCN: '外门弟子', req: 0 },
-  { name: 'Inner Disciple', nameCN: '内门弟子', req: 1e3 },
-  { name: 'Core Disciple',  nameCN: '核心弟子', req: 1e4 },
-  { name: 'True Disciple',  nameCN: '真传弟子', req: 1e5 },
-  { name: 'Elder',          nameCN: '长老',     req: 1e6 },
-  { name: 'Sect Master',    nameCN: '宗主',     req: 1e7 },
+  { name: 'Outer Disciple', req: 0 },
+  { name: 'Inner Disciple', req: 1e3 },
+  { name: 'Core Disciple',  req: 1e4 },
+  { name: 'True Disciple',  req: 1e5 },
+  { name: 'Elder',          req: 1e6 },
+  { name: 'Sect Master',    req: 1e7 },
 ];
 
 const SECT_RANK_BONUS = 0.03; // +3% global Qi per rank index

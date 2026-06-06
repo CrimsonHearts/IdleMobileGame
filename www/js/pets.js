@@ -1,27 +1,27 @@
 /* ===========================================================================
- * pets.js — Spirit Beasts (灵兽). Collectible companions that:
+ * pets.js — Spirit Beasts. Collectible companions that:
  *   • passively enhance cultivation (Qi production) — bonus from ALL owned beasts
  *   • fight alongside you in Trials — ATK/HP from your ACTIVE beasts (max 3)
- * Tamed with Beast Eggs (兽蛋), levelled with Spirit Stones (灵石).
+ * Tamed with Beast Eggs, levelled with Spirit Stones.
  * ========================================================================= */
 
 const PET_RARITY = {
-  common: { name: 'Mortal',   nameCN: '凡品', color: '#9c9488', weight: 50 },
-  rare:   { name: 'Spirit',   nameCN: '灵品', color: '#6fb594', weight: 28 },
-  epic:   { name: 'King',     nameCN: '王品', color: '#5aa9e6', weight: 14 },
-  legend: { name: 'Saint',    nameCN: '圣品', color: '#e7c878', weight: 7 },
-  mythic: { name: 'Divine',   nameCN: '神品', color: '#c8503f', weight: 1 },
+  common: { name: 'Mortal',   color: '#9c9488', weight: 50 },
+  rare:   { name: 'Spirit',   color: '#6fb594', weight: 28 },
+  epic:   { name: 'King',     color: '#5aa9e6', weight: 14 },
+  legend: { name: 'Saint',    color: '#e7c878', weight: 7 },
+  mythic: { name: 'Divine',   color: '#c8503f', weight: 1 },
 };
 
 const PETS_DATA = [
-  { id: 'crane',   name: 'Immortal Crane',  nameCN: '仙鹤', icon: 'ic-crane',   rarity: 'common', qiBonus: 0.04, atk: 6,   hp: 40,  desc: 'A serene crane whose cries clear the cultivator’s mind.' },
-  { id: 'fox',     name: 'Spirit Fox',      nameCN: '灵狐', icon: 'ic-fox',     rarity: 'rare',   qiBonus: 0.08, atk: 14,  hp: 55,  desc: 'A nine-tailed fox brimming with cunning and spiritual energy.' },
-  { id: 'tortoise',name: 'Black Tortoise',  nameCN: '玄龟', icon: 'ic-tortoise',rarity: 'rare',   qiBonus: 0.05, atk: 5,   hp: 150, desc: 'An ancient tortoise of the north — an unyielding shield.' },
-  { id: 'tiger',   name: 'Flame Tiger',     nameCN: '火虎', icon: 'ic-tiger',   rarity: 'epic',   qiBonus: 0.06, atk: 32,  hp: 90,  desc: 'A blazing tiger whose roar scatters demonic beasts.' },
-  { id: 'serpent', name: 'Thunder Serpent', nameCN: '雷蛇', icon: 'ic-serpent', rarity: 'epic',   qiBonus: 0.07, atk: 36,  hp: 70,  desc: 'A serpent wreathed in lightning, swift and deadly.' },
-  { id: 'qilin',   name: 'Auspicious Qilin',nameCN: '麒麟', icon: 'ic-qilin',   rarity: 'legend', qiBonus: 0.15, atk: 52,  hp: 165, desc: 'A divine qilin said to herald the birth of sages.' },
-  { id: 'phoenix', name: 'Vermillion Phoenix', nameCN: '凤凰', icon: 'ic-phoenix', rarity: 'legend', qiBonus: 0.14, atk: 62, hp: 125, desc: 'Reborn from flame, its plumage burns away all impurity.' },
-  { id: 'dragon',  name: 'Azure Dragon',    nameCN: '蛟龙', icon: 'ic-dragon',  rarity: 'mythic', qiBonus: 0.25, atk: 105, hp: 270, desc: 'A true dragon of the eastern seas — sovereign of all beasts.' },
+  { id: 'crane',   name: 'Immortal Crane',  icon: 'ic-crane',   rarity: 'common', qiBonus: 0.04, atk: 6,   hp: 40,  desc: 'A serene crane whose cries clear the cultivator’s mind.' },
+  { id: 'fox',     name: 'Spirit Fox',      icon: 'ic-fox',     rarity: 'rare',   qiBonus: 0.08, atk: 14,  hp: 55,  desc: 'A nine-tailed fox brimming with cunning and spiritual energy.' },
+  { id: 'tortoise',name: 'Black Tortoise',  icon: 'ic-tortoise',rarity: 'rare',   qiBonus: 0.05, atk: 5,   hp: 150, desc: 'An ancient tortoise of the north — an unyielding shield.' },
+  { id: 'tiger',   name: 'Flame Tiger',     icon: 'ic-tiger',   rarity: 'epic',   qiBonus: 0.06, atk: 32,  hp: 90,  desc: 'A blazing tiger whose roar scatters demonic beasts.' },
+  { id: 'serpent', name: 'Thunder Serpent', icon: 'ic-serpent', rarity: 'epic',   qiBonus: 0.07, atk: 36,  hp: 70,  desc: 'A serpent wreathed in lightning, swift and deadly.' },
+  { id: 'qilin',   name: 'Auspicious Qilin',icon: 'ic-qilin',   rarity: 'legend', qiBonus: 0.15, atk: 52,  hp: 165, desc: 'A divine qilin said to herald the birth of sages.' },
+  { id: 'phoenix', name: 'Vermillion Phoenix', icon: 'ic-phoenix', rarity: 'legend', qiBonus: 0.14, atk: 62, hp: 125, desc: 'Reborn from flame, its plumage burns away all impurity.' },
+  { id: 'dragon',  name: 'Azure Dragon',    icon: 'ic-dragon',  rarity: 'mythic', qiBonus: 0.25, atk: 105, hp: 270, desc: 'A true dragon of the eastern seas — sovereign of all beasts.' },
 ];
 
 const MAX_ACTIVE_PETS = 3;

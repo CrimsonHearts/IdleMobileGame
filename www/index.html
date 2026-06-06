@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#1a1410" />
-  <title>仙途 · Path to Immortality</title>
+  <title>Path to Immortality</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -111,25 +111,24 @@
     <!-- Top status bar -->
     <header id="topbar">
       <div class="realm-block">
-        <div class="char-line"><span id="char-name">Cultivator</span> · <span id="char-root">凡灵根</span></div>
+        <div class="char-line"><span id="char-name">Cultivator</span> · <span id="char-root">Mortal Root</span></div>
         <div class="realm-names">
           <span id="realm-name">Mortal</span>
-          <span id="realm-name-cn">凡人</span>
         </div>
-        <div class="stage-line"><span id="stage-name">Mortal Body</span> <span id="stage-name-cn">凡体</span></div>
+        <div class="stage-line"><span id="stage-name">Mortal Body</span></div>
       </div>
       <div class="dao-block">
-        <div class="dao-label">道韵 Dao</div>
+        <div class="dao-label">Dao</div>
         <div class="dao-value"><span id="dao-amount">0</span> ☯</div>
-        <div class="cb-line">修为 +<span id="cb-bonus">0</span>%</div>
+        <div class="cb-line">Cultivation +<span id="cb-bonus">0</span>%</div>
       </div>
     </header>
 
     <!-- Currency strip (always visible) -->
     <section id="status-strip">
-      <span class="cur cur-qi"><b id="qi-amount">0</b> 气<small id="qps">0/s</small></span>
-      <span class="cur cur-stone"><b id="stone-amount">0</b> 灵石</span>
-      <span class="cur cur-egg"><b id="egg-amount">0</b> 兽蛋</span>
+      <span class="cur cur-qi"><b id="qi-amount">0</b> Qi<small id="qps">0/s</small></span>
+      <span class="cur cur-stone"><b id="stone-amount">0</b> Stones</span>
+      <span class="cur cur-egg"><b id="egg-amount">0</b> Eggs</span>
     </section>
 
     <!-- Tab content -->
@@ -142,18 +141,18 @@
           <div id="realm-progress-label">0 / 1.00K Qi</div>
           <p id="breakthrough-info"></p>
           <button id="advance-btn" style="display:none">⬆ Minor Breakthrough</button>
-          <button id="breakthrough-btn" disabled>⚡ Heavenly Tribulation (天劫)</button>
+          <button id="breakthrough-btn" disabled>⚡ Heavenly Tribulation</button>
         </section>
 
         <section id="tap-zone">
           <button id="meditate-btn">
             <img class="tap-emblem" id="tap-emblem" src="assets/cultivator.svg" alt="Meditating cultivator" draggable="false" />
-            <span class="tap-label">Meditate 打坐</span>
+            <span class="tap-label">Meditate</span>
             <span class="tap-gain" id="tap-gain">+1</span>
           </button>
         </section>
 
-        <div class="section-title">⛩ Cultivation Grounds 修炼场</div>
+        <div class="section-title">⛩ Cultivation Grounds</div>
         <div class="buy-amount-row">
           <span>Buy:</span>
           <button class="buy-amount-btn active" data-amount="1">×1</button>
@@ -174,7 +173,7 @@
 
       <!-- ===== TECHNIQUES ===== -->
       <section class="tab-panel" id="tab-techniques">
-        <div class="section-title">📜 Techniques & Manuals 功法</div>
+        <div class="section-title">📜 Techniques & Manuals</div>
         <div id="upgrade-list"></div>
       </section>
 
@@ -182,11 +181,11 @@
 
     <!-- Bottom navigation -->
     <nav id="bottom-nav">
-      <button class="nav-btn active" data-tab="cultivate"><span class="nav-ico">☯</span><span>修炼<small>Cultivate</small></span></button>
-      <button class="nav-btn" data-tab="sect"><span class="nav-ico">⛩</span><span>宗门<small>Sect</small></span></button>
-      <button class="nav-btn" data-tab="beasts"><span class="nav-ico">🐾</span><span>灵兽<small>Beasts</small></span></button>
-      <button class="nav-btn" data-tab="trials"><span class="nav-ico">⚔</span><span>历练<small>Trials</small></span></button>
-      <button class="nav-btn" data-tab="techniques"><span class="nav-ico">📜</span><span>功法<small>Arts</small></span></button>
+      <button class="nav-btn active" data-tab="cultivate"><span class="nav-ico">☯</span><span>Cultivate</span></button>
+      <button class="nav-btn" data-tab="sect"><span class="nav-ico">⛩</span><span>Sect</span></button>
+      <button class="nav-btn" data-tab="beasts"><span class="nav-ico">🐾</span><span>Beasts</span></button>
+      <button class="nav-btn" data-tab="trials"><span class="nav-ico">⚔</span><span>Trials</span></button>
+      <button class="nav-btn" data-tab="techniques"><span class="nav-ico">📜</span><span>Arts</span></button>
     </nav>
 
   </div>
