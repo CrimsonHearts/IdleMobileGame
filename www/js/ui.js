@@ -15,11 +15,18 @@ const UI = {
       qps: $('qps'),
       realm: $('realm-name'),
       realmCN: $('realm-name-cn'),
+      stageName: $('stage-name'),
+      stageNameCN: $('stage-name-cn'),
+      charName: $('char-name'),
+      charRoot: $('char-root'),
+      cbBonus: $('cb-bonus'),
       dao: $('dao-amount'),
       tapBtn: $('meditate-btn'),
+      tapEmblem: $('tap-emblem'),
       tapGain: $('tap-gain'),
       shop: $('shop-list'),
       upgrades: $('upgrade-list'),
+      advanceBtn: $('advance-btn'),
       breakBtn: $('breakthrough-btn'),
       breakInfo: $('breakthrough-info'),
       progressFill: $('realm-progress-fill'),
@@ -54,12 +61,21 @@ const UI = {
       });
     });
 
-    // Breakthrough.
+    // Minor + major breakthroughs.
+    this.el.advanceBtn.addEventListener('click', () => this.doAdvanceStage());
     this.el.breakBtn.addEventListener('click', () => this.doBreakthrough());
 
     this.buildShop();
     this.buildUpgrades();
+    this.applyGenderEmblem();
     this.renderAll();
+
+    // First-run character creation.
+    if (!Game.state.characterCreated) this.showCharacterCreation();
+  },
+
+  applyGenderEmblem() {
+    this.el.tapEmblem.src = Game.genderInfo().emblem;
   },
 
   // -- Build static-ish lists once -----------------------------------------
@@ -197,36 +213,150 @@ const UI = {
   },
 
   renderRealm() {
-    const realm = GameData.realms[Game.state.realm];
-    this.el.realm.textContent = realm.name;
-    this.el.realmCN.textContent = realm.nameCN;
+    // -- Character header --------------------------------------------------
+    const g = Game.genderInfo();
+    const root = Game.state.spiritualRoot;
+    this.el.charName.textContent = Game.state.name;
+    this.el.charRoot.textContent = root.nameCN;
+    this.el.charRoot.style.color = root.color;
+    this.el.cbBonus.textContent = (Game.state.stagesCleared * GameData.stageBonusPerStage * 100).toFixed(0);
+
+    // -- Realm + stage labels ---------------------------------------------
+    const tier = Game.tierLabel();
+    this.el.realm.textContent = tier.realm;
+    this.el.realmCN.textContent = tier.realmCN;
+    this.el.stageName.textContent = tier.stage;
+    this.el.stageNameCN.textContent = tier.stageCN;
 
     const next = Game.nextRealm();
-    if (!next) {
-      this.el.breakInfo.textContent = 'You have reached the peak of cultivation.';
-      this.el.breakBtn.style.display = 'none';
-      this.el.progressFill.style.width = '100%';
-      this.el.progressLabel.textContent = 'Peak Realm';
-      return;
-    }
-    const progress = Math.min(1, Game.state.runQi / next.reqQi);
-    this.el.progressFill.style.width = (progress * 100).toFixed(1) + '%';
-    this.el.progressLabel.textContent =
-      GameNumbers.formatNumber(Game.state.runQi) + ' / ' + GameNumbers.formatNumber(next.reqQi) + ' Qi';
+    const realmComplete = Game.realmComplete();
+    const canAdvance = Game.canAdvanceStage();
+    const canBreak = Game.canBreakThrough();
 
-    const can = Game.canBreakThrough();
-    this.el.breakBtn.style.display = '';
-    this.el.breakBtn.disabled = !can;
-    this.el.breakBtn.classList.toggle('ready', can);
-    const gain = Game.pendingDaoGain();
-    this.el.breakInfo.innerHTML = can
-      ? `⚡ Ready to face the Heavenly Tribulation! Ascend to <b>${next.name}</b> for <b>+${GameNumbers.formatNumber(gain)}</b> 道韵.`
-      : `Reach <b>${GameNumbers.formatNumber(next.reqQi)}</b> Qi this life to break through to <b>${next.name} (${next.nameCN})</b>.`;
+    // -- Progress bar: toward next minor stage, or toward Tribulation ------
+    if (!realmComplete) {
+      const req = Game.nextStageReq();
+      this.el.progressFill.style.width = (Math.min(1, Game.state.runQi / req) * 100).toFixed(1) + '%';
+      this.el.progressLabel.textContent =
+        GameNumbers.formatNumber(Game.state.runQi) + ' / ' + GameNumbers.formatNumber(req) + ' Qi (this life)';
+    } else {
+      this.el.progressFill.style.width = '100%';
+      this.el.progressLabel.textContent = next ? 'Cultivation perfected — Tribulation awaits' : 'Peak of cultivation';
+    }
+
+    // -- Minor breakthrough button ----------------------------------------
+    this.el.advanceBtn.style.display = (!realmComplete) ? '' : 'none';
+    this.el.advanceBtn.disabled = !canAdvance;
+    this.el.advanceBtn.classList.toggle('ready', canAdvance);
+    if (!realmComplete) {
+      const realm = Game.currentRealm();
+      const nextStage = realm.stages[Game.state.stage];
+      const nextStageCN = realm.stagesCN[Game.state.stage];
+      this.el.advanceBtn.textContent = canAdvance
+        ? `⬆ Breakthrough → ${nextStage} (${nextStageCN})`
+        : `Need ${GameNumbers.formatNumber(Game.nextStageReq())} Qi → ${nextStage}`;
+    }
+
+    // -- Major Tribulation button -----------------------------------------
+    if (!next) {
+      this.el.breakBtn.style.display = realmComplete ? 'none' : 'none';
+      this.el.breakInfo.innerHTML = realmComplete
+        ? '☯ You have reached the peak of immortal cultivation.'
+        : 'Climb every stage of this realm to perfect your cultivation.';
+    } else {
+      this.el.breakBtn.style.display = realmComplete ? '' : 'none';
+      this.el.breakBtn.disabled = !canBreak;
+      this.el.breakBtn.classList.toggle('ready', canBreak);
+      const gain = Game.pendingDaoGain();
+      this.el.breakInfo.innerHTML = realmComplete
+        ? `⚡ Face the Heavenly Tribulation to ascend to <b>${next.name} (${next.nameCN})</b> for <b>+${GameNumbers.formatNumber(gain)}</b> 道韵.`
+        : `Advance through all stages of <b>${tier.realm}</b>, then face Tribulation to ascend to <b>${next.name}</b>.`;
+    }
   },
 
   multAll() {
     const m = Game.multipliers();
-    return m.allMult * m.dao;
+    return m.allMult * m.root * m.stage * m.dao;
+  },
+
+  // -- Minor breakthrough ---------------------------------------------------
+  doAdvanceStage() {
+    const result = Game.advanceStage();
+    if (result) {
+      Game.persist();
+      this.renderAll();
+      const tier = Game.tierLabel();
+      this.toast(`修为精进 · Advanced to ${tier.realm} · ${tier.stage} (+${(GameData.stageBonusPerStage*100).toFixed(0)}% power)`);
+    }
+  },
+
+  // -- Character creation ---------------------------------------------------
+  showCharacterCreation() {
+    let gender = 'male';
+    let root = GameData.rollSpiritualRoot();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'creation-overlay';
+
+    const render = () => {
+      const g = GameData.genders[gender];
+      overlay.innerHTML = `
+        <div class="modal creation">
+          <h2>Begin Your Cultivation</h2>
+          <p class="creation-sub">踏上仙途 · Forge your path to immortality.</p>
+
+          <div class="creation-emblem"><img src="${g.emblem}" alt="cultivator"/></div>
+
+          <div class="creation-field">
+            <label>Dao Name 道号</label>
+            <input id="creation-name" type="text" maxlength="20" placeholder="Enter a name…" value="${this._creationName || ''}"/>
+          </div>
+
+          <div class="creation-field">
+            <label>Body 身</label>
+            <div class="gender-row">
+              <button class="gender-btn ${gender==='male'?'active':''}" data-g="male">男 Male</button>
+              <button class="gender-btn ${gender==='female'?'active':''}" data-g="female">女 Female</button>
+            </div>
+          </div>
+
+          <div class="creation-field">
+            <label>Spiritual Root 灵根</label>
+            <div class="root-display" style="border-color:${root.color}">
+              <div class="root-name" style="color:${root.color}">${root.nameCN} · ${root.name}</div>
+              <div class="root-mult">Production ×${root.mult.toFixed(1)}</div>
+              <div class="root-desc">${root.desc}</div>
+            </div>
+            <button id="reroll-root" class="reroll-btn">🎲 Re-divine Fate</button>
+          </div>
+
+          <button id="begin-cultivation" class="modal-close">Begin Cultivation ☯</button>
+        </div>`;
+
+      overlay.querySelectorAll('.gender-btn').forEach(b =>
+        b.addEventListener('click', () => {
+          gender = b.dataset.g;
+          this._creationName = overlay.querySelector('#creation-name').value;
+          render();
+        }));
+      overlay.querySelector('#reroll-root').addEventListener('click', () => {
+        this._creationName = overlay.querySelector('#creation-name').value;
+        root = GameData.rollSpiritualRoot();
+        render();
+      });
+      overlay.querySelector('#begin-cultivation').addEventListener('click', () => {
+        const name = overlay.querySelector('#creation-name').value;
+        Game.createCharacter(gender, name, root);
+        this.applyGenderEmblem();
+        this.renderAll();
+        overlay.remove();
+        this.toast(`☯ Welcome, ${Game.state.name}. Your ${root.nameCN} awaits its destiny.`);
+      });
+    };
+
+    render();
+    document.body.appendChild(overlay);
   },
 
   // -- Effects --------------------------------------------------------------

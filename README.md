@@ -119,11 +119,14 @@ See **`docs/STORE-CHECKLIST.md`** for the full publishing walkthrough.
 
 - [x] Core idle loop (meditate, generators, cost scaling, QPS)
 - [x] Offline progress + clock anti-cheat
-- [x] Prestige (breakthrough / realms / Dao Comprehension)
+- [x] Character creation: gender (male/female) + Spiritual Root (灵根)
+- [x] Two-tier cultivation: minor stages (修为) + major realms
+- [x] Prestige via Heavenly Tribulation (天劫 → Dao Comprehension 道韵)
 - [x] Upgrades / techniques
 - [x] Save system + autosave
-- [x] Ink-wash xianxia UI
+- [x] Illustrated ink-wash xianxia art (landscape, cultivator emblems, icons)
 - [x] Ads + IAP hooks (simulated)
+- [ ] Deeper "Reincarnation 转世" meta-prestige + skill tree (optional 4th layer)
 - [ ] Real AdMob + Play Billing integration (needs your accounts)
 - [ ] Cloud save (Play Games / Game Center)
 - [ ] More content: sub-realms, alchemy minigame, sect/disciples, events

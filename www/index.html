@@ -57,15 +57,17 @@
     <!-- Top status bar -->
     <header id="topbar">
       <div class="realm-block">
-        <div class="realm-label">Realm</div>
+        <div class="char-line"><span id="char-name">Cultivator</span> · <span id="char-root">凡灵根</span></div>
         <div class="realm-names">
           <span id="realm-name">Mortal</span>
           <span id="realm-name-cn">凡人</span>
         </div>
+        <div class="stage-line"><span id="stage-name">Mortal Body</span> <span id="stage-name-cn">凡体</span></div>
       </div>
       <div class="dao-block">
         <div class="dao-label">道韵 Dao</div>
         <div class="dao-value"><span id="dao-amount">0</span> ☯</div>
+        <div class="cb-line">修为 +<span id="cb-bonus">0</span>%</div>
       </div>
     </header>
 
@@ -80,13 +82,14 @@
       <div class="progress-track"><div id="realm-progress-fill"></div></div>
       <div id="realm-progress-label">0 / 1.00K Qi</div>
       <p id="breakthrough-info"></p>
-      <button id="breakthrough-btn" disabled>⚡ Break Through (天劫)</button>
+      <button id="advance-btn" style="display:none">⬆ Minor Breakthrough</button>
+      <button id="breakthrough-btn" disabled>⚡ Heavenly Tribulation (天劫)</button>
     </section>
 
     <!-- Meditate tap -->
     <section id="tap-zone">
       <button id="meditate-btn">
-        <img class="tap-emblem" src="assets/cultivator.svg" alt="Meditating cultivator" draggable="false" />
+        <img class="tap-emblem" id="tap-emblem" src="assets/cultivator.svg" alt="Meditating cultivator" draggable="false" />
         <span class="tap-label">Meditate 打坐</span>
         <span class="tap-gain" id="tap-gain">+1</span>
       </button>

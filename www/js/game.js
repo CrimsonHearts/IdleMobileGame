@@ -16,12 +16,20 @@ const Game = {
     GameData.generators.forEach(g => { owned[g.id] = 0; });
     return {
       version: GameData.saveVersion,
+      // Character (set during creation).
+      characterCreated: false,
+      name: 'Nameless Cultivator',
+      gender: 'male',
+      spiritualRoot: GameData.spiritualRoots[0], // {key,name,nameCN,mult,...}
+
       qi: 0,
       lifetimeQi: 0,        // total Qi earned across ALL runs (stats)
       runQi: 0,             // total Qi earned THIS run (drives breakthrough)
       owned,
       upgrades: {},         // id -> true
-      realm: 0,             // index into GameData.realms
+      realm: 0,             // major realm index into GameData.realms
+      stage: 0,             // minor stage index within the current realm
+      stagesCleared: 0,     // lifetime count of minor breakthroughs (Cultivation Base 修为)
       daoComprehension: 0,  // prestige currency (permanent multiplier)
       lastSaved: TimeService.now(),
       createdAt: TimeService.now(),
@@ -33,13 +41,28 @@ const Game = {
 
   init(loaded) {
     this.state = loaded || this.newState();
-    // Backfill any new generators added in updates.
+    // Backfill any new generators / fields added in updates.
     GameData.generators.forEach(g => {
       if (this.state.owned[g.id] === undefined) this.state.owned[g.id] = 0;
     });
     if (!this.state.upgrades) this.state.upgrades = {};
+    if (this.state.stage === undefined) this.state.stage = 0;
+    if (this.state.stagesCleared === undefined) this.state.stagesCleared = 0;
+    if (this.state.characterCreated === undefined) this.state.characterCreated = false;
+    if (!this.state.spiritualRoot) this.state.spiritualRoot = GameData.spiritualRoots[0];
     this._lastTickMono = TimeService.monotonicNow();
   },
+
+  /** Finalise character creation. */
+  createCharacter(gender, name, root) {
+    this.state.gender = (gender === 'female') ? 'female' : 'male';
+    this.state.name = (name && name.trim()) ? name.trim().slice(0, 20) : 'Nameless Cultivator';
+    this.state.spiritualRoot = root || GameData.rollSpiritualRoot();
+    this.state.characterCreated = true;
+    this.persist();
+  },
+
+  genderInfo() { return GameData.genders[this.state.gender] || GameData.genders.male; },
 
   // -------------------------------------------------------------------------
   // Derived values
@@ -49,9 +72,17 @@ const Game = {
     GameData.upgrades.forEach(u => {
       if (this.state.upgrades[u.id]) u.effect(m);
     });
-    // Dao Comprehension global multiplier.
-    m.dao = 1 + this.state.daoComprehension * GameData.daoBonusPerPoint;
+    // Three permanent power vectors:
+    m.root  = this.state.spiritualRoot ? this.state.spiritualRoot.mult : 1;   // Spiritual Root 灵根
+    m.stage = 1 + this.state.stagesCleared * GameData.stageBonusPerStage;      // Cultivation Base 修为
+    m.dao   = 1 + this.state.daoComprehension * GameData.daoBonusPerPoint;     // Dao Comprehension 道韵
     return m;
+  },
+
+  /** Combined permanent global multiplier (root × cultivation base × dao). */
+  globalMult() {
+    const m = this.multipliers();
+    return m.root * m.stage * m.dao;
   },
 
   /** Qi per second from all generators, with all multipliers applied. */
@@ -61,13 +92,13 @@ const Game = {
     GameData.generators.forEach(g => {
       base += g.baseProd * this.state.owned[g.id];
     });
-    return base * m.allMult * m.dao;
+    return base * m.allMult * m.root * m.stage * m.dao;
   },
 
   /** Qi gained per manual meditate tap. */
   qiPerTap() {
     const m = this.multipliers();
-    return GameData.tap.baseGain * m.tapMult * m.dao;
+    return GameData.tap.baseGain * m.tapMult * m.root * m.stage * m.dao;
   },
 
   generatorCost(g, count = 1) {
@@ -127,18 +158,58 @@ const Game = {
   },
 
   // -------------------------------------------------------------------------
-  // Breakthrough (prestige)
+  // Cultivation tiers: minor stages (no reset) + major realms (prestige)
   // -------------------------------------------------------------------------
-  nextRealm() {
-    return GameData.realms[this.state.realm + 1] || null;
+  currentRealm() { return GameData.realms[this.state.realm]; },
+  nextRealm()    { return GameData.realms[this.state.realm + 1] || null; },
+
+  /** Number of minor stages in the current realm. */
+  stageCount() { return this.currentRealm().stages.length; },
+
+  /** True once every minor stage of the current realm has been cleared. */
+  realmComplete() { return this.state.stage >= this.stageCount(); },
+
+  /** RunQi needed for the NEXT minor stage (or null if realm minor-complete). */
+  nextStageReq() {
+    if (this.realmComplete()) return null;
+    return GameData.stageReq(this.state.realm, this.state.stage);
   },
 
+  canAdvanceStage() {
+    const req = this.nextStageReq();
+    return req !== null && this.state.runQi >= req;
+  },
+
+  /** Advance one minor stage: permanent +5% Cultivation Base, no reset. */
+  advanceStage() {
+    if (!this.canAdvanceStage()) return false;
+    this.state.stage += 1;
+    this.state.stagesCleared += 1;
+    return {
+      realm: this.currentRealm(),
+      stageIndex: this.state.stage - 1,
+    };
+  },
+
+  /** Label for the cultivator's current tier, e.g. "Foundation Establishment · Middle Stage". */
+  tierLabel() {
+    const realm = this.currentRealm();
+    const idx = Math.min(this.state.stage, realm.stages.length - 1);
+    const done = this.realmComplete();
+    return {
+      realm: realm.name, realmCN: realm.nameCN,
+      stage: done ? 'Great Perfection' : realm.stages[idx],
+      stageCN: done ? '大圆满' : realm.stagesCN[idx],
+      complete: done,
+    };
+  },
+
+  // -- Major breakthrough (Heavenly Tribulation = prestige) -----------------
   canBreakThrough() {
-    const next = this.nextRealm();
-    return !!next && this.state.runQi >= next.reqQi;
+    return this.realmComplete() && !!this.nextRealm();
   },
 
-  /** Dao Comprehension that a breakthrough would currently award. */
+  /** Dao Comprehension that a Tribulation would currently award. */
   pendingDaoGain() {
     return GameData.daoGainFor(this.state.runQi);
   },
@@ -148,7 +219,8 @@ const Game = {
     const gain = this.pendingDaoGain();
     this.state.daoComprehension += gain;
     this.state.realm += 1;
-    // Reset this run's progress (keep lifetime stats, dao, realm, upgrades).
+    this.state.stage = 0;            // re-enter the new realm at its first stage
+    // Soft reset this run (keep lifetime stats, dao, realm, stagesCleared, upgrades, character).
     this.state.qi = 0;
     this.state.runQi = 0;
     GameData.generators.forEach(g => { this.state.owned[g.id] = 0; });

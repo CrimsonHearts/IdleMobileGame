@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="360" viewBox="0 0 360 360">
+  <defs>
+    <radialGradient id="auraF" cx="0.5" cy="0.46" r="0.5">
+      <stop offset="0" stop-color="#e9b6c9" stop-opacity="0.5"/>
+      <stop offset="0.45" stop-color="#9fe3c2" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#9fe3c2" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="robeF" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#46594f"/>
+      <stop offset="1" stop-color="#283a33"/>
+    </linearGradient>
+    <linearGradient id="ringF" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e7c878"/>
+      <stop offset="0.5" stop-color="#c8a24a"/>
+      <stop offset="1" stop-color="#9a7a32"/>
+    </linearGradient>
+    <radialGradient id="dantianF" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff7df"/>
+      <stop offset="0.5" stop-color="#e7c878"/>
+      <stop offset="1" stop-color="#c8a24a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Aura -->
+  <circle cx="180" cy="172" r="170" fill="url(#auraF)"/>
+
+  <!-- Radiating qi rays -->
+  <g stroke="#e9b6c9" stroke-width="2" opacity="0.4" stroke-linecap="round">
+    <line x1="180" y1="20"  x2="180" y2="55"/>
+    <line x1="180" y1="290" x2="180" y2="325"/>
+    <line x1="40"  y1="172" x2="72"  y2="172"/>
+    <line x1="288" y1="172" x2="320" y2="172"/>
+    <line x1="78"  y1="70"  x2="100" y2="92"/>
+    <line x1="282" y1="70"  x2="260" y2="92"/>
+    <line x1="78"  y1="274" x2="100" y2="252"/>
+    <line x1="282" y1="274" x2="260" y2="252"/>
+  </g>
+
+  <!-- Gold ring -->
+  <circle cx="180" cy="172" r="150" fill="none" stroke="url(#ringF)" stroke-width="6"/>
+  <circle cx="180" cy="172" r="138" fill="none" stroke="#c8a24a" stroke-width="1.5" opacity="0.5"/>
+  <g fill="#c8a24a">
+    <circle cx="180" cy="22"  r="5"/><circle cx="180" cy="322" r="5"/>
+    <circle cx="30"  cy="172" r="5"/><circle cx="330" cy="172" r="5"/>
+  </g>
+
+  <!-- Lotus base -->
+  <g fill="#6fb594" opacity="0.9">
+    <path d="M180 286 q-46 -6 -78 14 q40 24 78 8 q38 16 78 -8 q-32 -20 -78 -14 Z"/>
+    <path d="M180 280 q-26 -4 -44 10 q22 14 44 6 q22 8 44 -6 q-18 -14 -44 -10 Z" fill="#8fd0ad"/>
+  </g>
+
+  <!-- Long flowing hair behind shoulders -->
+  <g fill="#2a221b">
+    <path d="M150 120 Q120 180 132 250 Q140 270 150 250 Q146 190 162 140 Z"/>
+    <path d="M210 120 Q240 180 228 250 Q220 270 210 250 Q214 190 198 140 Z"/>
+  </g>
+
+  <!-- Seated cultivator silhouette (slimmer robe) -->
+  <g fill="url(#robeF)" stroke="#1a241f" stroke-width="1.5">
+    <path d="M118 270 Q126 234 180 228 Q234 234 242 270 Q230 284 180 286 Q130 284 118 270 Z"/>
+    <path d="M142 248 Q138 180 180 152 Q222 180 218 248 Q200 262 180 262 Q160 262 142 248 Z"/>
+    <!-- crossed sleeves in meditation mudra -->
+    <path d="M142 234 Q156 254 180 252 Q204 254 218 234 Q204 248 180 248 Q156 248 142 234 Z" fill="#30443c"/>
+    <!-- flowing hanfu collar (crossed) -->
+    <path d="M156 180 L180 168 L204 180 L194 200 L180 190 L166 200 Z" fill="#5a6f63"/>
+  </g>
+
+  <!-- Head -->
+  <circle cx="180" cy="134" r="25" fill="#efe3cc" stroke="#1a241f" stroke-width="1.5"/>
+  <!-- Hair framing the face + bun -->
+  <path d="M155 134 Q152 104 180 100 Q208 104 205 134 Q200 116 180 114 Q160 116 155 134 Z" fill="#2a221b"/>
+  <ellipse cx="180" cy="102" rx="13" ry="9" fill="#2a221b"/>
+  <!-- Gold hairpin -->
+  <g stroke="#e7c878" stroke-width="3" stroke-linecap="round">
+    <line x1="196" y1="100" x2="214" y2="92"/>
+  </g>
+  <circle cx="214" cy="92" r="3.5" fill="#e9b6c9"/>
+  <!-- Calm closed eyes -->
+  <g stroke="#3a3128" stroke-width="2" stroke-linecap="round">
+    <path d="M168 134 q5 4 10 0"/>
+    <path d="M182 134 q5 4 10 0"/>
+  </g>
+  <!-- forehead mark (花钿) -->
+  <circle cx="180" cy="122" r="2.5" fill="#c8503f"/>
+
+  <!-- Glowing dantian -->
+  <circle cx="180" cy="218" r="22" fill="url(#dantianF)"/>
+  <circle cx="180" cy="218" r="7" fill="#fff7df"/>
+</svg>

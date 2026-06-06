@@ -62,18 +62,67 @@ const GameData = {
    * the current life. Breaking through resets Qi & generators but grants
    * Dao Comprehension (permanent global multiplier).
    */
-  realms: [
-    { name: 'Mortal',                  nameCN: '凡人',   reqQi: 0 },
-    { name: 'Qi Condensation',         nameCN: '炼气期', reqQi: 1e3 },
-    { name: 'Foundation Establishment', nameCN: '筑基期', reqQi: 1e5 },
-    { name: 'Core Formation',          nameCN: '金丹期', reqQi: 1e7 },
-    { name: 'Nascent Soul',            nameCN: '元婴期', reqQi: 1e9 },
-    { name: 'Soul Formation',          nameCN: '化神期', reqQi: 1e11 },
-    { name: 'Void Refinement',         nameCN: '炼虚期', reqQi: 1e13 },
-    { name: 'Body Integration',        nameCN: '合体期', reqQi: 1e15 },
-    { name: 'Great Ascension',         nameCN: '大乘期', reqQi: 1e17 },
-    { name: 'Immortal Ascension',      nameCN: '渡劫飞升', reqQi: 1e19 },
+  realms: (() => {
+    // Stage-name sets reused across realms.
+    const NINE = ['1st Layer','2nd Layer','3rd Layer','4th Layer','5th Layer','6th Layer','7th Layer','8th Layer','9th Layer'];
+    const NINE_CN = ['一层','二层','三层','四层','五层','六层','七层','八层','九层'];
+    const QUAD = ['Early Stage','Middle Stage','Late Stage','Great Perfection'];
+    const QUAD_CN = ['初期','中期','后期','大圆满'];
+    return [
+      { name: 'Mortal',                   nameCN: '凡人',     reqQi: 0,    stages: ['Mortal Body','Qi Sensing'], stagesCN: ['凡体','感气'] },
+      { name: 'Qi Condensation',          nameCN: '炼气期',   reqQi: 1e3,  stages: NINE, stagesCN: NINE_CN },
+      { name: 'Foundation Establishment', nameCN: '筑基期',   reqQi: 1e5,  stages: QUAD, stagesCN: QUAD_CN },
+      { name: 'Core Formation',           nameCN: '金丹期',   reqQi: 1e7,  stages: QUAD, stagesCN: QUAD_CN },
+      { name: 'Nascent Soul',             nameCN: '元婴期',   reqQi: 1e9,  stages: QUAD, stagesCN: QUAD_CN },
+      { name: 'Soul Formation',           nameCN: '化神期',   reqQi: 1e11, stages: QUAD, stagesCN: QUAD_CN },
+      { name: 'Void Refinement',          nameCN: '炼虚期',   reqQi: 1e13, stages: QUAD, stagesCN: QUAD_CN },
+      { name: 'Body Integration',         nameCN: '合体期',   reqQi: 1e15, stages: QUAD, stagesCN: QUAD_CN },
+      { name: 'Great Ascension',          nameCN: '大乘期',   reqQi: 1e17, stages: QUAD, stagesCN: QUAD_CN },
+      { name: 'Immortal Ascension',       nameCN: '渡劫飞升', reqQi: 1e19, stages: ['Tribulation','Half-Immortal','True Immortal','Golden Immortal'], stagesCN: ['渡劫','半仙','真仙','金仙'] },
+    ];
+  })(),
+
+  /* RunQi (Qi earned this life) required to reach a given minor stage.
+   * Stages are spread geometrically between this realm's anchor and the next
+   * realm's requirement; the major Tribulation becomes available once every
+   * minor stage of the realm is cleared.
+   */
+  stageReq(realmIndex, stageIndex) {
+    const realms = this.realms;
+    const realm = realms[realmIndex];
+    const next = realms[realmIndex + 1];
+    const start = realm.reqQi > 0 ? realm.reqQi : (next ? next.reqQi / 1000 : 100);
+    const end = next ? next.reqQi : start * 1e6;
+    const S = realm.stages.length;
+    return start * Math.pow(end / start, (stageIndex + 1) / (S + 1));
+  },
+
+  // -- Character creation ---------------------------------------------------
+  genders: {
+    male:   { key: 'male',   label: 'Male',   labelCN: '男', emblem: 'assets/cultivator.svg',        honorific: 'Daoist',  honorificCN: '道友' },
+    female: { key: 'female', label: 'Female', labelCN: '女', emblem: 'assets/cultivator-female.svg', honorific: 'Fairy',   honorificCN: '仙子' },
+  },
+
+  /* Spiritual Root (灵根): your birth talent — a permanent global multiplier.
+   * Rolled (weighted) at character creation; the player may re-divine freely.
+   */
+  spiritualRoots: [
+    { key: 'mortal', name: 'Mortal Spirit Root',   nameCN: '凡灵根',   mult: 1.0, weight: 50, color: '#9c9488', desc: 'Common roots. The road is long, but diligence overcomes talent.' },
+    { key: 'true',   name: 'True Spirit Root',      nameCN: '真灵根',   mult: 1.6, weight: 28, color: '#6fb594', desc: 'Pure single-element roots — a solid foundation for cultivation.' },
+    { key: 'heaven', name: 'Heavenly Spirit Root',  nameCN: '天灵根',   mult: 2.6, weight: 14, color: '#5aa9e6', desc: 'A rare gift of the heavens; Qi flows to you with ease.' },
+    { key: 'saint',  name: 'Saint Spirit Root',     nameCN: '圣灵根',   mult: 4.5, weight: 6,  color: '#e7c878', desc: 'The mark of a born sage — destined for greatness.' },
+    { key: 'chaos',  name: 'Chaos Spirit Root',     nameCN: '混沌灵根', mult: 8.0, weight: 2,  color: '#c8503f', desc: 'A legendary root said to appear once in ten thousand years.' },
   ],
+
+  rollSpiritualRoot() {
+    const total = this.spiritualRoots.reduce((s, r) => s + r.weight, 0);
+    let n = Math.random() * total;
+    for (const r of this.spiritualRoots) { if ((n -= r.weight) <= 0) return r; }
+    return this.spiritualRoots[0];
+  },
+
+  // +5% permanent global production per minor stage ever cleared (Cultivation Base 修为).
+  stageBonusPerStage: 0.05,
 
   // Each point of Dao Comprehension grants this fractional global bonus.
   // Total multiplier = 1 + (daoComprehension * daoBonusPerPoint).
