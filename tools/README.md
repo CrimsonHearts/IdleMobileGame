@@ -5,6 +5,12 @@ them to `www/assets/portraits/<gender>-<root>.jpg` (10 images). The game loads
 them automatically; vector art is the fallback until they exist.
 
 No API keys live in the repo — they're read from your environment.
+For the overall local workflow (running the game, Docker), see
+**[../docs/LOCAL-SETUP.md](../docs/LOCAL-SETUP.md)**.
+
+> **Run ComfyUI natively, not in Docker** — Docker can't use the Mac's GPU, so a
+> containerized ComfyUI would be CPU-only and very slow. The game container
+> reaches your native ComfyUI via `host.docker.internal:8188`.
 
 ---
 
@@ -29,10 +35,13 @@ Uses **ComfyUI**'s built-in API. 24 GB unified memory runs SDXL comfortably.
    It serves the API at `http://127.0.0.1:8188`.
 4. **Generate** (from this repo, in another terminal):
    ```bash
-   node tools/gen-portraits.mjs --backend=comfy --ckpt="YourCheckpoint.safetensors"
+   node tools/gen-portraits.mjs --list        # auto-detects your installed models
+   node tools/gen-portraits.mjs               # all 10 (auto-picks a checkpoint)
+   # …or from the game container instead of natively:
+   docker compose run --rm game node tools/gen-portraits.mjs --gender=female
    ```
-   Use `--only=female-chaos,female-saint` to make specific ones, or
-   `--gender=female` for just the female leads.
+   Use `--only=female-chaos,female-saint` for specific ones, `--gender=female`
+   for one gender, or `--ckpt="YourCheckpoint.safetensors"` to choose the model.
 
 > Prefer a GUI? **Draw Things** (free Mac App Store app) is the easiest way to
 > generate these by hand — then just save them with the right filenames into

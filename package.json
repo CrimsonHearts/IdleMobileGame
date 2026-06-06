@@ -4,7 +4,9 @@
   "private": true,
   "description": "Path to Immortality — a Chinese cultivation (xianxia) idle game for Android & iOS.",
   "scripts": {
-    "serve": "npx --yes serve www -l 8080",
+    "serve": "node tools/static-server.mjs",
+    "start": "node tools/static-server.mjs",
+    "docker": "docker compose up",
     "gen:portraits": "node tools/gen-portraits.mjs",
     "cap:init": "npx --yes @capacitor/cli init \"Path to Immortality\" com.crimsonhearts.xianxiaidle --web-dir=www",
     "cap:add:android": "npm i @capacitor/core @capacitor/android && npx cap add android",

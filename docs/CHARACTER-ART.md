@@ -9,9 +9,18 @@ fallback until then).
 > Don't copy the watermarked reference images directly (they're artists' work).
 > The prompts below produce **original** art in the same style.
 
-## Recommended tools
-- **NijiJourney** or **Midjourney v6** (best for this anime/guofeng look), or
-- **Stable Diffusion XL** with a *guofeng / xianxia* LoRA (e.g. on a local UI).
+## Recommended: generate locally with ComfyUI ⭐
+Run the bundled generator against your **local ComfyUI** (GPU) — it writes the
+files straight into `www/assets/portraits/` with the right names:
+```bash
+node tools/gen-portraits.mjs --list     # see your models
+node tools/gen-portraits.mjs            # generate all 10
+```
+Use a **guofeng / xianxia** or **Animagine XL** SDXL checkpoint for this style.
+Setup steps: **[../docs/LOCAL-SETUP.md](LOCAL-SETUP.md)** and **[../tools/README.md](../tools/README.md)**.
+
+The prompts below are what the script uses — tweak them in `tools/gen-portraits.mjs`,
+or paste into any other tool (NijiJourney / Midjourney / SDXL) if you prefer.
 
 ## File names → see `www/assets/portraits/README.md`
 `female-<root>.jpg` / `male-<root>.jpg` for roots: mortal, true, heaven, saint, chaos.

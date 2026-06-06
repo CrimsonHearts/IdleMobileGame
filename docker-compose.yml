@@ -1,0 +1,20 @@
+# Local setup — game container that uses your host's native ComfyUI for art.
+#
+#   docker compose up                # game at http://localhost:8080 (live-reload via mount)
+#   docker compose run --rm game node tools/gen-portraits.mjs --gender=female
+#
+# The generator reaches your native ComfyUI (full GPU speed) at host:8188 via
+# host.docker.internal, and writes portraits into the mounted repo.
+services:
+  game:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/app            # live edits + generated portraits land in your repo
+      - /app/node_modules  # don't shadow with host
+    environment:
+      - PORT=8080
+      - COMFY_URL=http://host.docker.internal:8188
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # needed on Linux; built-in on macOS
