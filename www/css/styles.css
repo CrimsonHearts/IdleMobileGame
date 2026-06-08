@@ -36,8 +36,10 @@ small { font-weight:400; }
   padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
   background:var(--surface); border-bottom:1px solid var(--line); box-shadow:var(--shadow-sm);
 }
-.avatar { width:46px; height:46px; border-radius:50%; flex-shrink:0;
-  background:radial-gradient(circle at 50% 40%, #eafaf2, #dff0e8); border:1px solid var(--line); object-fit:cover; }
+.avatar { width:52px; height:52px; border-radius:50%; flex-shrink:0;
+  background:radial-gradient(circle at 50% 40%, #eafaf2, #dff0e8); border:2px solid var(--line);
+  object-fit:cover; object-position:top center;
+  box-shadow:0 2px 8px rgba(22,182,122,0.18); }
 .topbar-id { flex:1; min-width:0; }
 .char-name-row { display:flex; align-items:center; gap:8px; }
 #char-name { font-size:17px; font-weight:700; color:var(--text); }
@@ -53,17 +55,19 @@ small { font-weight:400; }
 
 /* -- Currency strip ------------------------------------------------------- */
 #status-strip { display:flex; justify-content:space-around; align-items:center; gap:8px;
-  padding:10px 12px; background:var(--surface); border-bottom:1px solid var(--line); }
-.cur { font-size:13px; color:var(--muted); white-space:nowrap; }
-.cur b { color:var(--text); font-size:15.5px; }
+  padding:10px 14px; background:linear-gradient(180deg,var(--surface),var(--surface-2));
+  border-bottom:1px solid var(--line); }
+.cur { font-size:12.5px; color:var(--muted); white-space:nowrap; text-align:center; flex:1; }
+.cur b { color:var(--text); font-size:16px; display:block; }
 .cur:first-child b { color:var(--jade-d); }
-.cur small { color:var(--jade); margin-left:2px; }
+.cur small { color:var(--jade); font-size:11px; }
 
 /* -- Content + tabs ------------------------------------------------------- */
 #content { flex:1; overflow-y:auto; padding:14px 16px 18px; -webkit-overflow-scrolling:touch; }
 .tab-panel { display:none; }
-.tab-panel.active { display:block; animation:fade .2s ease; }
-@keyframes fade { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+.tab-panel.active { display:block; animation:tabIn .22s cubic-bezier(.22,.68,0,1.2); }
+@keyframes tabIn { from{opacity:0; transform:translateY(6px) scale(.99);} to{opacity:1; transform:none;} }
+@keyframes fade   { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
 
 .section-title { font-size:18px; font-weight:800; color:var(--text); margin:6px 2px 12px; letter-spacing:-0.2px; }
 .section-title.small { font-size:14px; font-weight:700; color:var(--muted); margin-top:18px; }
@@ -75,10 +79,10 @@ small { font-weight:400; }
 /* -- Bottom navigation ---------------------------------------------------- */
 #bottom-nav { display:flex; background:var(--surface); border-top:1px solid var(--line);
   padding-bottom:env(safe-area-inset-bottom); box-shadow:0 -2px 12px rgba(22,34,48,0.05); }
-.nav-btn { flex:1; padding:9px 2px 8px; border:none; background:none; cursor:pointer;
+.nav-btn { flex:1; padding:10px 2px 8px; border:none; background:none; cursor:pointer;
   color:var(--faint); font-family:inherit; display:flex; flex-direction:column; align-items:center; gap:3px;
-  transition:color .15s; position:relative; }
-.nav-btn .nav-ico { font-size:21px; line-height:1; filter:grayscale(0.4); opacity:0.7; transition:all .15s; }
+  transition:color .15s; position:relative; min-height:52px; }
+.nav-btn .nav-ico { font-size:22px; line-height:1; filter:grayscale(0.4); opacity:0.7; transition:all .15s; }
 .nav-btn span span, .nav-btn>span:last-child { font-size:11px; font-weight:600; }
 .nav-btn.active { color:var(--jade-d); }
 .nav-btn.active .nav-ico { filter:none; opacity:1; transform:translateY(-1px); }
@@ -141,24 +145,27 @@ small { font-weight:400; }
 #realm-progress-label { font-size:12px; color:var(--muted); margin-top:6px; }
 #breakthrough-info { font-size:12.5px; color:var(--muted); line-height:1.5; margin:8px 2px; min-height:18px; }
 #breakthrough-info b { color:var(--gold-d); }
-#advance-btn { width:100%; padding:12px; border-radius:13px; margin-bottom:8px; border:none; cursor:pointer;
-  font-family:inherit; font-size:14.5px; font-weight:700; color:#fff; background:linear-gradient(180deg,var(--jade),var(--jade-d));
-  box-shadow:0 4px 12px rgba(22,182,122,0.3); }
-#advance-btn:disabled { background:#cdd5de; box-shadow:none; }
-#breakthrough-btn { width:100%; padding:12px; border-radius:13px; border:none; cursor:pointer; font-family:inherit;
-  font-size:15px; font-weight:700; color:var(--gold-d); background:var(--gold-soft); border:1px solid #efe2bd; }
+#advance-btn { width:100%; padding:14px; border-radius:14px; margin-bottom:8px; border:none; cursor:pointer;
+  font-family:inherit; font-size:15px; font-weight:700; color:var(--jade-d); background:var(--jade-soft);
+  border:1px solid #d8efe4; box-shadow:none; transition:all .2s; min-height:48px; }
+#advance-btn:disabled { background:var(--surface-2); color:var(--faint); border-color:var(--line); box-shadow:none; cursor:default; }
+#advance-btn.ready { color:#fff; background:linear-gradient(135deg,var(--jade),var(--jade-d));
+  border-color:transparent; box-shadow:0 5px 16px rgba(22,182,122,0.4); animation:pulse 1.6s infinite; }
+#breakthrough-btn { width:100%; padding:14px; border-radius:14px; border:none; cursor:pointer; font-family:inherit;
+  font-size:15px; font-weight:700; color:var(--gold-d); background:var(--gold-soft); border:1px solid #efe2bd;
+  min-height:48px; }
 #breakthrough-btn:disabled { opacity:.5; }
-#breakthrough-btn.ready { color:#fff; background:linear-gradient(180deg,#e7b94e,var(--gold-d)); border-color:transparent;
-  box-shadow:0 4px 14px rgba(199,154,59,0.4); animation:pulse 1.6s infinite; }
-@keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.02);} }
+#breakthrough-btn.ready { color:#fff; background:linear-gradient(135deg,#f0c040,var(--gold-d)); border-color:transparent;
+  box-shadow:0 5px 16px rgba(199,154,59,0.45); animation:pulse 1.6s infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.025);} }
 
 #tap-zone { display:flex; justify-content:center; padding:8px 0 16px; }
-#meditate-btn { width:172px; height:172px; border-radius:50%; cursor:pointer; position:relative; border:none;
+#meditate-btn { width:180px; height:180px; border-radius:50%; cursor:pointer; position:relative; border:none;
   background:radial-gradient(circle at 50% 42%, #eafaf2, #ffffff 70%);
-  box-shadow:0 10px 30px rgba(22,182,122,0.22), inset 0 0 0 1px var(--line);
+  box-shadow:0 12px 36px rgba(22,182,122,0.25), inset 0 0 0 2px rgba(22,182,122,0.15);
   display:flex; flex-direction:column; align-items:center; justify-content:center; transition:transform .06s; }
-#meditate-btn:active { transform:scale(.96); }
-.tap-emblem { width:154px; height:154px; pointer-events:none; border-radius:50%; object-fit:cover; object-position:center top; }
+#meditate-btn:active { transform:scale(.95); }
+.tap-emblem { width:162px; height:162px; pointer-events:none; border-radius:50%; object-fit:cover; object-position:top center; }
 #meditate-btn .tap-label, #meditate-btn .tap-gain { position:absolute; left:0; right:0; text-align:center; }
 .tap-label { bottom:30px; font-size:13px; font-weight:700; color:var(--jade-d); }
 .tap-gain { bottom:14px; font-size:12px; color:var(--muted); }
@@ -201,10 +208,16 @@ small { font-weight:400; }
   text-align:center; z-index:100; opacity:0; transition:all .35s; box-shadow:var(--shadow); }
 .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-.modal-overlay { position:fixed; inset:0; z-index:200; background:rgba(20,30,42,0.45); backdrop-filter:blur(4px);
-  display:flex; align-items:center; justify-content:center; padding:24px; }
-.modal { max-width:380px; width:100%; text-align:center; background:var(--surface); border-radius:22px; padding:24px;
-  box-shadow:var(--shadow); max-height:92vh; overflow-y:auto; }
+.modal-overlay { position:fixed; inset:0; z-index:200; background:rgba(20,30,42,0.5); backdrop-filter:blur(6px);
+  display:flex; align-items:flex-end; justify-content:center; padding:0; }
+.modal { max-width:480px; width:100%; text-align:center; background:var(--surface);
+  border-radius:22px 22px 0 0; padding:20px 20px 32px;
+  box-shadow:0 -8px 40px rgba(22,34,48,0.18); max-height:88vh; overflow-y:auto;
+  animation: modalSlideUp .28s cubic-bezier(.22,1,.36,1); }
+@keyframes modalSlideUp { from{transform:translateY(40px);opacity:0;} to{transform:none;opacity:1;} }
+/* Sheet drag handle */
+.modal::before { content:''; display:block; width:40px; height:4px; border-radius:2px;
+  background:var(--line); margin:0 auto 16px; }
 .modal h2 { font-size:21px; margin-bottom:10px; }
 .modal p { color:var(--muted); font-size:14px; line-height:1.6; margin-bottom:18px; }
 .modal p b { color:var(--text); }
@@ -232,3 +245,835 @@ small { font-weight:400; }
 .root-desc { font-size:12px; color:var(--muted); line-height:1.5; }
 .reroll-btn { width:100%; margin-top:8px; padding:10px; border-radius:12px; border:1px dashed var(--line);
   background:var(--surface); color:var(--jade-d); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+
+/* -- Quick-action bar (Shop + Quests) ------------------------------------- */
+#quick-actions {
+  display:flex; gap:8px; padding:8px 16px;
+  background:var(--surface); border-bottom:1px solid var(--line);
+}
+.qa-btn {
+  flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+  padding:10px 14px; border:none; border-radius:12px; cursor:pointer;
+  font-family:inherit; font-size:14px; font-weight:700; position:relative;
+  min-height:44px; transition:transform .1s, opacity .15s;
+}
+.qa-btn:active { transform:scale(.96); }
+.qa-shop  { background:linear-gradient(135deg,#f0c040,var(--gold-d)); color:#1a1a1a;
+  box-shadow:0 3px 10px rgba(199,154,59,0.3); }
+.qa-quest { background:linear-gradient(135deg,var(--jade),var(--jade-d)); color:#fff;
+  box-shadow:0 3px 10px rgba(22,182,122,0.28); }
+.quest-badge { position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; border-radius:999px;
+  background:#e8588f; color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center;
+  justify-content:center; padding:0 5px; border:2px solid var(--surface);
+  animation:badgePop .25s cubic-bezier(.36,.07,.19,.97); }
+@keyframes badgePop { 0%{transform:scale(0);} 70%{transform:scale(1.2);} 100%{transform:scale(1);} }
+
+/* -- Foundation Quality badge (inside breakthrough modal) ----------------- */
+.fq-badge { border:1.5px solid; border-radius:14px; padding:12px 14px; text-align:left; }
+.fq-name  { display:block; font-size:15px; font-weight:800; margin-bottom:4px; }
+.fq-desc  { display:block; font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:6px; }
+.fq-next  { display:block; font-size:11.5px; color:var(--muted); border-top:1px dashed var(--line); padding-top:6px; margin-top:4px; }
+
+/* =========================================================================
+   QUEST LOG — polished
+   ========================================================================= */
+.quest-modal { text-align:left; padding-top:14px; display:flex; flex-direction:column;
+  max-height:88vh; overflow:hidden; }
+.quest-scroll { flex:1; min-height:0; }
+.quest-header { text-align:center; }
+.quest-header h2 { margin-bottom:10px; }
+.quest-progress-summary { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.quest-progress-track { flex:1; height:8px; border-radius:999px; background:var(--surface-2);
+  border:1px solid var(--line); overflow:hidden; }
+.quest-progress-fill { height:100%; border-radius:999px;
+  background:linear-gradient(90deg,var(--jade),#e7b94e); transition:width .4s ease; }
+.quest-progress-text { font-size:11.5px; font-weight:700; color:var(--muted); white-space:nowrap; }
+
+/* Claim-all banner */
+.quest-claim-all {
+  width:100%; margin:14px 0 4px; padding:14px; border:none; border-radius:14px; cursor:pointer;
+  font-family:inherit; font-size:15px; font-weight:800; letter-spacing:.02em;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  color:#3a2c05; background:linear-gradient(135deg,#ffe07a,#e7a820);
+  box-shadow:0 4px 16px rgba(199,154,59,0.45); animation:claimGlow 1.6s ease-in-out infinite;
+}
+.quest-claim-all:active { transform:scale(.98); }
+.claim-all-count { background:rgba(0,0,0,.18); color:#fff; border-radius:999px;
+  min-width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center;
+  font-size:12px; padding:0 6px; }
+@keyframes claimGlow {
+  0%,100% { box-shadow:0 4px 16px rgba(199,154,59,0.4); }
+  50%     { box-shadow:0 4px 22px rgba(231,168,32,0.7); }
+}
+
+/* Scroll region so header + claim-all stay pinned */
+.quest-scroll { overflow-y:auto; margin:6px -4px 0; padding:0 4px; }
+
+/* Empty state when everything is claimed */
+.quest-empty { text-align:center; padding:36px 18px; }
+.quest-empty-ico { font-size:46px; margin-bottom:10px; }
+.quest-empty-title { font-size:16px; font-weight:800; color:var(--text); margin-bottom:6px; }
+
+/* Category grouping */
+.quest-cat { margin-top:14px; }
+.quest-cat-head { display:flex; align-items:baseline; justify-content:space-between; margin:0 2px 8px; }
+.quest-cat-label { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1.2px;
+  color:var(--text); }
+.quest-cat-count { font-size:11px; color:var(--faint); font-weight:600; }
+.quest-cat-count .cat-ready { color:var(--jade-d); }
+
+/* Quest rows */
+.quest-hint-text { display:block; font-size:11px; color:var(--jade-d); margin-top:2px; }
+.quest-row { display:flex; align-items:center; gap:12px; padding:12px 14px; margin-bottom:8px;
+  border:1px solid var(--line); border-radius:14px; background:var(--surface);
+  box-shadow:var(--shadow-sm); transition:border-color .2s, background .2s; }
+.quest-row.done {
+  border-color:#e7b94e; background:linear-gradient(180deg,#fffaf0,var(--surface));
+  box-shadow:0 3px 12px rgba(199,154,59,0.18);
+}
+.quest-row.claimed { opacity:.55; box-shadow:none; }
+.quest-ico { font-size:24px; flex-shrink:0; width:34px; height:34px; display:flex; align-items:center;
+  justify-content:center; background:var(--surface-2); border-radius:10px; }
+.quest-row.done .quest-ico { background:var(--gold-soft); }
+.quest-row.claimed .quest-ico { background:var(--jade-soft); }
+.quest-info  { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.quest-title { font-size:14px; font-weight:700; color:var(--text); }
+.quest-desc  { font-size:12px; color:var(--muted); line-height:1.45; }
+.quest-reward       { font-size:11.5px; font-weight:700; color:var(--gold-d); margin-top:1px; }
+.quest-reward.ready { color:var(--gold-d); }
+.quest-reward.muted { color:var(--faint); font-weight:600; }
+.quest-claim-btn { flex-shrink:0; align-self:center; padding:11px 18px; border-radius:12px; border:none;
+  background:linear-gradient(135deg,#ffe07a,#e7a820); color:#3a2c05; font-family:inherit;
+  font-size:13px; font-weight:800; cursor:pointer; box-shadow:0 3px 10px rgba(199,154,59,0.4);
+  min-height:44px; }
+.quest-claim-btn:active { transform:scale(.96); }
+
+/* -- Cultivation Insight flash ------------------------------------------- */
+.insight-flash { position:fixed; inset:0; z-index:180; display:flex; align-items:center;
+  justify-content:center; pointer-events:none;
+  background:radial-gradient(ellipse at 50% 40%, rgba(22,182,122,.18) 0%, transparent 65%);
+  animation:insightIn .4s ease-out forwards, insightOut .8s ease-in 2.4s forwards; }
+@keyframes insightIn  { from{opacity:0;} to{opacity:1;} }
+@keyframes insightOut { from{opacity:1;} to{opacity:0;} }
+.insight-inner { text-align:center; background:var(--surface); border:2px solid var(--jade);
+  border-radius:20px; padding:22px 28px; box-shadow:0 0 40px rgba(22,182,122,.35), var(--shadow); }
+.insight-title { font-size:22px; font-weight:800; color:var(--jade-d); margin-bottom:6px;
+  animation:insightGlow 1.2s ease-in-out infinite alternate; }
+@keyframes insightGlow { from{text-shadow:0 0 4px rgba(22,182,122,.4);} to{text-shadow:0 0 18px rgba(22,182,122,.9);} }
+.insight-sub { font-size:13.5px; color:var(--muted); }
+
+/* -- Ad-boost bar (Cultivate tab) ---------------------------------------- */
+#ad-boosts { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+.ad-boost-btn { display:flex; align-items:center; gap:12px; width:100%; padding:11px 14px;
+  border:1px solid var(--line); border-radius:14px; background:var(--surface); cursor:pointer;
+  font-family:inherit; text-align:left; box-shadow:var(--shadow-sm); transition:opacity .15s; }
+.ad-boost-btn:disabled { opacity:.45; cursor:default; }
+.ad-boost-ico { font-size:22px; flex-shrink:0; width:30px; text-align:center; }
+.ad-boost-text { display:flex; flex-direction:column; gap:2px; }
+.ad-boost-label { font-size:13.5px; font-weight:700; color:var(--text); }
+.ad-boost-sub   { font-size:11.5px; color:var(--muted); }
+.ad-boost-btn.active-boost { border-color:var(--jade); background:var(--jade-soft); }
+.ad-boost-btn.active-boost .ad-boost-label { color:var(--jade-d); }
+
+/* -- Shop modal ------------------------------------------------------------ */
+.shop-grid { display:flex; flex-direction:column; gap:10px; margin-bottom:4px; }
+.shop-card { display:flex; align-items:center; gap:14px; padding:14px;
+  border:1px solid var(--line); border-radius:16px; background:var(--surface-2);
+  box-shadow:var(--shadow-sm); }
+.shop-card-ico { font-size:30px; width:44px; text-align:center; flex-shrink:0; }
+.shop-card-info { flex:1; min-width:0; }
+.shop-card-name { font-size:14.5px; font-weight:700; display:block; }
+.shop-card-desc { font-size:12px; color:var(--muted); margin-top:2px; line-height:1.4; }
+.shop-card-btn { flex-shrink:0; padding:9px 14px; border-radius:12px; border:none; cursor:pointer;
+  font-family:inherit; font-size:13px; font-weight:700; white-space:nowrap; }
+.shop-card-btn.gold-btn { background:linear-gradient(180deg,var(--gold),var(--gold-d)); color:#fff;
+  box-shadow:0 3px 8px rgba(199,154,59,0.35); }
+.shop-card-btn.jade-btn { background:linear-gradient(180deg,var(--jade),var(--jade-d)); color:#fff;
+  box-shadow:0 3px 8px rgba(22,182,122,0.3); }
+.shop-card-btn.muted-btn { background:var(--surface); color:var(--muted); border:1px solid var(--line); cursor:default; }
+.shop-section-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px;
+  color:var(--muted); margin:14px 2px 8px; }
+
+/* ============================================================
+ * ANIMATIONS
+ * ============================================================ */
+
+/* -- Avatar float --------------------------------------------------------- */
+.avatar {
+  animation: avatarFloat 3.6s ease-in-out infinite; cursor:pointer;
+}
+@keyframes avatarFloat {
+  0%,100% { transform:translateY(0px);   }
+  50%      { transform:translateY(-4px); }
+}
+
+/* -- Root chip glow (color driven by inline style; we animate the shadow) - */
+.root-chip {
+  animation: rootGlow 2.8s ease-in-out infinite;
+}
+@keyframes rootGlow {
+  0%,100% { box-shadow: 0 0 0px 0px transparent; }
+  50%      { box-shadow: 0 0 7px 2px rgba(22,182,122,0.35); }
+}
+
+/* -- Meditate button glow ring -------------------------------------------- */
+#meditate-btn::before {
+  content:'';
+  position:absolute; inset:-8px; border-radius:50%;
+  border:2px solid var(--jade);
+  opacity:0;
+  animation:glowRing 2.2s ease-in-out infinite;
+  pointer-events:none;
+}
+#meditate-btn::after {
+  content:'';
+  position:absolute; inset:-16px; border-radius:50%;
+  border:1.5px solid var(--jade);
+  opacity:0;
+  animation:glowRing 2.2s ease-in-out infinite .5s;
+  pointer-events:none;
+}
+@keyframes glowRing {
+  0%   { transform:scale(.92); opacity:0; }
+  40%  { opacity:.55; }
+  100% { transform:scale(1.06); opacity:0; }
+}
+
+/* -- Progress bar shimmer ------------------------------------------------- */
+.progress-track { position:relative; overflow:hidden; }
+.progress-track::after {
+  content:'';
+  position:absolute; top:0; left:-60%; width:40%; height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent);
+  animation:shimmer 2.4s ease-in-out infinite;
+  border-radius:999px;
+}
+@keyframes shimmer {
+  0%   { left:-60%; }
+  100% { left:110%; }
+}
+
+/* -- Qi amount flash ------------------------------------------------------ */
+.qi-flash {
+  animation: qiFlash .45s ease-out forwards;
+}
+@keyframes qiFlash {
+  0%   { color:var(--jade); transform:scale(1.18); }
+  60%  { color:var(--jade-d); transform:scale(1.05); }
+  100% { color:inherit; transform:scale(1); }
+}
+
+/* -- Generator buy bounce ------------------------------------------------- */
+.gen-bounce {
+  animation: genBounce .35s cubic-bezier(.36,.07,.19,.97);
+}
+@keyframes genBounce {
+  0%,100% { transform:scale(1); }
+  30%      { transform:scale(.96); }
+  65%      { transform:scale(1.03); }
+}
+
+/* -- Breakthrough lightning flash ----------------------------------------- */
+.breakthrough-flash {
+  position:fixed; inset:0; z-index:999; pointer-events:none;
+  background:radial-gradient(ellipse at 50% 40%, rgba(231,185,78,.55) 0%, rgba(255,255,255,.35) 30%, transparent 70%);
+  animation:btFlash .7s ease-out forwards;
+}
+@keyframes btFlash {
+  0%   { opacity:1; }
+  100% { opacity:0; }
+}
+
+/* -- Ambient Qi particles ------------------------------------------------- */
+.qi-particle {
+  position:fixed; border-radius:50%; pointer-events:none; z-index:5;
+  background:radial-gradient(circle, rgba(22,182,122,0.7) 0%, rgba(22,182,122,0) 70%);
+  animation: particleRise linear forwards;
+}
+@keyframes particleRise {
+  0%   { transform:translateY(0) scale(1); opacity:.7; }
+  80%  { opacity:.3; }
+  100% { transform:translateY(-120px) scale(.3); opacity:0; }
+}
+
+/* -- Float text (tap feedback) — enhanced --------------------------------- */
+.float-text {
+  text-shadow: 0 0 8px rgba(22,182,122,.6);
+}
+
+/* -- Advance button ready: extra shine ------------------------------------ */
+#advance-btn.ready::after {
+  content:'';
+  position:absolute; inset:0; border-radius:13px;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.18) 50%,transparent 100%);
+  animation:btnShine 1.8s ease-in-out infinite;
+  pointer-events:none;
+}
+#advance-btn { position:relative; overflow:hidden; }
+@keyframes btnShine {
+  0%   { transform:translateX(-100%); }
+  100% { transform:translateX(200%); }
+}
+
+/* -- Active boost bar pulse ----------------------------------------------- */
+.ad-boost-btn.active-boost {
+  animation: boostPulse 1.8s ease-in-out infinite;
+}
+@keyframes boostPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(22,182,122,0); }
+  50%      { box-shadow: 0 0 0 4px rgba(22,182,122,0.22); }
+}
+
+/* =========================================================================
+   GACHA SYSTEM — Spirit Root Character Creation
+   ========================================================================= */
+.gacha-modal { max-height:92vh; overflow-y:auto; padding-bottom:1.5rem; }
+
+.gacha-portrait-row {
+  display:flex; gap:1rem; align-items:flex-start;
+  margin:0.75rem 0;
+}
+.gacha-portrait-row .creation-emblem { flex-shrink:0; }
+
+.gacha-root-result {
+  flex:1; border:2px solid; border-radius:12px; padding:0.75rem;
+  background:rgba(255,255,255,0.06); position:relative; overflow:hidden;
+  transition:border-color .3s, box-shadow .3s;
+}
+.gacha-root-result.rolling {
+  animation: gachaRoll 0.4s ease-in-out;
+}
+.root-rarity-bar {
+  position:absolute; top:0; left:0; right:0; height:3px; border-radius:2px 2px 0 0;
+  opacity:0.8;
+}
+.root-cn { font-size:0.7em; opacity:0.6; margin-left:4px; }
+
+@keyframes gachaRoll {
+  0%   { opacity:1; transform:scale(1); }
+  40%  { opacity:0.2; transform:scale(0.96) rotateY(8deg); }
+  100% { opacity:1; transform:scale(1) rotateY(0); }
+}
+.roll-flash {
+  animation: rollFlash 0.45s ease-out !important;
+}
+@keyframes rollFlash {
+  0%   { box-shadow:0 0 0 0 rgba(255,255,255,0); }
+  30%  { box-shadow:0 0 18px 6px rgba(255,255,255,0.5); }
+  100% { box-shadow:0 0 0 0 rgba(255,255,255,0); }
+}
+
+.gacha-counter {
+  font-size:0.78rem; color:var(--text-soft); text-align:center;
+  margin:0.4rem 0;
+}
+.rolls-used { font-weight:700; color:var(--accent); }
+.gacha-bar-wrap {
+  height:5px; background:rgba(0,0,0,0.15); border-radius:3px;
+  margin:4px auto 0; max-width:240px; overflow:hidden;
+}
+.gacha-bar {
+  height:100%; background:linear-gradient(90deg,var(--accent),#a78bfa);
+  border-radius:3px; transition:width .4s ease;
+}
+
+.gacha-btn-row {
+  display:flex; gap:0.5rem; justify-content:center; margin:0.6rem 0;
+}
+.gacha-roll-btn {
+  flex:1; max-width:140px; padding:0.55rem 0.5rem;
+  background:linear-gradient(135deg,var(--accent),#059669);
+  color:#fff; border:none; border-radius:10px; font-weight:700;
+  cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px;
+  transition:opacity .2s, transform .1s;
+}
+.gacha-roll-btn:hover:not(:disabled) { transform:translateY(-1px); opacity:0.92; }
+.gacha-roll-btn:disabled { opacity:0.4; cursor:not-allowed; }
+.gacha-roll-btn .roll-odds { font-size:0.65em; font-weight:400; opacity:0.85; }
+.roll-10-btn { background:linear-gradient(135deg,#7c3aed,#4f46e5); }
+
+.gacha-exhausted {
+  text-align:center; font-size:0.85rem; color:var(--text-soft);
+  background:rgba(231,185,78,.08); border:1px solid rgba(231,185,78,.3);
+  border-radius:8px; padding:0.5rem; margin:0.4rem 0;
+}
+
+.leftover-reward {
+  text-align:center; font-size:0.8rem;
+  color:#f59e0b; background:rgba(245,158,11,.08);
+  border:1px dashed rgba(245,158,11,.3); border-radius:8px;
+  padding:0.4rem 0.5rem; margin:0.3rem 0;
+}
+
+.creation-fields { margin:0.75rem 0 0.5rem; }
+
+.begin-btn {
+  margin:0.5rem 0; width:100%;
+  background:linear-gradient(135deg,#e7b94e,#d97706) !important;
+  color:#1a1a1a !important; font-weight:800 !important;
+  letter-spacing:0.05em;
+}
+
+/* Pack cards */
+.pack-section {
+  margin-top:1rem; border-top:1px solid rgba(255,255,255,0.08);
+  padding-top:0.75rem;
+}
+.pack-section-title {
+  font-size:0.82rem; font-weight:700; text-align:center;
+  color:var(--text-soft); margin-bottom:0.5rem; letter-spacing:0.04em;
+}
+.pack-cards {
+  display:flex; gap:0.5rem; overflow-x:auto; padding-bottom:0.25rem;
+}
+.pack-card {
+  flex-shrink:0; width:150px; background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.12); border-radius:12px;
+  padding:0.65rem 0.5rem; display:flex; flex-direction:column; gap:0.25rem;
+  transition:border-color .25s, transform .2s;
+}
+.pack-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+.pack-price {
+  font-size:1.1rem; font-weight:800; color:#e7b94e; text-align:center;
+}
+.pack-name {
+  font-size:0.75rem; font-weight:700; text-align:center;
+  color:var(--text-soft); text-transform:uppercase; letter-spacing:0.06em;
+}
+.pack-perks { flex:1; }
+.pack-perk {
+  font-size:0.68rem; color:var(--text-soft); line-height:1.5; margin-bottom:2px;
+}
+.pack-buy-btn {
+  width:100%; padding:0.4rem; border:none; border-radius:8px;
+  background:linear-gradient(135deg,var(--accent),#059669);
+  color:#fff; font-weight:700; font-size:0.75rem; cursor:pointer;
+  margin-top:0.25rem; transition:opacity .2s;
+}
+.pack-buy-btn:hover { opacity:0.88; }
+
+/* Pack grant result */
+.pack-result-modal { text-align:center; }
+.pack-bonuses { margin:0.5rem 0; }
+.pack-bonus-line {
+  font-size:0.85rem; color:var(--accent); padding:0.2rem 0;
+}
+
+/* =========================================================================
+   STAGE MILESTONE POPUP
+   ========================================================================= */
+.milestone-overlay { z-index:600; }
+.milestone-modal {
+  text-align:center; border:2px solid #e7b94e;
+  box-shadow:0 0 30px rgba(231,185,78,0.4);
+  animation:milestoneIn 0.5s cubic-bezier(0.22,1,0.36,1);
+}
+@keyframes milestoneIn {
+  from { transform:scale(0.8) translateY(20px); opacity:0; }
+  to   { transform:scale(1) translateY(0); opacity:1; }
+}
+.milestone-icon {
+  font-size:3rem; margin:0.5rem 0;
+  animation:milestoneBounce 0.6s ease-out 0.15s both;
+}
+@keyframes milestoneBounce {
+  0%   { transform:scale(0.5); }
+  60%  { transform:scale(1.2); }
+  100% { transform:scale(1); }
+}
+.milestone-title {
+  font-size:1.3rem; font-weight:800; color:#e7b94e;
+  margin:0.25rem 0;
+}
+.milestone-sub {
+  font-size:0.8rem; color:var(--text-soft); margin-bottom:0.75rem;
+}
+.milestone-rewards { margin:0.5rem 0; }
+.milestone-reward {
+  font-size:0.9rem; color:var(--accent); padding:0.2rem 0;
+}
+.milestone-close {
+  margin-top:0.75rem; width:100%;
+}
+.fade-out { animation:fadeOut .3s ease forwards; }
+@keyframes fadeOut { to { opacity:0; transform:scale(0.95); } }
+
+/* =========================================================================
+   HIDDEN BREAKTHROUGH CONDITIONS
+   ========================================================================= */
+.conditions-modal { text-align:center; }
+.conditions-sub { font-size:0.82rem; color:var(--text-soft); margin-bottom:0.75rem; }
+.condition-hit {
+  display:flex; align-items:center; gap:0.6rem;
+  background:rgba(231,185,78,.07); border:1px solid rgba(231,185,78,.2);
+  border-radius:8px; padding:0.5rem 0.75rem; margin:0.35rem 0; text-align:left;
+}
+.cond-icon { font-size:1.2rem; flex-shrink:0; }
+.cond-bonus {
+  background:rgba(22,182,122,.15); color:var(--accent);
+  border-radius:4px; padding:1px 5px; font-size:0.75em; font-weight:700;
+  margin-left:4px;
+}
+
+/* =========================================================================
+   WORLD HUB — sub-nav + Trials / Beasts / Sect
+   ========================================================================= */
+.subnav { display:flex; gap:6px; margin-bottom:14px; background:var(--surface-2);
+  padding:5px; border-radius:14px; border:1px solid var(--line); }
+.subnav-btn { flex:1; padding:9px 4px; border:none; border-radius:10px; cursor:pointer;
+  background:transparent; color:var(--muted); font-family:inherit; font-size:13px; font-weight:700;
+  transition:all .15s; }
+.subnav-btn.active { background:var(--surface); color:var(--jade-d); box-shadow:var(--shadow-sm); }
+.subpanel { display:none; }
+.subpanel.active { display:block; animation:tabIn .22s cubic-bezier(.22,.68,0,1.2); }
+
+/* Locked panels */
+.locked-panel { text-align:center; padding:40px 20px; background:var(--surface);
+  border:1px dashed var(--line); border-radius:16px; }
+.locked-ico { font-size:48px; opacity:.4; margin-bottom:10px; }
+.locked-title { font-size:16px; font-weight:800; color:var(--muted); margin-bottom:8px; }
+
+/* -- Trials (combat) -- */
+.combat-stage { display:flex; align-items:center; justify-content:space-between; gap:8px;
+  background:linear-gradient(180deg,#1a1330,#0f0a22); border-radius:18px; padding:18px 14px;
+  box-shadow:inset 0 2px 12px rgba(0,0,0,.4); margin-bottom:12px; }
+.fighter { flex:1; text-align:center; }
+.fighter-ico { font-size:46px; line-height:1; filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
+.fighter.enemy.boss .fighter-ico { font-size:56px; animation:bossPulse 1.2s ease-in-out infinite; }
+@keyframes bossPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.12);} }
+.fighter-name { font-size:12px; font-weight:700; color:#e8eef6; margin:6px 0 5px; }
+.fighter-stat { font-size:10px; color:#9aa6b8; margin-top:5px; }
+.vs { font-size:20px; color:#e7b94e; flex-shrink:0; padding:0 4px; }
+.hp-bar { height:9px; border-radius:999px; background:rgba(255,255,255,.12); overflow:hidden; }
+.hp-fill { height:100%; border-radius:999px; transition:width .15s linear; }
+.hp-fill.player { background:linear-gradient(90deg,#16b67a,#5fd6a6); }
+.hp-fill.enemy  { background:linear-gradient(90deg,#e8588f,#f0884f); }
+.combat-controls { display:flex; gap:8px; margin-bottom:12px; }
+.combat-controls .btn-mini { flex:1; }
+.combat-resources { display:flex; gap:10px; margin-bottom:6px; }
+.cr-pill { flex:1; text-align:center; font-size:12.5px; color:var(--muted); background:var(--surface-2);
+  border:1px solid var(--line); border-radius:10px; padding:8px; }
+.cr-pill b { color:var(--text); }
+.combat-log { background:var(--surface-2); border:1px solid var(--line); border-radius:12px;
+  padding:10px 12px; min-height:90px; max-height:140px; overflow-y:auto; }
+.log-line { font-size:12px; color:var(--muted); padding:3px 0; border-bottom:1px solid var(--line); }
+.log-line:last-child { border-bottom:none; }
+
+/* -- Beasts -- */
+.beast-tame.card { margin-bottom:10px; }
+.exchange-row { display:flex; gap:8px; margin-top:8px; }
+.exchange-row .btn-mini { flex:1; }
+.beast-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:10px; }
+.beast-card { border:1.5px solid var(--line); border-radius:16px; padding:12px; text-align:center;
+  background:var(--surface); box-shadow:var(--shadow-sm); position:relative; }
+.beast-card.active { box-shadow:0 0 0 2px var(--jade), var(--shadow-sm); }
+.beast-rarity { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; }
+.beast-ico { font-size:42px; line-height:1; margin:4px 0; }
+.beast-name { font-size:13.5px; font-weight:700; }
+.beast-lvl { font-size:11px; color:var(--jade-d); font-weight:600; margin-top:3px; }
+.beast-lvl.muted { color:var(--faint); }
+.beast-actions { display:flex; gap:6px; margin-top:8px; }
+.beast-actions .btn-mini { flex:1; padding:6px 4px; font-size:11px; }
+
+/* -- Sect -- */
+.sect-seal { width:46px; height:46px; flex-shrink:0; border-radius:12px; color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; }
+.sect-current, .sect-option { border-width:1.5px; }
+.sect-current { display:flex; align-items:center; gap:14px; }
+.sect-head { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+.sect-info { flex:1; min-width:0; }
+.sect-bonus { font-size:12.5px; font-weight:700; margin-bottom:10px; }
+.sect-list { display:flex; flex-direction:column; gap:10px; }
+.roster-row { display:flex; justify-content:space-between; font-size:12px; padding:5px 0;
+  border-bottom:1px solid var(--line); }
+.roster-row:last-child { border-bottom:none; }
+
+/* =========================================================================
+   ROUND 2 — Synergy banner, crit taps, Meridian tree
+   ========================================================================= */
+.synergy-banner {
+  font-size:12px; color:var(--jade-d); background:var(--jade-soft);
+  border:1px solid #d8efe4; border-radius:12px; padding:8px 12px; margin:0 2px 10px;
+}
+.synergy-banner b { color:var(--jade-d); }
+
+/* Critical meditate tap */
+.float-text.crit {
+  font-size:24px; color:#e7a820;
+  text-shadow:0 0 12px rgba(231,168,32,.8), 0 0 4px #fff;
+  animation:floatUpCrit 1.1s ease-out forwards;
+}
+@keyframes floatUpCrit {
+  0%   { opacity:1; transform:translate(-50%,-50%) scale(1.4); }
+  100% { opacity:0; transform:translate(-50%,-150%) scale(1); }
+}
+
+/* Meridian header */
+.meridian-head { margin-bottom:14px; }
+.meridian-bonus-summary { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.mb-chip { font-size:11px; font-weight:700; color:var(--jade-d);
+  background:var(--jade-soft); border:1px solid #d8efe4; border-radius:999px; padding:3px 9px; }
+
+/* Meridian tree grid: 3 paths side by side */
+.meridian-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.meridian-col { display:flex; flex-direction:column; align-items:stretch; }
+.meridian-col-head { font-size:11.5px; font-weight:800; text-align:center; margin-bottom:8px;
+  letter-spacing:.2px; }
+.meridian-link { width:2px; height:14px; background:var(--line); margin:2px auto; border-radius:2px; }
+.meridian-link.lit { background:var(--mc,var(--jade)); box-shadow:0 0 6px rgba(22,182,122,.5); }
+
+.meridian-node { display:flex; flex-direction:column; align-items:center; gap:3px; text-align:center;
+  padding:10px 6px; border-radius:14px; border:1.5px solid var(--line); background:var(--surface);
+  cursor:pointer; font-family:inherit; box-shadow:var(--shadow-sm); transition:transform .1s, border-color .2s, opacity .2s; }
+.meridian-node:active { transform:scale(.96); }
+.mn-ico  { font-size:22px; line-height:1; }
+.mn-name { font-size:11px; font-weight:800; color:var(--text); line-height:1.2; }
+.mn-desc { font-size:9.5px; color:var(--muted); line-height:1.3; }
+.mn-cost { font-size:10.5px; font-weight:700; color:var(--gold-d); margin-top:2px; }
+
+/* States */
+.meridian-node.locked { opacity:.45; cursor:not-allowed; }
+.meridian-node.avail  { opacity:.85; cursor:not-allowed; border-style:dashed; }
+.meridian-node.avail .mn-cost { color:var(--faint); }
+.meridian-node.ready  { border-color:var(--mc); box-shadow:0 0 0 1px var(--mc), 0 3px 10px rgba(0,0,0,.08);
+  animation:meridianReady 1.6s ease-in-out infinite; }
+.meridian-node.open   { border-color:var(--mc); background:color-mix(in srgb, var(--mc) 12%, var(--surface)); }
+.meridian-node.open .mn-cost { color:var(--mc); }
+@keyframes meridianReady {
+  0%,100% { box-shadow:0 0 0 1px var(--mc), 0 3px 10px rgba(0,0,0,.08); }
+  50%      { box-shadow:0 0 0 2px var(--mc), 0 4px 16px rgba(0,0,0,.14); }
+}
+
+/* =========================================================================
+   ROUND 3 — Reincarnation, Heavenly Perks, Daily rewards
+   ========================================================================= */
+.qa-daily { background:linear-gradient(135deg,#b48ee0,#8a5fd0); color:#fff;
+  box-shadow:0 3px 10px rgba(138,95,208,0.3); }
+
+/* Reincarnation card */
+.reincarnate-card { background:linear-gradient(180deg,#fbf7ff,var(--surface)); border-color:#e6d6f7; }
+.reincarnate-top { display:flex; justify-content:space-around; text-align:center; gap:12px; }
+.merit-display, .lives-display { display:flex; flex-direction:column; gap:2px; }
+.merit-num  { font-size:22px; font-weight:800; color:#8a5fd0; }
+.lives-num  { font-size:22px; font-weight:800; color:var(--gold-d); }
+.merit-label { font-size:11px; color:var(--muted); }
+.reincarnate-btn { margin-top:6px; background:linear-gradient(135deg,#b48ee0,#7c4fd0) !important;
+  box-shadow:0 4px 14px rgba(138,95,208,0.4) !important; }
+.locked-inline { text-align:center; font-size:12.5px; color:var(--muted);
+  background:var(--surface-2); border:1px dashed var(--line); border-radius:12px; padding:12px; margin-top:6px; }
+
+/* Heavenly perks */
+.perk-list { display:flex; flex-direction:column; gap:8px; }
+.perk-row { display:flex; align-items:center; gap:12px; padding:12px; border:1px solid var(--line);
+  border-radius:14px; background:var(--surface); box-shadow:var(--shadow-sm); }
+.perk-row.maxed { border-color:#e6d6f7; background:#fbf7ff; }
+.perk-ico { font-size:24px; width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+  background:#f3ecfb; border-radius:10px; flex-shrink:0; }
+.perk-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.perk-name { font-size:13.5px; font-weight:700; }
+.perk-lvl  { font-size:11px; font-weight:700; color:#8a5fd0; margin-left:4px; }
+.perk-desc { font-size:11.5px; color:var(--muted); line-height:1.4; }
+.perk-buy { flex-shrink:0; min-height:40px; }
+
+/* Daily reward calendar */
+.daily-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:14px 0; }
+.daily-cell { position:relative; border:1.5px solid var(--line); border-radius:14px; padding:10px 4px;
+  background:var(--surface-2); display:flex; flex-direction:column; align-items:center; gap:3px; }
+.daily-cell.finale { grid-column:span 4; flex-direction:row; justify-content:center; gap:10px;
+  background:linear-gradient(135deg,#fff7e0,#faf3e0); border-color:#efe2bd; }
+.daily-day { font-size:10px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+.daily-ico { font-size:26px; line-height:1; }
+.daily-label { font-size:10px; color:var(--muted); text-align:center; line-height:1.2; }
+.daily-cell.next { border-color:#8a5fd0; box-shadow:0 0 0 1px #8a5fd0; background:#fbf7ff;
+  animation:meridianReady 1.6s ease-in-out infinite; }
+.daily-cell.claimed { opacity:.5; }
+.daily-check { position:absolute; top:4px; right:6px; color:var(--jade-d); font-weight:800; font-size:13px; }
+
+/* =========================================================================
+   ROUND 4 — Pill Alchemy + Secret Realm
+   ========================================================================= */
+/* Active buff banner */
+.alchemy-buffs { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 6px; }
+.no-buffs { font-size:12px; color:var(--faint); font-style:italic; }
+.buff-chip { font-size:11.5px; font-weight:700; color:var(--jade-d);
+  background:var(--jade-soft); border:1px solid #d8efe4; border-radius:999px; padding:4px 10px; }
+
+/* Pill recipe list */
+.pill-list { display:flex; flex-direction:column; gap:8px; }
+.pill-row { display:flex; align-items:center; gap:12px; padding:11px 12px; border:1px solid var(--line);
+  border-radius:14px; background:var(--surface); box-shadow:var(--shadow-sm); }
+.pill-ico { font-size:24px; width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+  background:var(--surface-2); border-radius:10px; flex-shrink:0; }
+.pill-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.pill-name { font-size:13.5px; font-weight:700; }
+.pill-have { font-size:11px; font-weight:800; color:var(--jade-d); background:var(--jade-soft);
+  border-radius:999px; padding:1px 7px; margin-left:4px; }
+.pill-desc { font-size:11.5px; color:var(--muted); line-height:1.4; }
+.pill-actions { display:flex; flex-direction:column; gap:5px; flex-shrink:0; }
+.pill-actions .btn-mini { padding:6px 10px; font-size:11px; min-width:84px; }
+.pill-use { background:linear-gradient(135deg,var(--jade),var(--jade-d)) !important; color:#fff !important;
+  border-color:transparent !important; }
+.pill-use:disabled { opacity:.4; background:var(--surface-2) !important; color:var(--muted) !important; }
+
+/* Secret Realm */
+.realm-card { background:linear-gradient(180deg,#f4f1ff,var(--surface)); border-color:#ddd0f5; }
+.realm-stats { display:flex; justify-content:space-around; text-align:center; gap:8px; }
+.realm-stat { display:flex; flex-direction:column; gap:2px; }
+.rs-num { font-size:22px; font-weight:800; color:#7c4fd0; }
+.rs-label { font-size:10.5px; color:var(--muted); }
+.realm-tip { font-size:11.5px; color:var(--muted); text-align:center; background:var(--surface-2);
+  border:1px dashed var(--line); border-radius:10px; padding:8px; margin:4px 0 10px; }
+.realm-tip.active { color:var(--rose); border-color:#f3c6d6; background:#fdeef3; border-style:solid; }
+.realm-enter { background:linear-gradient(135deg,#9a6fe0,#6d3fd0) !important;
+  box-shadow:0 4px 14px rgba(124,79,208,0.4) !important; }
+.realm-rewards { margin:6px 0 4px; }
+.rr-line { font-size:15px; font-weight:700; color:var(--text); padding:4px 0; }
+.record-badge { display:inline-block; font-size:12px; font-weight:800; color:var(--gold-d);
+  background:var(--gold-soft); border:1px solid #efe2bd; border-radius:999px; padding:4px 12px; margin-bottom:8px; }
+
+/* Slightly smaller subnav text so 4 buttons fit cleanly */
+.subnav-btn { padding:9px 2px; font-size:12px; }
+
+/* =========================================================================
+   ART PASS — Per-realm atmospheric backdrop + VFX polish
+   ========================================================================= */
+#app { position:relative; }
+#topbar, #quick-actions, #status-strip, #content, #bottom-nav { position:relative; z-index:1; }
+
+/* Backdrop layer: themed gradient + glow + drifting motes, behind transparent UI gaps */
+#realm-backdrop {
+  position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+  background:var(--realm-bg, linear-gradient(180deg,#f6f8fc,#eef2f7));
+  transition:background 1.4s ease;
+}
+/* Soft top glow in the realm accent colour */
+#realm-backdrop::before {
+  content:''; position:absolute; left:50%; top:-10%; transform:translateX(-50%);
+  width:140%; height:55%;
+  background:radial-gradient(ellipse at 50% 0%, var(--realm-glow, rgba(22,182,122,.18)) 0%, transparent 70%);
+  opacity:.9; transition:background 1.4s ease;
+}
+/* Drifting motes — denser/brighter at higher realms via --realm-mote */
+#realm-backdrop::after {
+  content:''; position:absolute; inset:-20% 0;
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, var(--realm-mote, rgba(22,182,122,.5)) 50%, transparent),
+    radial-gradient(2px 2px at 70% 60%, var(--realm-mote, rgba(22,182,122,.4)) 50%, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, var(--realm-mote, rgba(22,182,122,.4)) 50%, transparent),
+    radial-gradient(1.5px 1.5px at 85% 20%, var(--realm-mote, rgba(22,182,122,.35)) 50%, transparent),
+    radial-gradient(1px 1px at 55% 45%, var(--realm-mote, rgba(22,182,122,.3)) 50%, transparent);
+  background-size:100% 100%;
+  opacity:var(--realm-mote-opacity, .5);
+  animation:moteDrift 18s linear infinite;
+}
+@keyframes moteDrift {
+  0%   { transform:translateY(0); }
+  100% { transform:translateY(-12%); }
+}
+
+/* Make the app's own gradient transparent so the backdrop shows in UI gaps */
+#app { background:transparent; }
+#content { background:transparent; }
+
+/* ---- Realm themes (light, tasteful tints that keep cards readable) ---- */
+#app[data-realm="0"] { --realm-bg:linear-gradient(180deg,#f6f8fc,#e9eef4); --realm-glow:rgba(120,140,165,.16); --realm-mote:rgba(150,170,190,.4); --realm-accent:#7f94a8; --realm-mote-opacity:.35; }
+#app[data-realm="1"] { --realm-bg:linear-gradient(180deg,#eefaf3,#dcefe6); --realm-glow:rgba(22,182,122,.20); --realm-mote:rgba(22,182,122,.5); --realm-accent:#16b67a; --realm-mote-opacity:.5; }
+#app[data-realm="2"] { --realm-bg:linear-gradient(180deg,#e9f6f5,#d6ece9); --realm-glow:rgba(21,179,201,.20); --realm-mote:rgba(21,179,201,.5); --realm-accent:#15b3c9; --realm-mote-opacity:.5; }
+#app[data-realm="3"] { --realm-bg:linear-gradient(180deg,#fdf6e8,#f7ead0); --realm-glow:rgba(231,185,78,.26); --realm-mote:rgba(231,185,78,.6); --realm-accent:#e7b94e; --realm-mote-opacity:.55; }
+#app[data-realm="4"] { --realm-bg:linear-gradient(180deg,#f5eefb,#e7daf6); --realm-glow:rgba(150,95,208,.24); --realm-mote:rgba(168,120,224,.6); --realm-accent:#9a6fe0; --realm-mote-opacity:.55; }
+#app[data-realm="5"] { --realm-bg:linear-gradient(180deg,#eef0fb,#dbe0f6); --realm-glow:rgba(90,120,230,.24); --realm-mote:rgba(110,140,240,.6); --realm-accent:#5a78e6; --realm-mote-opacity:.55; }
+#app[data-realm="6"] { --realm-bg:linear-gradient(180deg,#eceff7,#d6dcec); --realm-glow:rgba(70,80,140,.28); --realm-mote:rgba(180,190,255,.7); --realm-accent:#5560a0; --realm-mote-opacity:.6; }
+#app[data-realm="7"] { --realm-bg:linear-gradient(180deg,#fbeeee,#f4d9d9); --realm-glow:rgba(200,80,63,.24); --realm-mote:rgba(224,110,90,.6); --realm-accent:#c8503f; --realm-mote-opacity:.55; }
+#app[data-realm="8"] { --realm-bg:linear-gradient(180deg,#fffaef,#fcefcf); --realm-glow:rgba(231,185,78,.34); --realm-mote:rgba(255,220,120,.75); --realm-accent:#e0a840; --realm-mote-opacity:.65; }
+#app[data-realm="9"] { --realm-bg:linear-gradient(180deg,#fefdf7,#f9f0db); --realm-glow:rgba(255,215,120,.4); --realm-mote:rgba(255,235,160,.85); --realm-accent:#f0c040; --realm-mote-opacity:.75; }
+
+/* Meditate orb aura tinted by realm accent */
+#meditate-btn {
+  box-shadow:0 12px 36px color-mix(in srgb, var(--realm-accent,#16b67a) 28%, transparent),
+             inset 0 0 0 2px color-mix(in srgb, var(--realm-accent,#16b67a) 18%, transparent);
+}
+.tap-label { color:var(--realm-accent, var(--jade-d)); }
+
+/* Header tint follows the realm */
+#topbar { background:color-mix(in srgb, var(--realm-accent,#16b67a) 5%, var(--surface)); }
+
+/* Richer breakthrough flash uses the realm accent */
+.breakthrough-flash {
+  background:radial-gradient(ellipse at 50% 40%,
+    color-mix(in srgb, var(--realm-accent,#e7b94e) 55%, transparent) 0%,
+    rgba(255,255,255,.4) 30%, transparent 70%);
+}
+
+/* Painted realm vista — faint, top-weighted, fades out so cards stay readable */
+#realm-vista {
+  position:absolute; inset:0; background-size:cover; background-position:center top;
+  background-repeat:no-repeat; opacity:0; transition:opacity 1.4s ease, background-image .1s;
+  -webkit-mask-image:linear-gradient(180deg, rgba(0,0,0,.9) 0%, rgba(0,0,0,.35) 38%, transparent 62%);
+          mask-image:linear-gradient(180deg, rgba(0,0,0,.9) 0%, rgba(0,0,0,.35) 38%, transparent 62%);
+}
+/* Reveal + bind a vista per realm (files appear as they're generated). */
+#app[data-realm="0"] #realm-vista { background-image:url(../assets/realms/realm-0.jpg); opacity:.20; }
+#app[data-realm="1"] #realm-vista { background-image:url(../assets/realms/realm-1.jpg); opacity:.24; }
+#app[data-realm="2"] #realm-vista { background-image:url(../assets/realms/realm-2.jpg); opacity:.24; }
+#app[data-realm="3"] #realm-vista { background-image:url(../assets/realms/realm-3.jpg); opacity:.26; }
+#app[data-realm="4"] #realm-vista { background-image:url(../assets/realms/realm-4.jpg); opacity:.28; }
+#app[data-realm="5"] #realm-vista { background-image:url(../assets/realms/realm-5.jpg); opacity:.28; }
+#app[data-realm="6"] #realm-vista { background-image:url(../assets/realms/realm-6.jpg); opacity:.30; }
+#app[data-realm="7"] #realm-vista { background-image:url(../assets/realms/realm-7.jpg); opacity:.28; }
+#app[data-realm="8"] #realm-vista { background-image:url(../assets/realms/realm-8.jpg); opacity:.30; }
+#app[data-realm="9"] #realm-vista { background-image:url(../assets/realms/realm-9.jpg); opacity:.32; }
+
+/* =========================================================================
+   LIFE — candidate stories + "Destined One" ad-unlock
+   ========================================================================= */
+.cand-story {
+  font-size:12px; font-style:italic; color:var(--muted); line-height:1.5;
+  background:var(--surface-2); border-left:3px solid var(--rose);
+  border-radius:8px; padding:8px 10px; margin:6px 0 10px;
+}
+.meet-destined-btn { margin-bottom:12px; border-color:#f3c6d6; }
+.meet-destined-btn .ad-boost-label { color:var(--rose); }
+.badge.destined-badge { background:linear-gradient(135deg,#e7b94e,#c8503f); color:#fff; }
+.card.candidate.destined {
+  border-color:#e7b94e;
+  background:linear-gradient(180deg,#fffaf0,var(--surface));
+  box-shadow:0 0 0 1px #e7b94e, 0 4px 16px rgba(231,185,78,.2);
+}
+.card.candidate.destined .cand-avatar {
+  box-shadow:0 0 0 2px #e7b94e, 0 0 12px rgba(231,185,78,.5);
+}
+
+/* =========================================================================
+   SPIRIT ROOT PACKS — popup (shown only when free rolls run out)
+   ========================================================================= */
+.open-packs-btn {
+  width:100%; margin:4px 0 2px; padding:11px; border:1px solid #efe2bd; border-radius:12px;
+  background:var(--gold-soft); color:var(--gold-d); font-family:inherit; font-size:13px;
+  font-weight:700; cursor:pointer; transition:transform .1s;
+}
+.open-packs-btn:active { transform:scale(.98); }
+
+.pack-popup-overlay { z-index:240; }   /* stacks above the creation modal */
+.pack-popup { text-align:center; }
+.pack-popup-icon { font-size:42px; margin:2px 0 4px; animation:milestoneBounce .6s ease-out both; }
+.pack-popup .creation-sub { margin-bottom:14px; }
+
+.pack-list { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+.pack-row {
+  display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+  padding:12px 14px; border:1.5px solid var(--line); border-left:4px solid var(--pc,var(--gold-d));
+  border-radius:14px; background:var(--surface); cursor:pointer; font-family:inherit;
+  box-shadow:var(--shadow-sm); transition:transform .1s, border-color .2s, box-shadow .2s;
+}
+.pack-row:active { transform:scale(.98); }
+.pack-row:hover { box-shadow:0 4px 14px rgba(22,34,48,.12); }
+.pack-row-ico { font-size:26px; flex-shrink:0; width:40px; height:40px; display:flex;
+  align-items:center; justify-content:center; background:var(--surface-2); border-radius:11px; }
+.pack-row-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.pack-row-name { font-size:14px; font-weight:800; color:var(--text); }
+.pack-row-perks { font-size:11.5px; color:var(--muted); line-height:1.4; }
+.pack-row-price {
+  flex-shrink:0; font-size:15px; font-weight:800; color:#fff;
+  background:linear-gradient(135deg,var(--pc,#e7b94e),var(--gold-d));
+  padding:9px 13px; border-radius:11px; box-shadow:0 3px 8px rgba(199,154,59,.35);
+}

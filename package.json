@@ -13,8 +13,22 @@
     "cap:add:ios": "npm i @capacitor/core @capacitor/ios && npx cap add ios",
     "cap:sync": "npx cap sync",
     "open:android": "npx cap open android",
+    "release:android": "npx cap sync android && cd android && ./gradlew bundleRelease && echo '\\n✅ AAB ready: android/app/build/outputs/bundle/release/app-release.aab'",
     "open:ios": "npx cap open ios"
   },
-  "keywords": ["idle", "incremental", "cultivation", "xianxia", "capacitor", "mobile"],
-  "license": "UNLICENSED"
+  "keywords": [
+    "idle",
+    "incremental",
+    "cultivation",
+    "xianxia",
+    "capacitor",
+    "mobile"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@capacitor-community/admob": "^8.0.0",
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0"
+  }
 }

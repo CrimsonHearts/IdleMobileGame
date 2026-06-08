@@ -17,6 +17,7 @@
   Game.init(saved);
   if (window.Life) Life.init();
   if (window.Family) Family.init();
+  if (window.Quests) Quests.init();
 
   // 3. Apply offline progress with anti-cheat checks.
   const offline = Game.applyOffline();
@@ -33,6 +34,12 @@
     if (ts - lastRender > 100) {
       lastRender = ts;
       UI.tickRender();
+      // Check quests and notify on any newly completed ones.
+      if (window.Quests) {
+        const newlyDone = Quests.checkAll();
+        newlyDone.forEach(q => UI.onQuestCompleted(q));
+        if (newlyDone.length) UI.updateQuestBadge();
+      }
     }
     requestAnimationFrame(frame);
   }

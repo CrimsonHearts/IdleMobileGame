@@ -7,14 +7,17 @@ cultivator who must **Cultivate** (gather Qi, ascend the cultivation realms),
 career that earns money), and build a **Life** — date a partner, marry, and
 raise children who inherit Spiritual Roots. Clean modern (light) UI.
 
-> Status: **playable**. Cultivation core (meditate, generators, realms,
-> breakthrough, spiritual root, character creation), plus the life-sim systems
-> (Study, Work, Romance, Family), offline progress + clock anti-cheat, save
-> system, and AdMob hooks are all in place.
+> Status: **playable & feature-complete**. Cultivation core (meditate,
+> generators + ownership milestones/synergy, realms, breakthrough, spiritual
+> root gacha), two prestige layers (**Dao → Meridian tree**, **Reincarnation →
+> Heavenly Perks**), the life-sim (Study, Work, Romance, Family), **Trials,
+> Spirit Beasts, Sects, Pill Alchemy, Secret Realm**, quests, daily rewards,
+> per-realm painted atmospheres, offline progress + clock anti-cheat, save
+> system, and AdMob/IAP hooks are all in place and wired into the UI.
 >
-> Earlier systems (Sect, Spirit Beasts, Trials/combat) are kept in the repo
-> (`js/sect.js`, `js/pets.js`, `js/combat.js`) but unlinked for now — they can
-> be re-enabled later.
+> 📖 **Full reference:** see [`docs/GAME-DOCUMENTATION.md`](docs/GAME-DOCUMENTATION.md)
+> for every system, the production math, save schema, balance constants, the art
+> pipeline, and how to extend the game.
 
 ---
 

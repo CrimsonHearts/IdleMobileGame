@@ -6,3 +6,7 @@ ios/
 *.log
 dist/
 .gradle/
+
+# Android signing — never commit these
+android/keystore/
+android/keystore.properties

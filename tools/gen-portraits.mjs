@@ -35,10 +35,16 @@ const args = Object.fromEntries(process.argv.slice(2).map(a => {
 const BACKEND = args.backend || (process.env.LEONARDO_API_KEY && !args.list ? 'leonardo' : 'comfy');
 const ONLY = args.only ? String(args.only).split(',') : null;
 const GENDER = args.gender ? [args.gender] : ['female', 'male'];
-const STEPS = parseInt(args.steps || '32', 10);
-const CFG = parseFloat(args.cfg || '7');
+const STEPS = parseInt(args.steps || '35', 10);
+const CFG = parseFloat(args.cfg || '7.5');
 const W = 832, H = 1216; // SDXL portrait; the game crops to a circle
 const COMFY = process.env.COMFY_URL || 'http://127.0.0.1:8188';
+// LoRAs applied to every generation (weight can be overridden with --lora-weight)
+const LORA_WEIGHT = parseFloat(args['lora-weight'] || '0.75');
+const LORAS = [
+  { name: 'girl_20.safetensors',      weight: LORA_WEIGHT },       // guofeng v4 style
+  { name: 'Xianxia_Style.safetensors', weight: LORA_WEIGHT * 0.8 }, // xianxia art overlay
+];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // -- Prompts ----------------------------------------------------------------
@@ -84,16 +90,54 @@ async function preflightComfy() {
   }
 }
 function comfyGraph(prompt, ckpt, seed) {
-  return {
-    '4': { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: ckpt } },
-    '5': { class_type: 'EmptyLatentImage', inputs: { width: W, height: H, batch_size: 1 } },
-    '6': { class_type: 'CLIPTextEncode', inputs: { text: prompt, clip: ['4', 1] } },
-    '7': { class_type: 'CLIPTextEncode', inputs: { text: NEG, clip: ['4', 1] } },
-    '3': { class_type: 'KSampler', inputs: { seed, steps: STEPS, cfg: CFG, sampler_name: 'dpmpp_2m', scheduler: 'karras',
-            denoise: 1, model: ['4', 0], positive: ['6', 0], negative: ['7', 0], latent_image: ['5', 0] } },
-    '8': { class_type: 'VAEDecode', inputs: { samples: ['3', 0], vae: ['4', 2] } },
-    '9': { class_type: 'SaveImage', inputs: { filename_prefix: 'portrait', images: ['8', 0] } },
+  const graph = {};
+
+  // 1. Load checkpoint
+  graph['1'] = { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: ckpt } };
+
+  // 2. Chain LoRAs onto the model + clip outputs from node '1'
+  // Each LoRA node takes (model, clip) from the previous node and outputs (model, clip).
+  let prevModel = ['1', 0];
+  let prevClip  = ['1', 1];
+  LORAS.forEach((lora, i) => {
+    const id = String(20 + i);
+    graph[id] = {
+      class_type: 'LoraLoader',
+      inputs: {
+        lora_name:     lora.name,
+        strength_model: lora.weight,
+        strength_clip:  lora.weight,
+        model: prevModel,
+        clip:  prevClip,
+      },
+    };
+    prevModel = [id, 0];
+    prevClip  = [id, 1];
+  });
+
+  // 3. Encode prompts using the LoRA-patched clip
+  graph['6'] = { class_type: 'CLIPTextEncode', inputs: { text: prompt, clip: prevClip } };
+  graph['7'] = { class_type: 'CLIPTextEncode', inputs: { text: NEG,    clip: prevClip } };
+
+  // 4. Latent canvas
+  graph['5'] = { class_type: 'EmptyLatentImage', inputs: { width: W, height: H, batch_size: 1 } };
+
+  // 5. Sample
+  graph['3'] = {
+    class_type: 'KSampler',
+    inputs: {
+      seed, steps: STEPS, cfg: CFG,
+      sampler_name: 'dpmpp_2m', scheduler: 'karras', denoise: 1,
+      model: prevModel,
+      positive: ['6', 0], negative: ['7', 0], latent_image: ['5', 0],
+    },
   };
+
+  // 6. Decode + save
+  graph['8'] = { class_type: 'VAEDecode',  inputs: { samples: ['3', 0], vae: ['1', 2] } };
+  graph['9'] = { class_type: 'SaveImage',  inputs: { filename_prefix: 'portrait', images: ['8', 0] } };
+
+  return graph;
 }
 async function genComfy(prompt, ckpt) {
   const seed = Math.floor(Math.random() * 1e15);

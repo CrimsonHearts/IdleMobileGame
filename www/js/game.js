@@ -40,6 +40,38 @@ const Game = {
       combat: { zone: 1, wave: 1, highestZone: 1, playerHp: null, paused: false },
       lastSaved: TimeService.now(),
       createdAt: TimeService.now(),
+      // Monetization flags
+      permanentDouble: false,  // set true after "permanent_double" IAP
+      qiBoostEndsAt: 0,        // wall-clock ms; 2× production while active
+
+      // Quest / hidden mechanic state
+      questPermanentBonus: 0,  // sum of all permanent bonuses from quest rewards
+      insightEndsAt: 0,        // wall-clock ms; 2× production during Cultivation Insight
+      foundationBonuses: [],   // [{ realm, bonus }] from quality breakthroughs
+
+      // Gacha system state
+      freeRollsLeft: 100,      // 100 free spirit-root rolls at start
+      milestonesUnlocked: [],  // stage numbers whose milestone bonus has been claimed
+      packProductionBonus: 0,  // permanent production % from spirit-root packs
+      breakthroughConditionsHit: [], // ids of hidden conditions triggered
+
+      // Meridian tree (Round 2): id -> true for each opened node.
+      meridians: {},
+
+      // Reincarnation / Heavenly Dao (Round 3)
+      heavenlyMerit: 0,        // meta-currency, persists across lives
+      heavenlyPerks: {},       // perk id -> level
+      reincarnations: 0,       // number of past lives
+
+      // Daily rewards (Round 3)
+      dailyStreak: 0,          // consecutive days claimed
+      lastDailyDay: null,      // YYYY-MM-DD string of last claim
+
+      // Pill Alchemy + Secret Realm (Round 4)
+      pillBag: {},             // pill id -> count owned
+      buffs: [],               // [{ buff, mult, endsAt }]
+      secretRealm: { lastRunDay: null, highestFloor: 0 },
+
       // Anti-cheat audit fields:
       maxSeenTime: TimeService.now(), // highest wall-clock ever observed
       cheatFlags: 0,                  // count of suspicious backward jumps
@@ -62,14 +94,33 @@ const Game = {
     if (this.state.sect === undefined) this.state.sect = null;
     if (!this.state.pets) this.state.pets = { owned: {}, active: [] };
     if (!this.state.combat) this.state.combat = { zone: 1, wave: 1, highestZone: 1, playerHp: null, paused: false };
+    if (this.state.permanentDouble === undefined) this.state.permanentDouble = false;
+    if (this.state.qiBoostEndsAt === undefined) this.state.qiBoostEndsAt = 0;
+    if (this.state.questPermanentBonus === undefined) this.state.questPermanentBonus = 0;
+    if (this.state.insightEndsAt === undefined) this.state.insightEndsAt = 0;
+    if (!this.state.foundationBonuses) this.state.foundationBonuses = [];
+    if (this.state.freeRollsLeft === undefined) this.state.freeRollsLeft = 100;
+    if (!this.state.milestonesUnlocked) this.state.milestonesUnlocked = [];
+    if (this.state.packProductionBonus === undefined) this.state.packProductionBonus = 0;
+    if (!this.state.breakthroughConditionsHit) this.state.breakthroughConditionsHit = [];
+    if (!this.state.meridians) this.state.meridians = {};
+    if (this.state.heavenlyMerit === undefined) this.state.heavenlyMerit = 0;
+    if (!this.state.heavenlyPerks) this.state.heavenlyPerks = {};
+    if (this.state.reincarnations === undefined) this.state.reincarnations = 0;
+    if (this.state.dailyStreak === undefined) this.state.dailyStreak = 0;
+    if (this.state.lastDailyDay === undefined) this.state.lastDailyDay = null;
+    if (!this.state.pillBag) this.state.pillBag = {};
+    if (!this.state.buffs) this.state.buffs = [];
+    if (!this.state.secretRealm) this.state.secretRealm = { lastRunDay: null, highestFloor: 0 };
     this._lastTickMono = TimeService.monotonicNow();
   },
 
   /** Finalise character creation. */
-  createCharacter(gender, name, root) {
+  createCharacter(gender, name, root, packBonus) {
     this.state.gender = (gender === 'female') ? 'female' : 'male';
     this.state.name = (name && name.trim()) ? name.trim().slice(0, 20) : 'Nameless Cultivator';
-    this.state.spiritualRoot = root || GameData.rollSpiritualRoot();
+    this.state.spiritualRoot = root || GameData.rollSpiritualRoot('free');
+    if (packBonus) this.state.packProductionBonus = (this.state.packProductionBonus || 0) + packBonus;
     this.state.characterCreated = true;
     this.persist();
   },
@@ -79,6 +130,255 @@ const Game = {
   /** Painted portrait path for a character (falls back to the vector emblem). */
   portraitSrc(gender, rootKey) {
     return GameData.portraitDir + (gender || this.state.gender) + '-' + (rootKey || (this.state.spiritualRoot && this.state.spiritualRoot.key)) + '.jpg';
+  },
+
+  // -------------------------------------------------------------------------
+  // Meridian tree (Round 2)
+  // -------------------------------------------------------------------------
+  meridianNode(id) { return GameData.meridians.find(n => n.id === id); },
+  meridianOpen(id) { return !!this.state.meridians[id]; },
+
+  /** Summed fraction for an effect key across all opened meridian nodes. */
+  meridianMult(key) {
+    let sum = 0;
+    for (const id in this.state.meridians) {
+      if (!this.state.meridians[id]) continue;
+      const n = this.meridianNode(id);
+      if (n && n.effect && n.effect[key]) sum += n.effect[key];
+    }
+    return sum;
+  },
+  meridianTotalSpent() {
+    let dao = 0;
+    for (const id in this.state.meridians) {
+      if (this.state.meridians[id]) { const n = this.meridianNode(id); if (n) dao += n.cost; }
+    }
+    return dao;
+  },
+  canOpenMeridian(id) {
+    const n = this.meridianNode(id);
+    if (!n || this.meridianOpen(id)) return false;
+    if (n.requires && !this.meridianOpen(n.requires)) return false;
+    return this.state.daoComprehension >= n.cost;
+  },
+  openMeridian(id) {
+    if (!this.canOpenMeridian(id)) return false;
+    const n = this.meridianNode(id);
+    this.state.daoComprehension -= n.cost;
+    this.state.meridians[id] = true;
+    this.persist();
+    return true;
+  },
+  /** Refund all Dao spent on meridians and clear the tree. */
+  respecMeridians() {
+    const refund = this.meridianTotalSpent();
+    this.state.daoComprehension += refund;
+    this.state.meridians = {};
+    this.persist();
+    return refund;
+  },
+
+  // -------------------------------------------------------------------------
+  // Reincarnation / Heavenly Dao (Round 3)
+  // -------------------------------------------------------------------------
+  perkDef(id) { return GameData.heavenlyPerks.find(p => p.id === id); },
+  perkLevel(id) { return this.state.heavenlyPerks[id] || 0; },
+  /** Summed bonus across all perks with the given effect key (per × level). */
+  perkBonus(effectKey) {
+    let sum = 0;
+    GameData.heavenlyPerks.forEach(p => {
+      if (p.effect === effectKey) sum += p.per * this.perkLevel(p.id);
+    });
+    return sum;
+  },
+  heavenlyPerkCost(id) {
+    const p = this.perkDef(id);
+    if (!p) return Infinity;
+    return Math.floor(p.baseCost * Math.pow(p.costGrowth, this.perkLevel(id)));
+  },
+  canBuyHeavenlyPerk(id) {
+    const p = this.perkDef(id);
+    if (!p || this.perkLevel(id) >= p.maxLevel) return false;
+    return this.state.heavenlyMerit >= this.heavenlyPerkCost(id);
+  },
+  buyHeavenlyPerk(id) {
+    if (!this.canBuyHeavenlyPerk(id)) return false;
+    this.state.heavenlyMerit -= this.heavenlyPerkCost(id);
+    this.state.heavenlyPerks[id] = this.perkLevel(id) + 1;
+    this.persist();
+    return true;
+  },
+
+  /** +X global production from all past lives. */
+  reincarnationMult() { return 1 + (this.state.reincarnations || 0) * GameData.reincarnationBonusPer; },
+
+  canReincarnate() { return this.state.realm >= GameData.reincarnationRealmReq; },
+  pendingMerit() {
+    return Math.floor(GameData.heavenlyMeritFor(this.state) * (1 + this.perkBonus('merit')));
+  },
+
+  reincarnate() {
+    if (!this.canReincarnate()) return false;
+    const merit = this.pendingMerit();
+    this.state.heavenlyMerit += merit;
+    this.state.reincarnations += 1;
+
+    // Full cultivation reset (collections & meta persist).
+    this.state.realm = 0;
+    this.state.qi = 0;
+    this.state.runQi = 0;
+    this.state.daoComprehension = 0;
+    this.state.upgrades = {};
+    this.state.meridians = {};
+    this.state.foundationBonuses = [];
+    this.state.milestonesUnlocked = [];
+    this.state.breakthroughConditionsHit = [];
+    GameData.generators.forEach(g => { this.state.owned[g.id] = 0; });
+
+    // Per-life head-start perks.
+    this.state.stage = 0;
+    this.state.stagesCleared = this.perkBonus('startStages'); // perk gives flat stages
+    const startStones = this.perkBonus('startStones');
+    if (startStones) this.state.spiritStones = (this.state.spiritStones || 0) + startStones;
+
+    this.persist();
+    return { merit, reincarnations: this.state.reincarnations };
+  },
+
+  // -------------------------------------------------------------------------
+  // Daily login rewards (Round 3)
+  // -------------------------------------------------------------------------
+  _today() {
+    const d = new Date(TimeService.now());
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  },
+  _dayNumber(now) { return Math.floor((now - new Date(now).getTimezoneOffset() * 60000) / 86400000); },
+  /** true if a daily reward can be claimed right now. */
+  dailyAvailable() { return this.state.lastDailyDay !== this._today(); },
+  /** The reward definition for the streak day that would be claimed next. */
+  pendingDailyReward() {
+    const idx = (this.state.dailyStreak % GameData.dailyRewards.length);
+    return GameData.dailyRewards[idx];
+  },
+  claimDaily() {
+    if (!this.dailyAvailable()) return null;
+    // Streak continues if last claim was yesterday; otherwise it resets.
+    const today = this._dayNumber(TimeService.now());
+    const last = this.state._lastDailyNum;
+    if (last === today - 1) this.state.dailyStreak += 1;
+    else this.state.dailyStreak = 1;
+    this.state._lastDailyNum = today;
+    this.state.lastDailyDay = this._today();
+
+    const reward = GameData.dailyRewards[(this.state.dailyStreak - 1) % GameData.dailyRewards.length];
+    const g = reward.grant;
+    if (g.qiHours) this._addQi(this.qiPerSecond() * 3600 * g.qiHours + 500);
+    if (g.stones)  this.state.spiritStones = (this.state.spiritStones || 0) + g.stones;
+    if (g.money && this.state.life) this.state.life.money += g.money;
+    if (g.eggs)    this.state.beastEggs = (this.state.beastEggs || 0) + g.eggs;
+    if (g.merit)   this.state.heavenlyMerit += g.merit;
+    this.persist();
+    return { reward, streak: this.state.dailyStreak };
+  },
+
+  // -------------------------------------------------------------------------
+  // Pill Alchemy (Round 4)
+  // -------------------------------------------------------------------------
+  pillDef(id) { return GameData.pills.find(p => p.id === id); },
+  pillCount(id) { return this.state.pillBag[id] || 0; },
+
+  craftPill(id) {
+    const p = this.pillDef(id);
+    if (!p || this.state.spiritStones < p.cost) return false;
+    this.state.spiritStones -= p.cost;
+    this.state.pillBag[id] = this.pillCount(id) + 1;
+    this.persist();
+    return true;
+  },
+
+  usePill(id) {
+    const p = this.pillDef(id);
+    if (!p || this.pillCount(id) < 1) return false;
+    this.state.pillBag[id] -= 1;
+    if (p.type === 'buff') {
+      // Refresh any existing buff of the same key, else add.
+      const now = TimeService.now();
+      const existing = this.state.buffs.find(b => b.buff === p.buff);
+      const endsAt = now + p.durationSec * 1000;
+      if (existing) { existing.mult = p.mult; existing.endsAt = Math.max(existing.endsAt, endsAt); }
+      else this.state.buffs.push({ buff: p.buff, mult: p.mult, endsAt });
+    } else if (p.instant === 'eggs') {
+      this.state.beastEggs = (this.state.beastEggs || 0) + (p.amount || 1);
+    } else if (p.instant === 'runqi') {
+      const req = this.nextStageReq();
+      const add = req ? req * (p.frac || 0.25) : this.qiPerSecond() * 600;
+      this._addQi(add);
+    }
+    this.persist();
+    return { pill: p };
+  },
+
+  /** Product of active buff multipliers of a given key (prunes expired). */
+  buffMult(key) {
+    const now = TimeService.now();
+    let mult = 1;
+    let changed = false;
+    this.state.buffs = (this.state.buffs || []).filter(b => {
+      if (b.endsAt <= now) { changed = true; return false; }
+      return true;
+    });
+    this.state.buffs.forEach(b => { if (b.buff === key) mult *= b.mult; });
+    if (changed) { /* expired buffs pruned */ }
+    return mult;
+  },
+  activeBuffs() {
+    const now = TimeService.now();
+    return (this.state.buffs || []).filter(b => b.endsAt > now);
+  },
+
+  // -------------------------------------------------------------------------
+  // Secret Realm (Round 4)
+  // -------------------------------------------------------------------------
+  /** Combined combat rating used for Secret Realm depth. */
+  secretRealmPower() {
+    if (!window.Combat) return 0;
+    return Combat.playerAtk() + Combat.playerHpMax() * 0.2;
+  },
+  /** Deepest floor clearable at the given power. */
+  secretRealmMaxFloor(power) {
+    const cfg = GameData.secretRealm;
+    let floor = 0;
+    while (floor < 200) {
+      const req = cfg.floorBaseReq * Math.pow(cfg.floorGrowth, floor);
+      if (power >= req) floor++; else break;
+    }
+    return floor;
+  },
+  secretRealmAvailable() { return this.state.secretRealm.lastRunDay !== this._today(); },
+
+  /** Run the Secret Realm: clears floors by power, grants scaled rewards. */
+  enterSecretRealm() {
+    if (!this.secretRealmAvailable()) return null;
+    const cfg = GameData.secretRealm;
+    const power = this.secretRealmPower();
+    const floors = this.secretRealmMaxFloor(power);
+    this.state.secretRealm.lastRunDay = this._today();
+    const isRecord = floors > (this.state.secretRealm.highestFloor || 0);
+    if (isRecord) this.state.secretRealm.highestFloor = floors;
+
+    // Rewards.
+    let stones = 0;
+    for (let f = 1; f <= floors; f++) stones += cfg.stoneBase * Math.pow(cfg.stoneGrowth, f - 1);
+    stones = Math.floor(stones);
+    const eggs  = Math.floor(floors / cfg.eggEvery);
+    const merit = Math.floor(floors / cfg.meritEvery);
+    if (isRecord && floors > 0) stones = Math.floor(stones * 1.5); // first-clear bonus
+
+    this.state.spiritStones += stones;
+    this.state.beastEggs = (this.state.beastEggs || 0) + eggs;
+    this.state.heavenlyMerit = (this.state.heavenlyMerit || 0) + merit;
+    this.persist();
+    return { floors, stones, eggs, merit, isRecord, power };
   },
 
   // -------------------------------------------------------------------------
@@ -97,6 +397,38 @@ const Game = {
     m.pet   = (window.Pets && Pets.qiMult) ? Pets.qiMult() : 1;                // Spirit Beast bond (legacy)
     m.talent= (window.Life && this.state.life) ? Life.talentMult() : 1;        // Study → Talent
     m.family= (window.Family && this.state.family) ? Family.familyMult() : 1;  // Spouse + children
+    // Meridian tree (Round 2): Qi, tap, offline, beast bonuses.
+    m.allMult    *= (1 + this.meridianMult('qi'));
+    m.tapMult    *= (1 + this.meridianMult('tap'));
+    m.offlineBonus += this.meridianMult('offline');
+    m.pet        *= (1 + this.meridianMult('pet'));
+    // Reincarnation (Round 3): Heavenly perk Qi + per-life stacking bonus.
+    m.allMult *= (1 + this.perkBonus('qi'));
+    m.allMult *= this.reincarnationMult();
+    // Alchemy (Round 4): active Qi-buff pills.
+    m.allMult *= this.buffMult('qi');
+    // IAP: Permanent 2× production
+    if (this.state.permanentDouble) m.allMult *= 2;
+    // Rewarded-ad timed boost: 2× production
+    if (this.state.qiBoostEndsAt && TimeService.now() < this.state.qiBoostEndsAt) m.allMult *= 2;
+    // Hidden: Cultivation Insight timed boost: 2× production
+    if (this.state.insightEndsAt && TimeService.now() < this.state.insightEndsAt) m.allMult *= 2;
+    // Quest rewards: permanent bonus fraction
+    if (this.state.questPermanentBonus) m.allMult *= (1 + this.state.questPermanentBonus);
+    // Foundation quality bonuses (stacking, per realm)
+    if (this.state.foundationBonuses && this.state.foundationBonuses.length) {
+      const fb = this.state.foundationBonuses.reduce((s, b) => s + b.bonus, 0);
+      m.allMult *= (1 + fb);
+    }
+    // Spirit Root Pack production bonus
+    if (this.state.packProductionBonus) m.allMult *= (1 + this.state.packProductionBonus);
+    // Stage milestone bonuses
+    if (this.state.milestonesUnlocked && this.state.milestonesUnlocked.length) {
+      const milestoneBonus = GameData.stageMilestones
+        .filter(ms => this.state.milestonesUnlocked.includes(ms.at))
+        .reduce((s, ms) => s + ms.bonus, 0);
+      if (milestoneBonus) m.allMult *= (1 + milestoneBonus);
+    }
     return m;
   },
 
@@ -106,13 +438,25 @@ const Game = {
     return m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family;
   },
 
-  /** Qi per second from all generators, with all multipliers applied. */
+  /** Number of generators owned at the "mastered" depth (for synergy). */
+  synergyCount() {
+    return GameData.generators.reduce((n, g) =>
+      n + ((this.state.owned[g.id] || 0) >= GameData.synergyThreshold ? 1 : 0), 0);
+  },
+  /** Compounding global production multiplier from generator synergy. */
+  synergyMult() {
+    return 1 + this.synergyCount() * GameData.synergyBonusPer;
+  },
+
+  /** Qi per second from all generators, with milestones, synergy & all multipliers. */
   qiPerSecond() {
     const m = this.multipliers();
     let base = 0;
     GameData.generators.forEach(g => {
-      base += g.baseProd * this.state.owned[g.id];
+      const owned = this.state.owned[g.id];
+      if (owned) base += g.baseProd * owned * GameData.genMilestoneMultiplier(owned);
     });
+    base *= this.synergyMult();
     return base * m.allMult * m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family;
   },
 
@@ -135,9 +479,24 @@ const Game = {
   // Player actions
   // -------------------------------------------------------------------------
   meditate() {
-    const gain = this.qiPerTap();
+    let gain = this.qiPerTap();
+    // Meridian crit (Radiant Soul): chance for a ×N tap.
+    let crit = false;
+    const critChance = this.meridianMult('crit');
+    if (critChance > 0 && Math.random() < critChance) {
+      crit = true;
+      gain *= GameData.meridianCritMult;
+    }
     this._addQi(gain);
-    return gain;
+    // Hidden mechanic: 0.5% chance of Cultivation Insight (2× production for 60s).
+    if (!this.state.insightEndsAt || TimeService.now() >= this.state.insightEndsAt) {
+      if (Math.random() < 0.005) {
+        this.state.insightEndsAt = TimeService.now() + 60 * 1000;
+        if (window.Quests) Quests.onInsight();
+        if (window.UI) UI.showInsight();
+      }
+    }
+    return { gain, crit };
   },
 
   buyGenerator(id, count = 1) {
@@ -184,6 +543,9 @@ const Game = {
   currentRealm() { return GameData.realms[this.state.realm]; },
   nextRealm()    { return GameData.realms[this.state.realm + 1] || null; },
 
+  /** Trials (combat) unlock once you sense Qi (reach Qi Condensation). */
+  combatUnlocked() { return this.state.realm >= 1 || this.state.stagesCleared >= 2; },
+
   /** Number of minor stages in the current realm. */
   stageCount() { return this.currentRealm().stages.length; },
 
@@ -206,10 +568,20 @@ const Game = {
     if (!this.canAdvanceStage()) return false;
     this.state.stage += 1;
     this.state.stagesCleared += 1;
-    return {
+    const result = {
       realm: this.currentRealm(),
       stageIndex: this.state.stage - 1,
+      milestone: null,
     };
+    // Check stage milestone (culturally significant numbers)
+    const stageNum = this.state.stagesCleared; // lifetime stages cleared
+    const ms = GameData.stageMilestones && GameData.stageMilestones.find(m => m.at === stageNum);
+    if (ms && !this.state.milestonesUnlocked.includes(stageNum)) {
+      this.state.milestonesUnlocked.push(stageNum);
+      if (ms.dao) this.state.daoComprehension += ms.dao;
+      result.milestone = ms;
+    }
+    return result;
   },
 
   /** Label for the cultivator's current tier, e.g. "Foundation Establishment · Middle Stage". */
@@ -231,20 +603,50 @@ const Game = {
 
   /** Dao Comprehension that a Tribulation would currently award. */
   pendingDaoGain() {
-    return GameData.daoGainFor(this.state.runQi);
+    const base = GameData.daoGainFor(this.state.runQi);
+    // Meridian (Dao Resonance) + Heavenly perk (Heaven's Insight) boost rewards.
+    return Math.floor(base * (1 + this.meridianMult('daoGain') + this.perkBonus('daoGain')));
   },
 
   breakThrough() {
     if (!this.canBreakThrough()) return false;
+    const runQiAtBreak = this.state.runQi;
+    const realmIndex   = this.state.realm;
+
+    // Hidden mechanic: evaluate Foundation Quality before resetting runQi.
+    let quality = null;
+    if (window.Quests) quality = Quests.onBreakthrough(runQiAtBreak, realmIndex);
+    if (quality && quality.bonus > 0) {
+      this.state.foundationBonuses.push({ realm: realmIndex, bonus: quality.bonus });
+    }
+
+    // Check hidden breakthrough conditions
+    const conditionsHit = [];
+    if (GameData.breakthroughConditions) {
+      GameData.breakthroughConditions.forEach(cond => {
+        if (this.state.breakthroughConditionsHit.includes(cond.id)) return;
+        let met = false;
+        try {
+          met = cond.check ? cond.check(this.state) : false;
+        } catch (e) { /* ignore */ }
+        if (met) {
+          conditionsHit.push(cond);
+          this.state.breakthroughConditionsHit.push(cond.id);
+          // Apply production bonus (all conditions use `bonus` field)
+          if (cond.bonus) this.state.packProductionBonus = (this.state.packProductionBonus || 0) + cond.bonus;
+        }
+      });
+    }
+
     const gain = this.pendingDaoGain();
     this.state.daoComprehension += gain;
     this.state.realm += 1;
-    this.state.stage = 0;            // re-enter the new realm at its first stage
-    // Soft reset this run (keep lifetime stats, dao, realm, stagesCleared, upgrades, character).
+    this.state.stage = 0;
+    // Soft reset this run.
     this.state.qi = 0;
     this.state.runQi = 0;
     GameData.generators.forEach(g => { this.state.owned[g.id] = 0; });
-    return { gain, realm: GameData.realms[this.state.realm] };
+    return { gain, realm: GameData.realms[this.state.realm], quality, conditionsHit };
   },
 
   // -------------------------------------------------------------------------
@@ -274,6 +676,15 @@ const Game = {
     // Life-sim systems advance while the app is open.
     if (window.Life && this.state.life) Life.tick(dtSec);
     if (window.Family && this.state.family) Family.tick(dtSec);
+
+    // Trials (idle auto-battler) advance while the app is open, once unlocked.
+    if (window.Combat && this.combatUnlocked()) Combat.tick(dtSec);
+
+    // Passive sect contribution while you hold membership.
+    if (window.Sect && this.state.sect) Sect.addContribution(dtSec * 1);
+
+    // Hidden mechanic: lucky number check.
+    if (window.Quests) Quests.checkLuckyNumbers();
 
     // Track the highest wall-clock time we've seen (anti-cheat baseline).
     const wall = TimeService.now();

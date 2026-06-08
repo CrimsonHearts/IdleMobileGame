@@ -13,8 +13,8 @@ only be done by you; everything else is already done or can be done in-repo.
 | 1 | Create a **Google Play Developer account** | **(you)** | One-time **$25**. Needs name, address, ID. |
 | 2 | Install **Android Studio** | (you) | Free. Any OS. |
 | 3 | `npm install && npm run cap:add:android` | done by repo | Generates the Android project. |
-| 4 | Generate an **upload keystore** & sign the app | (you, 1 cmd) | `keytool -genkey ...` — guide below. Keep it safe forever. |
-| 5 | Build a release **`.aab`** in Android Studio | (you) | Build → Generate Signed Bundle. |
+| 4 | Generate an **upload keystore** | done (`xianxia-release.keystore`) | `keytool -genkey ...` — guide below. **Keep it safe forever.** |
+| 5 | Build a signed **APK** (testing) / **`.aab`** (upload) | (you, 1 cmd) | `bash tools/build-apk.sh` for sideload testing; `gradlew bundleRelease` for the store. See below. |
 | 6 | Create the app in **Play Console** | (you) | App name, category = Games > Casual. |
 | 7 | Upload `.aab`, fill store listing | (you) | Title, description, screenshots, feature graphic. |
 | 8 | **Privacy policy URL** | (you) | Host `docs/privacy-policy.md` (GitHub Pages is free). |
@@ -22,13 +22,47 @@ only be done by you; everything else is already done or can be done in-repo.
 | 10 | Set up **AdMob** + **payments profile** | (you) | So Google can pay you. Free signup. |
 | 11 | Submit for review | (you) | Usually live within a day. |
 
-### Generating the signing key (step 4)
+### Signing & building (steps 4–5)
+
+**The keystore** (already created — `xianxia-release.keystore` in the repo root):
 ```bash
 keytool -genkey -v -keystore xianxia-release.keystore \
   -alias xianxia -keyalg RSA -keysize 2048 -validity 10000
+# alias: xianxia   ·   store & key password: CrimsonHearts@2026
 ```
-⚠️ **Back up this file and its passwords.** Losing it means you can never
-update the app under the same listing.
+⚠️ **Back up this file and its password.** Losing it means you can never
+update the app under the same Play listing.
+
+> 🚨 **DO NOT use `npx cap build android --keystore...` for a sideload APK.**
+> That command signs with the **legacy v1 (JAR) scheme only**. Because the app
+> targets **SDK 36**, Android **refuses to install a v1-only APK** — you'll get
+> a generic **"App not installed."** (This is the bug that blocked earlier test
+> installs.) Always sign sideload APKs with **apksigner (v2 + v3)** instead.
+
+**A) Test APK for sideloading / your phone — use the build script:**
+```bash
+bash tools/build-apk.sh        # → ~/Desktop/PathToImmortality.apk (v2+v3 signed)
+```
+This syncs web assets, runs `gradlew assembleRelease`, then `zipalign` +
+`apksigner sign --v2-signing-enabled --v3-signing-enabled`. Verify with:
+```bash
+$ANDROID_HOME/build-tools/35.0.0/apksigner verify ~/Desktop/PathToImmortality.apk
+# must report: Verified using v2 scheme: true  /  v3 scheme: true
+```
+
+**B) Play Store upload — build an App Bundle (`.aab`):**
+```bash
+npx cap sync android
+cd android && ./gradlew bundleRelease
+# → android/app/build/outputs/bundle/release/app-release.aab  (sign it, or let
+#   Play App Signing manage delivery — Play re-signs delivered APKs as v2/v3)
+```
+For an `.aab`, the v1-only concern does **not** apply: Google Play re-signs the
+APKs it delivers to devices via **Play App Signing**, so the upload just needs a
+valid signature. Sideloaded `.apk`s (path A) are what require v2/v3 directly.
+
+> Bump `versionCode` in `android/app/build.gradle` before every new build (Play
+> rejects duplicate version codes; current = 2 / `versionName` 1.1).
 
 ---
 

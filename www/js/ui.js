@@ -7,6 +7,8 @@ const UI = {
   el: {},          // cached DOM refs
   buyAmount: 1,    // 1 | 10 | 'max'
   _builtShop: false,
+  _breakthroughCount: 0,   // show interstitial every 3rd breakthrough
+  _stageAidActive: false,  // 30% stage requirement reduction from ad
 
   init() {
     const $ = id => document.getElementById(id);
@@ -43,8 +45,11 @@ const UI = {
 
     // Meditate (tap).
     this.el.tapBtn.addEventListener('click', e => {
-      const gain = Game.meditate();
-      this.floatText(e, '+' + GameNumbers.formatNumber(gain) + ' ' + GameData.theme.currencyIcon);
+      const res = Game.meditate();
+      const gain = (res && typeof res === 'object') ? res.gain : res;
+      const crit = !!(res && res.crit);
+      this.floatText(e, (crit ? '✦ CRIT +' : '+') + GameNumbers.formatNumber(gain) + ' ' + GameData.theme.currencyIcon, crit);
+      this.flashQiCounter();
       this.renderResources();
     });
 
@@ -68,17 +73,69 @@ const UI = {
       });
     });
 
+    // World sub-navigation (Trials / Beasts / Sect).
+    this.worldSub = 'trials';
+    document.querySelectorAll('#world-subnav .subnav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.worldSub = btn.dataset.sub;
+        document.querySelectorAll('#world-subnav .subnav-btn').forEach(b => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('#tab-world .subpanel').forEach(p =>
+          p.classList.toggle('active', p.id === 'sub-' + this.worldSub));
+        this.renderWorld();
+      });
+    });
+
+    // Arts sub-navigation (Techniques / Meridians).
+    this.artsSub = 'techniques';
+    document.querySelectorAll('#arts-subnav .subnav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.artsSub = btn.dataset.asub;
+        document.querySelectorAll('#arts-subnav .subnav-btn').forEach(b => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('#tab-techniques .subpanel').forEach(p =>
+          p.classList.toggle('active', p.id === 'asub-' + this.artsSub));
+        if (this.artsSub === 'meridians') this.renderMeridians();
+        else if (this.artsSub === 'heaven') this.renderHeaven();
+        else if (this.artsSub === 'alchemy') this.renderAlchemy();
+        else this.renderUpgrades();
+      });
+    });
+
     // Minor + major breakthroughs.
     this.el.advanceBtn.addEventListener('click', () => this.doAdvanceStage());
     this.el.breakBtn.addEventListener('click', () => this.doBreakthrough());
+
+    // Shop button in topbar.
+    const shopBtn = document.getElementById('shop-btn');
+    if (shopBtn) shopBtn.addEventListener('click', () => this.showShop());
+
+    // Quest button in topbar.
+    const questBtn = document.getElementById('quest-btn');
+    if (questBtn) questBtn.addEventListener('click', () => this.showQuests());
+
+    // Daily rewards button.
+    const dailyBtn = document.getElementById('daily-btn');
+    if (dailyBtn) dailyBtn.addEventListener('click', () => this.showDaily());
+
+    // Ad boost buttons on Cultivate tab.
+    const boostQiBtn = document.getElementById('boost-qi-btn');
+    if (boostQiBtn) boostQiBtn.addEventListener('click', () => this.doAdBoostQi());
+    const boostStageBtn = document.getElementById('boost-stage-btn');
+    if (boostStageBtn) boostStageBtn.addEventListener('click', () => this.doAdBoostStage());
 
     this.buildShop();
     this.buildUpgrades();
     this.applyGenderEmblem();
     this.renderAll();
+    this._startAmbientParticles();
 
     // First-run character creation.
-    if (!Game.state.characterCreated) this.showCharacterCreation();
+    if (!Game.state.characterCreated) {
+      this.showCharacterCreation();
+    } else {
+      // Returning player: surface the daily reward if it's a new day.
+      this.updateDailyBadge();
+      if (Game.dailyAvailable()) setTimeout(() => this.showDaily(), 600);
+    }
   },
 
   applyGenderEmblem() {
@@ -145,6 +202,7 @@ const UI = {
     if (Game.buyGenerator(id, count)) {
       this.renderResources();
       this.renderShop();
+      this.bounceGen(id);
     }
   },
 
@@ -152,22 +210,53 @@ const UI = {
     if (!Game.canBreakThrough()) return;
     const next = Game.nextRealm();
     const gain = Game.pendingDaoGain();
-    const ok = confirm(
-      `⚡ Heavenly Tribulation ⚡\n\n` +
-      `Ascend to ${next.name}?\n\n` +
-      `You will gain ${GameNumbers.formatNumber(gain)} Dao Comprehension, ` +
-      `granting +${(gain * GameData.daoBonusPerPoint * 100).toFixed(0)}% permanent production.\n\n` +
-      `Your Qi and all generators will reset.`
-    );
-    if (!ok) return;
-    const result = Game.breakThrough();
-    if (result) {
-      Game.persist();
-      this.renderAll();
-      this.toast(`☯ Ascended to ${result.realm.name}! +${GameNumbers.formatNumber(result.gain)} Dao`);
-      // Interstitial ad at a natural break point (skipped if ads removed).
-      Monetization.showInterstitial();
-    }
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    // Preview foundation quality so the player can make an informed choice.
+    const realm = Game.currentRealm();
+    const fqRatio = realm.reqQi > 0 ? Game.state.runQi / realm.reqQi : 0;
+    const fq = GameData.foundationQualities.find(q => fqRatio >= q.minRatio);
+    const nextFq = GameData.foundationQualities.slice().reverse().find(q => q.minRatio > fqRatio);
+    const fqHtml = fq ? `
+      <div class="fq-badge" style="border-color:${fq.color};background:${fq.color}18;margin:10px 0">
+        <span class="fq-name" style="color:${fq.color}">${fq.name}</span>
+        <span class="fq-desc">${fq.desc}${fq.bonus > 0 ? ` <b>+${(fq.bonus*100).toFixed(0)}% permanent</b>` : ''}</span>
+        ${nextFq ? `<span class="fq-next">Cultivate to ${(nextFq.minRatio).toFixed(1)}× req Qi for <b style="color:${nextFq.color}">${nextFq.name}</b></span>` : ''}
+      </div>` : '';
+
+    overlay.innerHTML = `
+      <div class="modal">
+        <h2>⚡ Heavenly Tribulation</h2>
+        <p>Face the Tribulation to ascend to <b>${next.name}</b>.<br><br>
+           You will gain <b>+${GameNumbers.formatNumber(gain)} Dao Comprehension</b>,
+           granting <b>+${(gain * GameData.daoBonusPerPoint * 100).toFixed(0)}%</b> permanent production.<br><br>
+           Your Qi and all generators will reset. Your progress and Spiritual Root remain.</p>
+        ${fqHtml}
+        <button class="btn-primary" id="confirm-tribulation" style="background:linear-gradient(180deg,#e7b94e,var(--gold-d));box-shadow:0 4px 14px rgba(199,154,59,0.4)">
+          ⚡ Face the Tribulation
+        </button>
+        <button class="btn-ghost" id="cancel-tribulation" style="margin-top:8px">Not yet</button>
+      </div>`;
+    overlay.querySelector('#confirm-tribulation').addEventListener('click', () => {
+      overlay.remove();
+      const result = Game.breakThrough();
+      if (result) {
+        this.breakthroughFlash();
+        Game.persist();
+        this.renderAll();
+        const fqMsg = result.quality && result.quality.bonus > 0
+          ? ` · ${result.quality.name} (+${(result.quality.bonus*100).toFixed(0)}%)` : '';
+        this.toast(`☯ Ascended to ${result.realm.name}! +${GameNumbers.formatNumber(result.gain)} Dao${fqMsg}`);
+        if (result.conditionsHit && result.conditionsHit.length) {
+          setTimeout(() => this.showBreakthroughConditions(result.conditionsHit), 800);
+        }
+        // Show interstitial every 3rd breakthrough only — don't punish every ascension.
+        this._breakthroughCount = (this._breakthroughCount || 0) + 1;
+        if (this._breakthroughCount % 3 === 0) Monetization.showInterstitial();
+      }
+    });
+    overlay.querySelector('#cancel-tribulation').addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
   },
 
   // -- Rendering ------------------------------------------------------------
@@ -194,9 +283,13 @@ const UI = {
   tickRender() {
     this.renderResources();
     switch (this.activeTab) {
-      case 'cultivate':  this.renderShop(); this.renderRealm(); break;
+      case 'cultivate':  this.renderShop(); this.renderRealm(); this.renderBoosts(); break;
       case 'study':      if (Life.isStudying()) Life.renderStudy(this.el.studyPanel); break;
-      case 'techniques': this.renderUpgrades(); break;
+      case 'techniques':
+        if (this.artsSub === 'alchemy') this.renderAlchemyBuffs();
+        else this.renderUpgrades();
+        break;
+      case 'world':      if (this.worldSub === 'trials') this.renderTrialsLive(); break;
     }
   },
 
@@ -208,11 +301,29 @@ const UI = {
       case 'study':      Life.renderStudy(this.el.studyPanel); break;
       case 'work':       Life.renderWork(this.el.workPanel); break;
       case 'life':       Family.render(this.el.lifePanel); break;
-      case 'techniques': this.renderUpgrades(); break;
+      case 'techniques':
+        if (this.artsSub === 'meridians') this.renderMeridians();
+        else if (this.artsSub === 'heaven') this.renderHeaven();
+        else if (this.artsSub === 'alchemy') this.renderAlchemy();
+        else this.renderUpgrades();
+        break;
+      case 'world':      this.renderWorld(); break;
     }
   },
 
   renderShop() {
+    // Synergy banner — rewards mastering many generators.
+    const banner = document.getElementById('synergy-banner');
+    if (banner) {
+      const mastered = Game.synergyCount();
+      const total = GameData.generators.length;
+      if (mastered > 0) {
+        banner.style.display = '';
+        banner.innerHTML = `🔗 <b>Spirit Synergy</b> · ${mastered}/${total} grounds mastered (${GameData.synergyThreshold}+) · <b>+${(mastered*GameData.synergyBonusPer*100).toFixed(0)}%</b> global Qi`;
+      } else {
+        banner.style.display = 'none';
+      }
+    }
     GameData.generators.forEach(g => {
       const owned = Game.state.owned[g.id];
       const row = document.getElementById('gen-' + g.id);
@@ -231,9 +342,16 @@ const UI = {
         GameNumbers.formatNumber(cost) + ' ' + GameData.theme.currencyIcon +
         (this.buyAmount === 'max' ? ` ×${Game.maxAffordable(g.id)}` : (count > 1 ? ` ×${count}` : ''));
       document.getElementById('gen-owned-' + g.id).textContent = 'Owned: ' + owned;
-      const each = g.baseProd * this.multAll();
-      document.getElementById('gen-sub-' + g.id).textContent =
-        GameNumbers.formatRate(each) + ' each' + (owned > 0 ? ` · ${GameNumbers.formatRate(each * owned)} total` : '');
+      const msMult = GameData.genMilestoneMultiplier(owned);
+      const each = g.baseProd * this.multAll() * msMult * Game.synergyMult();
+      let sub = GameNumbers.formatRate(each) + ' each' + (owned > 0 ? ` · ${GameNumbers.formatRate(each * owned)} total` : '');
+      // Milestone progress badge.
+      const nextMs = GameData.nextGenMilestone(owned);
+      if (owned > 0) {
+        sub += msMult > 1 ? ` · ⚡×${GameNumbers.formatNumber(msMult)}` : '';
+        if (nextMs) sub += ` · next ⚡ at ${nextMs}`;
+      }
+      document.getElementById('gen-sub-' + g.id).textContent = sub;
       row.classList.toggle('affordable', affordable);
       row.disabled = !affordable;
     });
@@ -254,7 +372,342 @@ const UI = {
     });
   },
 
+  // -- Meridian Tree (Round 2) ---------------------------------------------
+  renderMeridians() {
+    const el = document.getElementById('asub-meridians');
+    if (!el) return;
+    const dao = Game.state.daoComprehension;
+    const spent = Game.meridianTotalSpent();
+
+    // Live summary of all active meridian bonuses.
+    const fmtPct = v => `+${Math.round(v*100)}%`;
+    const bonusBits = [];
+    if (Game.meridianMult('qi'))      bonusBits.push(`${fmtPct(Game.meridianMult('qi'))} Qi`);
+    if (Game.meridianMult('tap'))     bonusBits.push(`${fmtPct(Game.meridianMult('tap'))} Tap`);
+    if (Game.meridianMult('combat'))  bonusBits.push(`${fmtPct(Game.meridianMult('combat'))} Combat`);
+    if (Game.meridianMult('offline')) bonusBits.push(`${fmtPct(Game.meridianMult('offline'))} Offline`);
+    if (Game.meridianMult('pet'))     bonusBits.push(`${fmtPct(Game.meridianMult('pet'))} Beasts`);
+    if (Game.meridianMult('daoGain')) bonusBits.push(`${fmtPct(Game.meridianMult('daoGain'))} Dao gain`);
+    if (Game.meridianMult('crit'))    bonusBits.push(`${Math.round(Game.meridianMult('crit')*100)}% Crit`);
+
+    let html = `
+      <div class="section-title">🧬 Meridian Tree</div>
+      <div class="meridian-head card">
+        <div class="row-between">
+          <div><div class="card-title">☯ ${GameNumbers.formatNumber(dao)} Dao available</div>
+            <div class="hint" style="margin:4px 0 0">Open meridians to permanently shape your cultivation. Each node needs the one before it.</div></div>
+          <button class="btn-mini" id="meridian-respec" ${spent>0?'':'disabled'}>↺ Respec</button>
+        </div>
+        ${bonusBits.length ? `<div class="meridian-bonus-summary">${bonusBits.map(b=>`<span class="mb-chip">${b}</span>`).join('')}</div>` : ''}
+      </div>
+      <div class="meridian-grid">`;
+
+    GameData.meridianPaths.forEach(path => {
+      html += `<div class="meridian-col">
+        <div class="meridian-col-head" style="color:${path.color}">${path.icon} ${path.name}</div>`;
+      const nodes = GameData.meridians.filter(n => n.path === path.key).sort((a,b)=>a.tier-b.tier);
+      nodes.forEach((n, i) => {
+        const open = Game.meridianOpen(n.id);
+        const prereqMet = !n.requires || Game.meridianOpen(n.requires);
+        const affordable = dao >= n.cost;
+        let state = 'locked';
+        if (open) state = 'open';
+        else if (prereqMet && affordable) state = 'ready';
+        else if (prereqMet) state = 'avail';
+        if (i > 0) html += `<div class="meridian-link ${open?'lit':''}"></div>`;
+        html += `<button class="meridian-node ${state}" data-mid="${n.id}" style="--mc:${path.color}"
+            ${(state==='ready')?'':'disabled'}>
+          <span class="mn-ico">${n.icon}</span>
+          <span class="mn-name">${n.name}</span>
+          <span class="mn-desc">${n.desc}</span>
+          <span class="mn-cost">${open ? '✓ Opened' : '☯ ' + n.cost}</span>
+        </button>`;
+      });
+      html += `</div>`;
+    });
+    html += `</div>`;
+    el.innerHTML = html;
+
+    el.querySelectorAll('.meridian-node[data-mid]').forEach(b => b.addEventListener('click', () => {
+      if (Game.openMeridian(b.dataset.mid)) {
+        const n = Game.meridianNode(b.dataset.mid);
+        this.toast(`🧬 Opened ${n.name}!`);
+        this.renderMeridians(); this.renderResources(); this.renderRealm();
+      }
+    }));
+    const respec = el.querySelector('#meridian-respec');
+    if (respec) respec.addEventListener('click', () => {
+      const refund = Game.respecMeridians();
+      this.toast(`↺ Meridians reset · ${GameNumbers.formatNumber(refund)} Dao refunded`);
+      this.renderMeridians(); this.renderResources(); this.renderRealm();
+    });
+  },
+
+  // -- Heaven (Reincarnation + Heavenly Perks, Round 3) --------------------
+  renderHeaven() {
+    const el = document.getElementById('asub-heaven');
+    if (!el) return;
+    const merit = Game.state.heavenlyMerit;
+    const lives = Game.state.reincarnations;
+    const canRe = Game.canReincarnate();
+    const pending = Game.pendingMerit();
+    const peak = GameData.realms[GameData.reincarnationRealmReq];
+
+    let html = `
+      <div class="section-title">☁️ Heavenly Dao</div>
+      <div class="card reincarnate-card">
+        <div class="reincarnate-top">
+          <div class="merit-display"><span class="merit-num">🌟 ${GameNumbers.formatNumber(merit)}</span><span class="merit-label">Heavenly Merit</span></div>
+          <div class="lives-display"><span class="lives-num">${lives}</span><span class="merit-label">Past Lives · +${(lives*GameData.reincarnationBonusPer*100).toFixed(0)}% Qi</span></div>
+        </div>
+        ${canRe ? `
+          <div class="hint" style="text-align:center;margin:10px 0">Reincarnating resets your cultivation (realm, Dao, generators, meridians) but you keep beasts, sect, family — and gain permanent power.</div>
+          <button class="btn-primary reincarnate-btn" id="reincarnate-btn">🌀 Reincarnate · +${GameNumbers.formatNumber(pending)} Merit</button>
+        ` : `
+          <div class="locked-inline">Reach <b>${peak.name}</b> to reincarnate. Each life beyond grants Heavenly Merit and a permanent +${(GameData.reincarnationBonusPer*100).toFixed(0)}% production.</div>
+        `}
+      </div>
+
+      <div class="section-title small">🌟 Heavenly Perks <small>permanent across all lives</small></div>
+      <div class="perk-list">`;
+
+    GameData.heavenlyPerks.forEach(p => {
+      const lvl = Game.perkLevel(p.id);
+      const maxed = lvl >= p.maxLevel;
+      const cost = Game.heavenlyPerkCost(p.id);
+      const affordable = Game.canBuyHeavenlyPerk(p.id);
+      html += `
+        <div class="perk-row ${maxed?'maxed':''}">
+          <span class="perk-ico">${p.icon}</span>
+          <span class="perk-info">
+            <span class="perk-name">${p.name} <span class="perk-lvl">Lv ${lvl}/${p.maxLevel}</span></span>
+            <span class="perk-desc">${p.desc}</span>
+          </span>
+          <button class="btn-mini perk-buy" data-perk="${p.id}" ${affordable?'':'disabled'}>
+            ${maxed ? 'MAX' : `🌟 ${GameNumbers.formatNumber(cost)}`}
+          </button>
+        </div>`;
+    });
+    html += `</div>`;
+    el.innerHTML = html;
+
+    const rb = el.querySelector('#reincarnate-btn');
+    if (rb) rb.addEventListener('click', () => this.confirmReincarnate());
+    el.querySelectorAll('.perk-buy[data-perk]').forEach(b => b.addEventListener('click', () => {
+      if (Game.buyHeavenlyPerk(b.dataset.perk)) {
+        const p = Game.perkDef(b.dataset.perk);
+        this.toast(`🌟 ${p.name} → Lv ${Game.perkLevel(b.dataset.perk)}`);
+        this.renderHeaven(); this.renderResources(); this.renderRealm();
+      }
+    }));
+  },
+
+  confirmReincarnate() {
+    const pending = Game.pendingMerit();
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="text-align:center">
+        <div style="font-size:48px;margin:6px 0">🌀</div>
+        <h2>Reincarnate?</h2>
+        <p>You will be reborn anew. Your realm, Dao Comprehension, generators and meridians reset — but you gain <b>🌟 ${GameNumbers.formatNumber(pending)} Heavenly Merit</b> and a permanent <b>+${(GameData.reincarnationBonusPer*100).toFixed(0)}% production</b>.<br><br>Beasts, sect, family and Heavenly Perks are kept.</p>
+        <button class="modal-close" id="confirm-re">🌀 Begin a New Life</button>
+        <button class="btn-ghost" id="cancel-re" style="margin-top:8px">Not yet</button>
+      </div>`;
+    overlay.querySelector('#confirm-re').addEventListener('click', () => {
+      const res = Game.reincarnate();
+      overlay.remove();
+      if (res) {
+        this.breakthroughFlash();
+        this.renderAll();
+        this.toast(`🌀 Reborn! +${GameNumbers.formatNumber(res.merit)} Heavenly Merit · Life #${res.reincarnations + 1}`);
+        this.renderHeaven();
+      }
+    });
+    overlay.querySelector('#cancel-re').addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+  },
+
+  // -- Daily rewards (Round 3) ---------------------------------------------
+  updateDailyBadge() {
+    const badge = document.getElementById('daily-badge');
+    if (badge) badge.style.display = Game.dailyAvailable() ? '' : 'none';
+  },
+
+  showDaily() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const render = () => {
+      const avail = Game.dailyAvailable();
+      const streak = Game.state.dailyStreak;
+      const cycleLen = GameData.dailyRewards.length;
+      // The day that will be claimed next (1-based within cycle).
+      const nextIdx = avail ? (streak % cycleLen) : ((streak - 1 + cycleLen) % cycleLen);
+      let html = `<div class="modal" style="text-align:center">
+        <h2>🎁 Daily Cultivation</h2>
+        <p style="margin-bottom:6px">Return each day for escalating blessings. Current streak: <b>${streak} day${streak===1?'':'s'}</b>.</p>
+        <div class="daily-grid">`;
+      GameData.dailyRewards.forEach((r, i) => {
+        const claimedThisCycle = !avail && i === nextIdx;
+        const isNext = avail && i === nextIdx;
+        html += `<div class="daily-cell ${isNext?'next':''} ${claimedThisCycle?'claimed':''} ${r.day===7?'finale':''}">
+          <div class="daily-day">Day ${r.day}</div>
+          <div class="daily-ico">${r.icon}</div>
+          <div class="daily-label">${r.label}</div>
+          ${claimedThisCycle?'<div class="daily-check">✓</div>':''}
+        </div>`;
+      });
+      html += `</div>`;
+      if (avail) html += `<button class="modal-close" id="claim-daily">Claim Day ${nextIdx+1}</button>`;
+      else html += `<button class="modal-close" id="close-daily" style="background:var(--surface-2);color:var(--muted)">Come back tomorrow</button>`;
+      overlay.innerHTML = html;
+
+      const cd = overlay.querySelector('#claim-daily');
+      if (cd) cd.addEventListener('click', () => {
+        const res = Game.claimDaily();
+        if (res) {
+          this.toast(`🎁 Day ${res.streak} claimed: ${res.reward.label}!`);
+          this.renderAll(); this.updateDailyBadge();
+          render();
+        }
+      });
+      const close = overlay.querySelector('#close-daily');
+      if (close) close.addEventListener('click', () => overlay.remove());
+    };
+    render();
+    document.body.appendChild(overlay);
+  },
+
+  // -- Pill Alchemy (Round 4) ----------------------------------------------
+  _buffLabel(key) { return key === 'qi' ? 'Qi' : key === 'combat' ? 'Combat' : key; },
+
+  renderAlchemy() {
+    const el = document.getElementById('asub-alchemy');
+    if (!el) return;
+    const stones = Game.state.spiritStones;
+    const buffs = Game.activeBuffs();
+
+    let html = `<div class="section-title">⚗️ Pill Alchemy <small>💠 ${GameNumbers.formatNumber(stones)}</small></div>`;
+    html += `<div id="alchemy-buffs" class="alchemy-buffs">${this._buffsHtml(buffs)}</div>`;
+    html += `<div class="hint">Brew pills with 💠 Spirit Stones (earned in Trials & the Secret Realm), then consume them for powerful buffs.</div>`;
+    html += `<div class="pill-list">`;
+    GameData.pills.forEach(p => {
+      const owned = Game.pillCount(p.id);
+      const canBrew = stones >= p.cost;
+      html += `
+        <div class="pill-row">
+          <span class="pill-ico">${p.icon}</span>
+          <span class="pill-info">
+            <span class="pill-name">${p.name}${owned?` <span class="pill-have">×${owned}</span>`:''}</span>
+            <span class="pill-desc">${p.desc}</span>
+          </span>
+          <span class="pill-actions">
+            <button class="btn-mini pill-brew" data-pill="${p.id}" ${canBrew?'':'disabled'}>Brew 💠${GameNumbers.formatNumber(p.cost)}</button>
+            <button class="btn-mini pill-use" data-pill="${p.id}" ${owned>0?'':'disabled'}>Use</button>
+          </span>
+        </div>`;
+    });
+    html += `</div>`;
+    el.innerHTML = html;
+
+    el.querySelectorAll('.pill-brew[data-pill]').forEach(b => b.addEventListener('click', () => {
+      if (Game.craftPill(b.dataset.pill)) {
+        this.toast(`⚗️ Brewed ${Game.pillDef(b.dataset.pill).name}`);
+        this.renderAlchemy(); this.renderResources();
+      }
+    }));
+    el.querySelectorAll('.pill-use[data-pill]').forEach(b => b.addEventListener('click', () => {
+      const res = Game.usePill(b.dataset.pill);
+      if (res) {
+        const p = res.pill;
+        this.toast(p.type === 'buff' ? `${p.icon} ${this._buffLabel(p.buff)} buff active!` : `${p.icon} ${p.name} consumed!`);
+        this.renderAlchemy(); this.renderResources(); this.renderRealm();
+      }
+    }));
+  },
+
+  _buffsHtml(buffs) {
+    if (!buffs.length) return '<div class="no-buffs">No active elixirs. Brew and consume a pill below.</div>';
+    const now = TimeService.now();
+    return buffs.map(b => {
+      const secs = Math.max(0, Math.ceil((b.endsAt - now) / 1000));
+      return `<span class="buff-chip">${b.buff==='qi'?'🟢':'🔴'} ${b.mult}× ${this._buffLabel(b.buff)} · ${GameNumbers.formatDuration(secs)}</span>`;
+    }).join('');
+  },
+
+  /** Light per-frame refresh of just the buff timers while on the Alchemy tab. */
+  renderAlchemyBuffs() {
+    const box = document.getElementById('alchemy-buffs');
+    if (box) box.innerHTML = this._buffsHtml(Game.activeBuffs());
+  },
+
+  // -- Secret Realm (Round 4) ----------------------------------------------
+  renderSecretRealm() {
+    const el = document.getElementById('sub-realm');
+    if (!el) return;
+    if (!Game.combatUnlocked()) {
+      el.innerHTML = `<div class="section-title">🌀 Secret Realm</div>
+        <div class="locked-panel"><div class="locked-ico">🔒</div><div class="locked-title">Sealed</div>
+        <div class="hint">Reach <b>Qi Condensation</b> to unlock the Secret Realm.</div></div>`;
+      return;
+    }
+    const power = Game.secretRealmPower();
+    const projected = Game.secretRealmMaxFloor(power);
+    const high = Game.state.secretRealm.highestFloor || 0;
+    const avail = Game.secretRealmAvailable();
+    const buffs = Game.activeBuffs();
+    const hasCombatBuff = buffs.some(b => b.buff === 'combat');
+
+    el.innerHTML = `
+      <div class="section-title">🌀 Secret Realm</div>
+      <div class="realm-card card">
+        <div class="realm-stats">
+          <div class="realm-stat"><span class="rs-num">${GameNumbers.formatNumber(Math.floor(power))}</span><span class="rs-label">Combat Rating</span></div>
+          <div class="realm-stat"><span class="rs-num">${projected}</span><span class="rs-label">Projected Floor</span></div>
+          <div class="realm-stat"><span class="rs-num">${high}</span><span class="rs-label">Best Floor</span></div>
+        </div>
+        <div class="hint" style="text-align:center;margin:8px 0">A once-daily expedition. Your combat power (beasts, sect, meridians, Immortal Body, pills) decides how deep you delve. Deeper floors yield 💠 Stones, 🥚 Eggs and 🌟 Merit.</div>
+        ${!hasCombatBuff ? `<div class="realm-tip">💡 Brew a <b>Berserk Pill</b> in Alchemy before entering for a deeper run.</div>` : `<div class="realm-tip active">🔴 Berserk buff active — combat doubled!</div>`}
+        ${avail
+          ? `<button class="btn-primary realm-enter" id="realm-enter">🌀 Enter Secret Realm</button>`
+          : `<button class="btn-primary" id="realm-done" disabled style="opacity:.6">Explored today · returns tomorrow</button>`}
+      </div>`;
+
+    const enter = el.querySelector('#realm-enter');
+    if (enter) enter.addEventListener('click', () => {
+      const res = Game.enterSecretRealm();
+      if (res) this.showRealmResult(res);
+    });
+  },
+
+  showRealmResult(res) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="text-align:center">
+        <div style="font-size:46px;margin:4px 0">🌀</div>
+        <h2>${res.floors > 0 ? `Cleared ${res.floors} Floor${res.floors>1?'s':''}!` : 'Repelled at the Gate'}</h2>
+        ${res.isRecord && res.floors>0 ? `<div class="record-badge">🏆 New Record! (+50% Stones)</div>` : ''}
+        <div class="realm-rewards">
+          ${res.stones ? `<div class="rr-line">💠 +${GameNumbers.formatNumber(res.stones)} Spirit Stones</div>` : ''}
+          ${res.eggs   ? `<div class="rr-line">🥚 +${res.eggs} Beast Egg${res.eggs>1?'s':''}</div>` : ''}
+          ${res.merit  ? `<div class="rr-line">🌟 +${res.merit} Heavenly Merit</div>` : ''}
+          ${!res.stones && !res.eggs && !res.merit ? `<div class="hint">Build more combat power and try again tomorrow.</div>` : ''}
+        </div>
+        <button class="modal-close">Return</button>
+      </div>`;
+    overlay.querySelector('.modal-close').addEventListener('click', () => {
+      overlay.remove(); this.renderSecretRealm(); this.renderResources();
+    });
+    document.body.appendChild(overlay);
+  },
+
   renderRealm() {
+    // -- Per-realm atmosphere ----------------------------------------------
+    const app = document.getElementById('app');
+    if (app && app.dataset.realm !== String(Game.state.realm)) {
+      app.dataset.realm = Game.state.realm;
+    }
     // -- Character header --------------------------------------------------
     const g = Game.genderInfo();
     const root = Game.state.spiritualRoot;
@@ -321,90 +774,615 @@ const UI = {
 
   // -- Minor breakthrough ---------------------------------------------------
   doAdvanceStage() {
+    // If stage aid is active, temporarily lower the requirement by 30%.
+    let aidApplied = false;
+    if (this._stageAidActive) {
+      const req = Game.nextStageReq();
+      if (req !== null) {
+        const reduced = req * 0.7;
+        if (Game.state.runQi >= reduced && Game.state.runQi < req) {
+          // Temporarily satisfy the requirement by topping up runQi.
+          Game.state.runQi = req;
+          aidApplied = true;
+        }
+      }
+    }
     const result = Game.advanceStage();
     if (result) {
+      if (aidApplied || this._stageAidActive) {
+        this._stageAidActive = false; // consume the aid
+      }
       Game.persist();
       this.renderAll();
       const tier = Game.tierLabel();
       this.toast(`Cultivation deepened · Advanced to ${tier.realm} · ${tier.stage} (+${(GameData.stageBonusPerStage*100).toFixed(0)}% power)`);
+      if (result.milestone) this.showMilestonePopup(result.milestone);
     }
   },
 
-  // -- Character creation ---------------------------------------------------
+  // =========================================================================
+  // WORLD HUB — Trials (combat) / Beasts (pets) / Sect
+  // =========================================================================
+  renderWorld() {
+    if (this.worldSub === 'trials')      this.renderTrials();
+    else if (this.worldSub === 'beasts') this.renderBeasts();
+    else if (this.worldSub === 'sect')   this.renderSect();
+    else if (this.worldSub === 'realm')  this.renderSecretRealm();
+  },
+
+  /** Emoji fallback for beast/mob sprite ids. */
+  _beastEmoji(id) {
+    return ({ crane:'🕊️', fox:'🦊', tortoise:'🐢', tiger:'🐯', serpent:'🐍',
+      qilin:'🦄', phoenix:'🦅', dragon:'🐲' })[id] || '🐾';
+  },
+  _mobEmoji(icon) {
+    return ({ 'ic-mob-wolf':'🐺', 'ic-mob-ghoul':'🧟', 'ic-mob-scorpion':'🦂',
+      'ic-mob-demon':'👹' })[icon] || '👾';
+  },
+
+  // -- TRIALS (combat) ------------------------------------------------------
+  renderTrials() {
+    const el = document.getElementById('sub-trials');
+    if (!el) return;
+    if (!Game.combatUnlocked()) {
+      el.innerHTML = `<div class="section-title">⚔️ Trials</div>
+        <div class="locked-panel">
+          <div class="locked-ico">🔒</div>
+          <div class="locked-title">Trials Locked</div>
+          <div class="hint">Reach <b>Qi Condensation</b> (your first major breakthrough) to send your cultivator into the demon-infested wilds.</div>
+        </div>`;
+      return;
+    }
+    const c = Game.state.combat;
+    el.innerHTML = `
+      <div class="section-title">⚔️ Trials <small>Zone ${c.zone} · Wave ${c.wave}${Combat.isBossWave(c.wave)?' · BOSS':''}</small></div>
+      <div class="combat-stage" id="combat-stage"></div>
+      <div class="combat-controls">
+        <button class="btn-mini" id="cb-retreat">◀ Retreat</button>
+        <button class="btn-mini" id="cb-pause">${c.paused?'▶ Resume':'⏸ Pause'}</button>
+        <button class="btn-mini" id="cb-push" ${((c.highestZone||1)>c.zone)?'':'disabled'}>Advance ▶</button>
+      </div>
+      <div class="combat-resources">
+        <span class="cr-pill">💠 <b id="cb-stones">${GameNumbers.formatNumber(Game.state.spiritStones)}</b> Stones</span>
+        <span class="cr-pill">🥚 <b id="cb-eggs">${Game.state.beastEggs}</b> Eggs</span>
+      </div>
+      <div class="section-title small">Battle Log</div>
+      <div class="combat-log" id="combat-log"></div>`;
+    this.renderTrialsLive();
+
+    const bind = (id, fn) => { const b = el.querySelector(id); if (b) b.addEventListener('click', fn); };
+    bind('#cb-retreat', () => { Combat.retreatZone(); this.renderTrials(); });
+    bind('#cb-push',    () => { Combat.pushZone();    this.renderTrials(); });
+    bind('#cb-pause',   () => { Game.state.combat.paused = !Game.state.combat.paused; this.renderTrials(); });
+  },
+
+  /** Lightweight per-frame update of the combat stage (HP bars, log). */
+  renderTrialsLive() {
+    const stage = document.getElementById('combat-stage');
+    if (!stage) return;
+    const c = Game.state.combat;
+    Combat.ensurePlayerHp();
+    const mob = Combat.mob();
+    const pHpMax = Combat.playerHpMax(), pHp = Math.max(0, c.playerHp);
+    const mHpPct = Math.max(0, (mob.hp / mob.maxHp) * 100);
+    const pHpPct = Math.max(0, (pHp / pHpMax) * 100);
+    stage.innerHTML = `
+      <div class="fighter player">
+        <div class="fighter-ico">🧘</div>
+        <div class="fighter-name">${Game.state.name}</div>
+        <div class="hp-bar"><div class="hp-fill player" style="width:${pHpPct}%"></div></div>
+        <div class="fighter-stat">HP ${GameNumbers.formatNumber(pHp)} · ATK ${GameNumbers.formatNumber(Combat.playerAtk())}</div>
+      </div>
+      <div class="vs">⚔</div>
+      <div class="fighter enemy ${mob.boss?'boss':''}">
+        <div class="fighter-ico">${this._mobEmoji(mob.icon)}</div>
+        <div class="fighter-name">${mob.name}${mob.boss?' 👑':''}</div>
+        <div class="hp-bar"><div class="hp-fill enemy" style="width:${mHpPct}%"></div></div>
+        <div class="fighter-stat">HP ${GameNumbers.formatNumber(Math.max(0,mob.hp))} · ATK ${GameNumbers.formatNumber(mob.atk)}</div>
+      </div>`;
+    const stones = document.getElementById('cb-stones');
+    if (stones) stones.textContent = GameNumbers.formatNumber(Game.state.spiritStones);
+    const eggs = document.getElementById('cb-eggs');
+    if (eggs) eggs.textContent = Game.state.beastEggs;
+    const log = document.getElementById('combat-log');
+    if (log) log.innerHTML = Combat.log.map(l => `<div class="log-line">${l}</div>`).join('') || '<div class="hint">The battle begins…</div>';
+  },
+
+  // -- BEASTS (pets) --------------------------------------------------------
+  renderBeasts() {
+    const el = document.getElementById('sub-beasts');
+    if (!el) return;
+    const active = Pets.active();
+    const money = (Game.state.life && Game.state.life.money) || 0;
+    let html = `
+      <div class="section-title">🐉 Spirit Beasts <small>${active.length}/${Pets.MAX_ACTIVE} active</small></div>
+      <div class="beast-tame card">
+        <div class="row-between">
+          <div><div class="card-title">🥚 Tame a Beast</div>
+            <div class="hint">You have <b>${Game.state.beastEggs}</b> Beast Egg(s). Eggs drop from Trials.</div></div>
+          <button class="btn-primary sm" id="tame-btn" ${Game.state.beastEggs>=1?'':'disabled'}>Tame</button>
+        </div>
+      </div>
+      <div class="beast-tame card">
+        <div class="card-title">💱 Spirit Market <small style="float:right;color:var(--muted)">¥${GameNumbers.formatNumber(money)}</small></div>
+        <div class="hint">Convert your worldly wealth (¥, earned from Work) into 💠 Spirit Stones to empower your beasts.</div>
+        <div class="exchange-row">
+          <button class="btn-mini" data-market="100"  ${money>=500?'':'disabled'}>💠 100 — ¥500</button>
+          <button class="btn-mini" data-market="2500" ${money>=10000?'':'disabled'}>💠 2,500 — ¥10K</button>
+        </div>
+      </div>
+      <div class="hint">Owned beasts boost Qi production. Up to ${Pets.MAX_ACTIVE} active beasts also fight in Trials. Duplicates auto-level. Level up with 💠 Spirit Stones.</div>
+      <div class="beast-grid">`;
+
+    Pets.data.forEach(p => {
+      const owned = Pets.isOwned(p.id);
+      const lvl = Pets.levelOf(p.id);
+      const rar = Pets.rarity[p.rarity];
+      const isActive = Pets.isActive(p.id);
+      const cost = owned ? Pets.levelUpCost(p.id) : 0;
+      const canLvl = owned && Game.state.spiritStones >= cost;
+      html += `
+        <div class="beast-card ${owned?'owned':'locked'} ${isActive?'active':''}" style="border-color:${owned?rar.color:'var(--line)'}">
+          <div class="beast-rarity" style="color:${rar.color}">${rar.name}</div>
+          <div class="beast-ico" style="${owned?'':'filter:grayscale(1);opacity:.4'}">${this._beastEmoji(p.id)}</div>
+          <div class="beast-name">${owned ? p.name : '???'}</div>
+          ${owned ? `
+            <div class="beast-lvl">Lv ${lvl} · +${(Pets.qiBonusOf(p.id)*100).toFixed(1)}% Qi</div>
+            <div class="beast-actions">
+              <button class="btn-mini" data-act="toggle" data-id="${p.id}" ${(!isActive&&active.length>=Pets.MAX_ACTIVE)?'disabled':''}>${isActive?'★ Active':'Deploy'}</button>
+              <button class="btn-mini" data-act="lvl" data-id="${p.id}" ${canLvl?'':'disabled'}>💠 ${GameNumbers.formatNumber(cost)}</button>
+            </div>` : `<div class="beast-lvl muted">Undiscovered</div>`}
+        </div>`;
+    });
+    html += `</div>`;
+    el.innerHTML = html;
+
+    const tame = el.querySelector('#tame-btn');
+    if (tame) tame.addEventListener('click', () => {
+      const res = Pets.tame();
+      if (res) {
+        const r = Pets.rarity[res.pet.rarity];
+        this.toast(`${this._beastEmoji(res.pet.id)} ${res.duplicate?'Another':'Tamed'} ${r.name} ${res.pet.name}!${res.duplicate?' (+1 Lv)':''}`);
+        this.renderBeasts(); this.renderResources();
+      }
+    });
+    el.querySelectorAll('button[data-act]').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.id;
+      if (b.dataset.act === 'toggle') Pets.toggleActive(id);
+      else if (b.dataset.act === 'lvl') Pets.levelUp(id);
+      this.renderBeasts(); this.renderResources();
+    }));
+    el.querySelectorAll('button[data-market]').forEach(b => b.addEventListener('click', () => {
+      const stones = parseInt(b.dataset.market, 10);
+      const cost = stones === 100 ? 500 : 10000;
+      if (Game.state.life && Game.state.life.money >= cost) {
+        Game.state.life.money -= cost;
+        Game.state.spiritStones += stones;
+        Game.persist();
+        this.toast(`💠 +${GameNumbers.formatNumber(stones)} Spirit Stones`);
+        this.renderBeasts(); this.renderResources();
+      }
+    }));
+  },
+
+  // -- SECT -----------------------------------------------------------------
+  renderSect() {
+    const el = document.getElementById('sub-sect');
+    if (!el) return;
+    const current = Sect.current();
+    if (current) {
+      const rank = Sect.rank(), next = Sect.nextRank();
+      const contrib = Sect.contribution();
+      const pct = next ? Math.min(100, ((contrib - rank.req) / (next.req - rank.req)) * 100) : 100;
+      el.innerHTML = `
+        <div class="section-title">🏯 ${current.name}</div>
+        <div class="card sect-current" style="border-color:${current.color}">
+          <div class="sect-seal" style="background:${current.color}">${current.seal}</div>
+          <div class="sect-info">
+            <div class="card-title">${rank.name}</div>
+            <div class="hint">${current.bonusDesc}</div>
+          </div>
+        </div>
+        <div class="section-title small">Rank Progress</div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="hint">${GameNumbers.formatNumber(contrib)} contribution${next?` · Next: ${next.name} at ${GameNumbers.formatNumber(next.req)}`:' · Max rank reached'}</div>
+
+        <div class="section-title small">🛒 Contribution Exchange</div>
+        <div class="exchange-row">
+          <button class="btn-mini" data-buy="egg"   ${contrib>=500?'':'disabled'}>🥚 Beast Egg — 500</button>
+          <button class="btn-mini" data-buy="stones" ${contrib>=200?'':'disabled'}>💠 1K Stones — 200</button>
+        </div>
+
+        <div class="section-title small">Fellow Disciples</div>
+        <div id="sect-roster" class="hint">Loading roster…</div>
+        <button class="btn-ghost" id="leave-sect">Leave Sect (forfeit contribution)</button>`;
+
+      Sect.backend.members(current.id).then(members => {
+        const roster = el.querySelector('#sect-roster');
+        if (roster) roster.innerHTML = members.map(m =>
+          `<div class="roster-row"><span>${m.name}</span><span class="muted">${m.rank.name} · ${m.realm.name}</span></div>`).join('');
+      });
+
+      el.querySelector('#leave-sect').addEventListener('click', () => {
+        Sect.leave().then(() => { this.toast('You have left your sect.'); this.renderSect(); this.renderResources(); });
+      });
+      el.querySelectorAll('button[data-buy]').forEach(b => b.addEventListener('click', () => {
+        const kind = b.dataset.buy;
+        if (kind === 'egg' && Sect.contribution() >= 500)   { Game.state.sect.contribution -= 500; Game.state.beastEggs += 1; this.toast('🥚 +1 Beast Egg'); }
+        if (kind === 'stones' && Sect.contribution() >= 200) { Game.state.sect.contribution -= 200; Game.state.spiritStones += 1000; this.toast('💠 +1,000 Spirit Stones'); }
+        Game.persist(); this.renderSect(); this.renderResources();
+      }));
+      return;
+    }
+
+    // Not in a sect — show join list.
+    let html = `<div class="section-title">🏯 Join a Sect</div>
+      <div class="hint">Pledge to one of the great cultivation orders for a permanent bonus. Earn Contribution over time and through Trials to rise in rank.</div>
+      <div class="sect-list">`;
+    Sect.data.forEach(s => {
+      html += `
+        <div class="card sect-option" style="border-color:${s.color}">
+          <div class="sect-head">
+            <div class="sect-seal" style="background:${s.color}">${s.seal}</div>
+            <div class="sect-info"><div class="card-title">${s.name}</div>
+              <div class="hint">${s.desc}</div></div>
+          </div>
+          <div class="sect-bonus" style="color:${s.color}">✦ ${s.bonusDesc}</div>
+          <button class="btn-primary sm" data-join="${s.id}">Pledge</button>
+        </div>`;
+    });
+    html += `</div>`;
+    el.innerHTML = html;
+    el.querySelectorAll('button[data-join]').forEach(b => b.addEventListener('click', () => {
+      Sect.join(b.dataset.join).then(() => {
+        this.toast(`🏯 You joined the ${Sect.current().name}!`);
+        this.renderSect(); this.renderResources();
+      });
+    }));
+  },
+
+  // -- Character creation (Gacha system) -----------------------------------
   showCharacterCreation() {
     let gender = 'male';
-    let root = GameData.rollSpiritualRoot();
+    let currentRoot = GameData.rollSpiritualRoot('free');
+    let rollsUsed = 1;
+    const maxFreeRolls = 100;
+    let bestRoot = currentRoot;
+    let isRolling = false;
+    let packsShown = false; // auto-show the packs popup once, when free rolls run out
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.id = 'creation-overlay';
 
+    const rootRarityOrder = ['mortal', 'true', 'heaven', 'saint', 'chaos'];
+    const rootRank = r => rootRarityOrder.indexOf(r.key);
+
+    const leftoverRewards = (rollsLeft) => {
+      if (rollsLeft <= 0) return '';
+      const qi = rollsLeft * 50;
+      const stones = Math.floor(rollsLeft * 10);
+      return `<div class="leftover-reward">🎁 ${rollsLeft} unused rolls → <b>+${qi} Qi</b> + <b>${stones} Spirit Stones</b></div>`;
+    };
+
+    // Show the packs popup exactly once, the moment free rolls are exhausted.
+    const maybeShowPacks = () => {
+      if (rollsUsed >= maxFreeRolls && !packsShown) {
+        packsShown = true;
+        setTimeout(() => this.showSpiritPacks(overlay, bestRoot), 450);
+      }
+    };
+
     const render = () => {
       const g = GameData.genders[gender];
+      const rollsLeft = maxFreeRolls - rollsUsed;
+      const canRoll = rollsLeft > 0 && !isRolling;
+
       overlay.innerHTML = `
-        <div class="modal creation">
-          <h2>Begin Your Cultivation</h2>
-          <p class="creation-sub">Forge your path to immortality.</p>
+        <div class="modal creation gacha-modal">
+          <h2>✨ Awaken Your Spiritual Root</h2>
+          <p class="creation-sub">Every cultivator's fate is sealed by their root. Roll the heavens!</p>
 
-          <div class="creation-emblem"><img id="creation-portrait" src="${g.emblem}" alt="cultivator"/></div>
-
-          <div class="creation-field">
-            <label>Dao Name</label>
-            <input id="creation-name" type="text" maxlength="20" placeholder="Enter a name…" value="${this._creationName || ''}"/>
-          </div>
-
-          <div class="creation-field">
-            <label>Body</label>
-            <div class="gender-row">
-              <button class="gender-btn ${gender==='male'?'active':''}" data-g="male">Male</button>
-              <button class="gender-btn ${gender==='female'?'active':''}" data-g="female">Female</button>
+          <div class="gacha-portrait-row">
+            <div class="creation-emblem"><img id="creation-portrait" src="${g.emblem}" alt="cultivator"/></div>
+            <div class="gacha-root-result ${isRolling ? 'rolling' : ''}" style="border-color:${currentRoot.color}">
+              <div class="root-rarity-bar" style="background:${currentRoot.color}"></div>
+              <div class="root-name" style="color:${currentRoot.color}">${currentRoot.name}
+                <span class="root-cn">${currentRoot.nameCN || ''}</span>
+              </div>
+              <div class="root-mult">×${currentRoot.mult.toFixed(1)} Production</div>
+              <div class="root-desc">${currentRoot.desc}</div>
             </div>
           </div>
 
-          <div class="creation-field">
-            <label>Spiritual Root</label>
-            <div class="root-display" style="border-color:${root.color}">
-              <div class="root-name" style="color:${root.color}">${root.name}</div>
-              <div class="root-mult">Production ×${root.mult.toFixed(1)}</div>
-              <div class="root-desc">${root.desc}</div>
-            </div>
-            <button id="reroll-root" class="reroll-btn">🎲 Re-divine Fate</button>
+          <div class="gacha-counter">
+            <span class="rolls-used">${rollsUsed}/${maxFreeRolls}</span> rolls used
+            <div class="gacha-bar-wrap"><div class="gacha-bar" style="width:${(rollsUsed/maxFreeRolls*100).toFixed(1)}%"></div></div>
           </div>
 
-          <button id="begin-cultivation" class="modal-close">Begin Cultivation ☯</button>
+          ${rollsLeft > 0 ? `
+          <div class="gacha-btn-row">
+            <button id="roll-1" class="gacha-roll-btn" ${!canRoll?'disabled':''}>🎲 Roll ×1<span class="roll-odds">Free</span></button>
+            <button id="roll-10" class="gacha-roll-btn roll-10-btn" ${rollsLeft<10||!canRoll?'disabled':''}>🎲 Roll ×10<span class="roll-odds">Free</span></button>
+          </div>
+          ` : `
+          <div class="gacha-exhausted">🌟 All free rolls used! Your best root: <b style="color:${bestRoot.color}">${bestRoot.name}</b></div>
+          <button id="open-packs" class="open-packs-btn">🔮 Want a stronger root? View Spirit Root Packs</button>
+          `}
+
+          ${leftoverRewards(rollsLeft)}
+
+          <div class="creation-fields">
+            <div class="creation-field">
+              <label>Dao Name</label>
+              <input id="creation-name" type="text" maxlength="20" placeholder="Enter a name…" value="${this._creationName || ''}"/>
+            </div>
+            <div class="creation-field">
+              <label>Body</label>
+              <div class="gender-row">
+                <button class="gender-btn ${gender==='male'?'active':''}" data-g="male">Male</button>
+                <button class="gender-btn ${gender==='female'?'active':''}" data-g="female">Female</button>
+              </div>
+            </div>
+          </div>
+
+          <button id="begin-cultivation" class="modal-close begin-btn">Begin Cultivation ☯</button>
         </div>`;
 
+      // Bind gender buttons
       overlay.querySelectorAll('.gender-btn').forEach(b =>
         b.addEventListener('click', () => {
           gender = b.dataset.g;
-          this._creationName = overlay.querySelector('#creation-name').value;
+          this._creationName = overlay.querySelector('#creation-name')?.value || '';
           render();
         }));
-      overlay.querySelector('#reroll-root').addEventListener('click', () => {
-        this._creationName = overlay.querySelector('#creation-name').value;
-        root = GameData.rollSpiritualRoot();
+
+      // Manual "view packs" button (only present after rolls are exhausted)
+      const openPacksBtn = overlay.querySelector('#open-packs');
+      if (openPacksBtn) openPacksBtn.addEventListener('click', () => this.showSpiritPacks(overlay, bestRoot));
+
+      // Roll ×1
+      const roll1Btn = overlay.querySelector('#roll-1');
+      if (roll1Btn) roll1Btn.addEventListener('click', () => {
+        if (isRolling || rollsUsed >= maxFreeRolls) return;
+        this._creationName = overlay.querySelector('#creation-name')?.value || '';
+        isRolling = true;
         render();
+        setTimeout(() => {
+          currentRoot = GameData.rollSpiritualRoot('free');
+          rollsUsed = Math.min(rollsUsed + 1, maxFreeRolls);
+          if (rootRank(currentRoot) > rootRank(bestRoot)) bestRoot = currentRoot;
+          isRolling = false;
+          render();
+          this._flashRollResult(overlay, currentRoot);
+          maybeShowPacks();
+        }, 400);
       });
+
+      // Roll ×10
+      const roll10Btn = overlay.querySelector('#roll-10');
+      if (roll10Btn) roll10Btn.addEventListener('click', () => {
+        if (isRolling || rollsUsed + 10 > maxFreeRolls) return;
+        this._creationName = overlay.querySelector('#creation-name')?.value || '';
+        isRolling = true;
+        render();
+        setTimeout(() => {
+          let lastRoot = currentRoot;
+          for (let i = 0; i < 10 && rollsUsed < maxFreeRolls; i++) {
+            lastRoot = GameData.rollSpiritualRoot('free');
+            rollsUsed++;
+            if (rootRank(lastRoot) > rootRank(bestRoot)) bestRoot = lastRoot;
+          }
+          currentRoot = lastRoot;
+          isRolling = false;
+          render();
+          this._flashRollResult(overlay, currentRoot);
+          maybeShowPacks();
+        }, 600);
+      });
+
+      // Begin cultivation
       overlay.querySelector('#begin-cultivation').addEventListener('click', () => {
-        const name = overlay.querySelector('#creation-name').value;
-        Game.createCharacter(gender, name, root);
+        const name = overlay.querySelector('#creation-name')?.value || '';
+        const rollsLeft = maxFreeRolls - rollsUsed;
+        // Grant leftover rewards
+        if (rollsLeft > 0) {
+          Game._addQi(rollsLeft * 50);
+          Game.state.spiritStones = (Game.state.spiritStones || 0) + Math.floor(rollsLeft * 10);
+        }
+        Game.createCharacter(gender, name, bestRoot);
         this.applyGenderEmblem();
         this.renderAll();
         overlay.remove();
-        this.toast(`☯ Welcome, ${Game.state.name}. Your ${root.name} awaits its destiny.`);
+        this.toast(`☯ Welcome, ${Game.state.name}. Your ${bestRoot.name} Root awakens!`);
       });
-      // Painted portrait for the rolled root, with vector fallback.
-      this.setPortrait(overlay.querySelector('#creation-portrait'), Game.portraitSrc(gender, root.key), g.emblem);
+
+      // Portrait
+      this.setPortrait(overlay.querySelector('#creation-portrait'), Game.portraitSrc(gender, currentRoot.key), g.emblem);
     };
 
     render();
     document.body.appendChild(overlay);
   },
 
+  /** Spirit Root Packs popup — only surfaced once free rolls are exhausted.
+   *  Vertical, scannable list. `parentOverlay` is the creation modal. */
+  showSpiritPacks(parentOverlay, bestRoot) {
+    const packs = GameData.spiritRootPacks || [];
+    const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+    const rootColor = key => (GameData.spiritualRoots.find(r => r.key === key) || {}).color || 'var(--gold-d)';
+
+    const perkLine = p => {
+      const bits = [];
+      if (p.guaranteedRoot) bits.push(`<b style="color:${rootColor(p.guaranteedRoot)}">${cap(p.guaranteedRoot)} Root</b> guaranteed`);
+      if (p.rollMode === 'min_true')  bits.push('True Root or better');
+      if (p.rollMode === 'min_saint') bits.push('Saint Root or better');
+      if (p.extraRolls)     bits.push(`+${p.extraRolls} rolls`);
+      if (p.bonusQi)        bits.push(`+${GameNumbers.formatNumber(p.bonusQi)} Qi`);
+      if (p.bonusMoney)     bits.push(`+${p.bonusMoney} Stones`);
+      if (p.bonusDao)       bits.push(`+${p.bonusDao} Dao`);
+      if (p.productionBonus)bits.push(`+${(p.productionBonus*100).toFixed(0)}% production`);
+      return bits.join(' · ');
+    };
+
+    const ov = document.createElement('div');
+    ov.className = 'modal-overlay pack-popup-overlay';
+    ov.innerHTML = `
+      <div class="modal pack-popup">
+        <div class="pack-popup-icon">🔮</div>
+        <h2>Spirit Root Packs</h2>
+        <p class="creation-sub">Out of free rolls. Your best is <b style="color:${bestRoot.color}">${bestRoot.name}</b>.
+        Secure an even stronger root &amp; a head start — or continue free, your choice.</p>
+        <div class="pack-list">
+          ${packs.map(p => `
+            <button class="pack-row" data-pack="${p.id}" style="--pc:${p.color||'var(--gold-d)'}">
+              <span class="pack-row-ico">${p.icon || '🔮'}</span>
+              <span class="pack-row-main">
+                <span class="pack-row-name">${p.name || cap(p.id)}</span>
+                <span class="pack-row-perks">${perkLine(p)}</span>
+              </span>
+              <span class="pack-row-price">${p.price}</span>
+            </button>`).join('')}
+        </div>
+        <button class="btn-ghost" id="packs-close">Maybe later — continue with my ${bestRoot.name}</button>
+      </div>`;
+
+    ov.querySelectorAll('.pack-row[data-pack]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const ok = await Monetization.purchaseSpiritPack(btn.dataset.pack);
+        if (ok) { ov.remove(); if (parentOverlay) parentOverlay.remove(); } // grant result takes over
+      });
+    });
+    ov.querySelector('#packs-close').addEventListener('click', () => ov.remove());
+    document.body.appendChild(ov);
+  },
+
+  /** Brief flash/shake animation on the root-result card after a roll. */
+  _flashRollResult(overlay, root) {
+    const card = overlay.querySelector('.gacha-root-result');
+    if (!card) return;
+    card.classList.remove('roll-flash');
+    void card.offsetWidth; // reflow
+    card.classList.add('roll-flash');
+    card.addEventListener('animationend', () => card.classList.remove('roll-flash'), { once: true });
+  },
+
+  // -- Ad boost actions -----------------------------------------------------
+  async doAdBoostQi() {
+    const btn = document.getElementById('boost-qi-btn');
+    if (btn) btn.disabled = true;
+    const ok = await Monetization.showAdBoost();
+    if (!ok && btn) btn.disabled = false;
+    this.renderBoosts();
+  },
+
+  async doAdBoostStage() {
+    if (this._stageAidActive) return;
+    const btn = document.getElementById('boost-stage-btn');
+    if (btn) btn.disabled = true;
+    const watched = await Monetization.showRewardedAd('stage_aid');
+    if (watched) {
+      this._stageAidActive = true;
+      this.toast('⬆ Stage Aid active — next stage requirement reduced by 30%!');
+    }
+    if (btn) btn.disabled = false;
+    this.renderBoosts();
+  },
+
+  /** Update ad-boost button states and timers. Called from tickRender. */
+  renderBoosts() {
+    // Qi boost button
+    const qiBtn = document.getElementById('boost-qi-btn');
+    const qiStatus = document.getElementById('boost-qi-status');
+    if (qiBtn && qiStatus) {
+      const endsAt = Game.state.qiBoostEndsAt || 0;
+      const left = Math.max(0, Math.ceil((endsAt - TimeService.now()) / 1000));
+      if (left > 0) {
+        qiBtn.classList.add('active-boost');
+        qiBtn.disabled = true;
+        qiStatus.textContent = `⚡ Active — ${GameNumbers.formatDuration(left)} remaining`;
+      } else {
+        qiBtn.classList.remove('active-boost');
+        qiBtn.disabled = false;
+        qiStatus.textContent = '5 min production boost';
+      }
+    }
+    // Stage aid button
+    const stageBtn = document.getElementById('boost-stage-btn');
+    if (stageBtn) {
+      stageBtn.classList.toggle('active-boost', !!this._stageAidActive);
+      stageBtn.querySelector('.ad-boost-sub').textContent = this._stageAidActive
+        ? '✓ Active — advance to apply'
+        : '−30% next stage requirement';
+    }
+  },
+
+  // -- Shop -----------------------------------------------------------------
+  showShop() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const adsOwned  = Monetization.adsRemoved;
+    const dblOwned  = Game.state.permanentDouble;
+
+    overlay.innerHTML = `
+      <div class="modal" style="text-align:left">
+        <h2 style="text-align:center;margin-bottom:4px">🛒 Immortal Shop</h2>
+        <p style="text-align:center;margin-bottom:16px">Support the game & speed up your cultivation.</p>
+
+        <div class="shop-section-label">💎 Premium</div>
+        <div class="shop-grid">
+          <div class="shop-card">
+            <span class="shop-card-ico">🚫</span>
+            <span class="shop-card-info">
+              <span class="shop-card-name">Remove Ads</span>
+              <span class="shop-card-desc">Removes all banner & interstitial ads. Rewarded ads remain (they're optional & beneficial).</span>
+            </span>
+            <button class="shop-card-btn ${adsOwned ? 'muted-btn' : 'jade-btn'}" data-product="remove_ads" ${adsOwned ? 'disabled' : ''}>
+              ${adsOwned ? '✓ Owned' : '$10.99'}
+            </button>
+          </div>
+          <div class="shop-card">
+            <span class="shop-card-ico">⚡</span>
+            <span class="shop-card-info">
+              <span class="shop-card-name">Permanent 2× Production</span>
+              <span class="shop-card-desc">Doubles all Qi generation forever — stacks with all bonuses.</span>
+            </span>
+            <button class="shop-card-btn ${dblOwned ? 'muted-btn' : 'gold-btn'}" data-product="permanent_double" ${dblOwned ? 'disabled' : ''}>
+              ${dblOwned ? '✓ Owned' : '$4.99'}
+            </button>
+          </div>
+        </div>
+
+        <div class="shop-section-label">🧧 Consumables</div>
+        <div class="shop-grid">
+          <div class="shop-card">
+            <span class="shop-card-ico">☯</span>
+            <span class="shop-card-info">
+              <span class="shop-card-name">Qi Pouch</span>
+              <span class="shop-card-desc">Instantly grants 1 hour of your current Qi production straight to your meridians.</span>
+            </span>
+            <button class="shop-card-btn gold-btn" data-product="qi_pouch_small">$0.99</button>
+          </div>
+        </div>
+
+        <button class="modal-close" style="margin-top:16px">Close</button>
+      </div>`;
+
+    overlay.querySelectorAll('[data-product]').forEach(btn => {
+      if (btn.disabled) return;
+      btn.addEventListener('click', async () => {
+        overlay.remove();
+        await Monetization.purchase(btn.dataset.product);
+      });
+    });
+    overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+  },
+
   // -- Effects --------------------------------------------------------------
-  floatText(e, text) {
+  floatText(e, text, crit) {
     const span = document.createElement('span');
-    span.className = 'float-text';
+    span.className = 'float-text' + (crit ? ' crit' : '');
     span.textContent = text;
     const rect = this.el.tapBtn.getBoundingClientRect();
     const x = (e.clientX || rect.left + rect.width / 2);
@@ -413,6 +1391,293 @@ const UI = {
     span.style.top = y + 'px';
     document.body.appendChild(span);
     setTimeout(() => span.remove(), 1000);
+    // Emit a small burst of Qi particles around the tap point.
+    this.spawnParticles(x, y, 6);
+  },
+
+  // -- Quests ---------------------------------------------------------------
+  showQuests() {
+    if (!window.Quests) return;
+    const s = Quests.state;
+    const cats = [
+      { key: 'story',       label: '📖 Cultivator\'s Path', hint: 'Follow the story — each step unlocks the next.' },
+      { key: 'achievement', label: '🏆 Achievements',       hint: 'One-time milestones you can complete in any order.' },
+      { key: 'hidden',      label: '🔮 Hidden',             hint: 'Some quests are not what they seem…' },
+    ];
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    let claimAllUsed = false; // once tapped, keep the Claim-All button hidden for this view
+
+    const renderContent = () => {
+      const unclaimedList = Quests.defs.filter(q => s.completed[q.id] && !s.claimed[q.id]);
+      const totalCount   = Quests.defs.length;
+      const claimedCount = Quests.defs.filter(q => s.claimed[q.id]).length;
+      const pct = totalCount ? Math.round((claimedCount / totalCount) * 100) : 0;
+
+      let html = `<div class="modal quest-modal">
+        <div class="quest-header">
+          <h2>📜 Quest Log</h2>
+          <div class="quest-progress-summary">
+            <div class="quest-progress-track"><div class="quest-progress-fill" style="width:${pct}%"></div></div>
+            <span class="quest-progress-text">${claimedCount}/${totalCount} claimed</span>
+          </div>
+        </div>`;
+
+      // Prominent Claim All when there are rewards waiting (hidden once used this view).
+      if (unclaimedList.length >= 1 && !claimAllUsed) {
+        html += `<button class="quest-claim-all" id="quest-claim-all">
+          🎁 Claim All Rewards <span class="claim-all-count">${unclaimedList.length}</span>
+        </button>`;
+      }
+
+      html += `<div class="quest-scroll">`;
+      let anyVisible = false;
+      cats.forEach(cat => {
+        // Only show quests that are NOT yet claimed — claimed ones disappear from the log.
+        const quests = Quests.defs.filter(q => q.category === cat.key && !s.claimed[q.id]);
+        if (!quests.length) return; // whole category done → hide its header too
+        const catReady = quests.filter(q => s.completed[q.id]).length;
+        // Sort: ready-to-claim first, then in-progress.
+        const sorted = [...quests].sort((a, b) => {
+          const rank = q => (s.completed[q.id] ? 0 : 1);
+          return rank(a) - rank(b);
+        });
+        anyVisible = true;
+        html += `<div class="quest-cat">
+          <div class="quest-cat-head">
+            <span class="quest-cat-label">${cat.label}</span>
+            <span class="quest-cat-count">${quests.length} left${catReady?` · <b class="cat-ready">${catReady} ready</b>`:''}</span>
+          </div>`;
+        sorted.forEach(q => {
+          const done    = !!s.completed[q.id];
+          const secret  = q.secret && !done;
+          const title   = secret ? '???' : (done && q.revealTitle ? q.revealTitle : q.title);
+          const desc    = secret ? q.desc : (done && q.revealDesc ? q.revealDesc : q.desc);
+          const state   = done ? 'done' : '';
+          html += `<div class="quest-row ${state}" data-id="${q.id}">
+            <span class="quest-ico">${done ? q.icon : (secret ? '🔒' : q.icon)}</span>
+            <span class="quest-info">
+              <span class="quest-title">${title}</span>
+              <span class="quest-desc">${desc}</span>
+              ${!secret && q.hint && !done ? `<span class="quest-hint-text">💡 ${q.hint}</span>` : ''}
+              <span class="quest-reward ${done?'ready':''}">🎁 ${q.rewardText}</span>
+            </span>
+            ${done ? `<button class="quest-claim-btn" data-qid="${q.id}">Claim</button>` : ''}
+          </div>`;
+        });
+        html += `</div>`;
+      });
+      if (!anyVisible) {
+        html += `<div class="quest-empty">
+          <div class="quest-empty-ico">🎉</div>
+          <div class="quest-empty-title">All caught up!</div>
+          <div class="hint">Every available quest reward has been claimed. New quests will appear as you progress your cultivation.</div>
+        </div>`;
+      }
+      html += `</div><button class="modal-close" style="margin-top:14px">Done</button></div>`;
+      overlay.innerHTML = html;
+
+      overlay.querySelectorAll('.quest-claim-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (Quests.claim(btn.dataset.qid)) {
+            UI.renderAll(); UI.updateQuestBadge(); renderContent();
+          }
+        });
+      });
+
+      const claimAll = overlay.querySelector('#quest-claim-all');
+      if (claimAll) claimAll.addEventListener('click', () => {
+        let n = 0;
+        unclaimedList.forEach(q => { if (Quests.claim(q.id)) n++; });
+        claimAllUsed = true; // hide the button after use, even if new quests complete
+        if (n) {
+          UI.renderAll(); UI.updateQuestBadge();
+          UI.toast(`🎁 Claimed ${n} quest reward${n>1?'s':''}!`);
+        }
+        renderContent();
+      });
+
+      overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+    };
+
+    renderContent();
+    document.body.appendChild(overlay);
+  },
+
+  /** Called from main loop when a quest is newly completed. */
+  onQuestCompleted(q) {
+    const isSecret = q.secret;
+    const title = isSecret ? `🔮 Secret Discovered: ${q.revealTitle || q.title}` : `📜 Quest Complete: ${q.title}`;
+    this.toast(title + ` — tap 📜 to claim ${q.rewardText}`);
+  },
+
+  /** Update the red badge on the quest button. */
+  updateQuestBadge() {
+    const badge = document.getElementById('quest-badge');
+    if (!badge || !window.Quests) return;
+    const count = Quests.unclaimed().length;
+    if (count > 0) {
+      badge.textContent = count;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  },
+
+  // -- Hidden mechanic popups -----------------------------------------------
+  /** Cultivation Insight — appears briefly over the cultivate tab. */
+  showInsight() {
+    const el = document.createElement('div');
+    el.className = 'insight-flash';
+    el.innerHTML = `<div class="insight-inner">
+      <div class="insight-title">✨ Cultivation Insight</div>
+      <div class="insight-sub">Your Dao perception deepens — 2× Qi for 60 seconds!</div>
+    </div>`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3200);
+    this.spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 18);
+  },
+
+  /** Lucky number resonance event. */
+  showLuckyEvent() {
+    setTimeout(() => {
+      this.modal('🎰 Auspicious Resonance',
+        'Your Qi resonates at <b>8,888</b> — a supremely auspicious number. The universe smiles upon the observant.<br><br>Check your Quest Log for a hidden reward.',
+        null);
+      if (window.Quests) {
+        const newlyDone = Quests.checkAll();
+        newlyDone.forEach(q => this.onQuestCompleted(q));
+        this.updateQuestBadge();
+      }
+    }, 500);
+  },
+
+  /** Show a stage milestone popup when a culturally significant stage is reached. */
+  showMilestonePopup(milestone) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay milestone-overlay';
+    overlay.innerHTML = `
+      <div class="modal milestone-modal">
+        <div class="milestone-icon">${milestone.icon}</div>
+        <h2 class="milestone-title">${milestone.name}</h2>
+        <p class="milestone-sub">Stage ${milestone.at} — A sacred number of the Dao</p>
+        <div class="milestone-rewards">
+          <div class="milestone-reward">✦ +${(milestone.bonus*100).toFixed(0)}% permanent production</div>
+          ${milestone.dao ? `<div class="milestone-reward">✦ +${milestone.dao} Dao Comprehension</div>` : ''}
+        </div>
+        <button class="modal-close milestone-close">Embrace the Dao ☯</button>
+      </div>`;
+    overlay.querySelector('.milestone-close').addEventListener('click', () => {
+      overlay.classList.add('fade-out');
+      setTimeout(() => overlay.remove(), 300);
+    });
+    document.body.appendChild(overlay);
+    this.spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 12);
+  },
+
+  /** Show result after a spirit pack is purchased and granted. */
+  showPackGrantResult(pack, root) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal pack-result-modal">
+        <h2>🔮 Root Awakened!</h2>
+        <div class="gacha-root-result" style="border-color:${root.color};margin:1rem auto;max-width:260px">
+          <div class="root-rarity-bar" style="background:${root.color}"></div>
+          <div class="root-name" style="color:${root.color}">${root.name} <span class="root-cn">${root.nameCN||''}</span></div>
+          <div class="root-mult">×${root.mult.toFixed(1)} Production</div>
+          <div class="root-desc">${root.desc}</div>
+        </div>
+        <div class="pack-bonuses">
+          ${pack.bonusQi ? `<div class="pack-bonus-line">✦ +${GameNumbers.formatNumber(pack.bonusQi)} Qi granted</div>` : ''}
+          ${pack.bonusDao ? `<div class="pack-bonus-line">✦ +${pack.bonusDao} Dao Comprehension</div>` : ''}
+          ${pack.bonusMoney ? `<div class="pack-bonus-line">✦ +${pack.bonusMoney} Spirit Stones</div>` : ''}
+          ${pack.productionBonus ? `<div class="pack-bonus-line">✦ +${(pack.productionBonus*100).toFixed(0)}% Production (permanent)</div>` : ''}
+        </div>
+        <button class="modal-close">Accept Destiny ☯</button>
+      </div>`;
+    overlay.querySelector('.modal-close').addEventListener('click', () => {
+      overlay.remove();
+      // Re-show character creation with new root applied
+      if (!Game.state.characterCreated) this.showCharacterCreation();
+    });
+    document.body.appendChild(overlay);
+    this.spawnParticles(window.innerWidth / 2, 200, 16);
+  },
+
+  /** Show hidden breakthrough conditions that were triggered. */
+  showBreakthroughConditions(conditionsHit) {
+    if (!conditionsHit || !conditionsHit.length) return;
+    const lines = conditionsHit.map(c =>
+      `<div class="condition-hit"><span class="cond-icon">${c.icon||'✦'}</span><b>${c.name}</b> — ${c.desc}${c.bonus ? ` <span class="cond-bonus">+${(c.bonus*100).toFixed(0)}% Prod</span>` : ''}</div>`
+    ).join('');
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal conditions-modal">
+        <h2>🌟 Hidden Dao Revealed!</h2>
+        <p class="conditions-sub">Your cultivation path has unveiled secret insights:</p>
+        ${lines}
+        <button class="modal-close">Transcend ☯</button>
+      </div>`;
+    overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+  },
+
+  /** Emit a gentle trickle of ambient particles from the meditate button. */
+  _startAmbientParticles() {
+    setInterval(() => {
+      if (this.activeTab !== 'cultivate') return;
+      const rect = this.el.tapBtn && this.el.tapBtn.getBoundingClientRect();
+      if (!rect) return;
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      this.spawnParticles(cx, cy, 2);
+    }, 1800);
+  },
+
+  /** Spawn `count` ambient Qi particles at (cx, cy). */
+  spawnParticles(cx, cy, count = 4) {
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'qi-particle';
+      const size = 6 + Math.random() * 10;
+      const ox = (Math.random() - .5) * 50;
+      const oy = (Math.random() - .5) * 30;
+      const dur = 600 + Math.random() * 600;
+      p.style.cssText = `width:${size}px;height:${size}px;left:${cx + ox - size/2}px;top:${cy + oy - size/2}px;animation-duration:${dur}ms`;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), dur + 50);
+    }
+  },
+
+  /** Flash the Qi counter to signal a gain. */
+  flashQiCounter() {
+    if (!this.el.qi) return;
+    this.el.qi.classList.remove('qi-flash');
+    // Force reflow so the class re-triggers.
+    void this.el.qi.offsetWidth;
+    this.el.qi.classList.add('qi-flash');
+    setTimeout(() => this.el.qi.classList.remove('qi-flash'), 500);
+  },
+
+  /** Micro-bounce a generator row after purchase. */
+  bounceGen(id) {
+    const row = document.getElementById('gen-' + id);
+    if (!row) return;
+    row.classList.remove('gen-bounce');
+    void row.offsetWidth;
+    row.classList.add('gen-bounce');
+    setTimeout(() => row.classList.remove('gen-bounce'), 400);
+  },
+
+  /** Full-screen lightning flash overlay — shown on realm ascension. */
+  breakthroughFlash() {
+    const el = document.createElement('div');
+    el.className = 'breakthrough-flash';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 750);
   },
 
   toast(msg) {

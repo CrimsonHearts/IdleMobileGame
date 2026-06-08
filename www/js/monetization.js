@@ -59,6 +59,12 @@ const IAP_PRODUCTS = {
   removeAds:   'remove_ads',          // non-consumable
   qiPouch:     'qi_pouch_small',      // consumable
   doubleProd:  'permanent_double',    // non-consumable
+  // Spirit Root Packs (consumable — one-time use but consumable for repeated purchase flow)
+  spiritWanderer: 'spirit_pack_wanderer',  // $2.99
+  spiritSeeker:   'spirit_pack_seeker',    // $4.99
+  spiritRadiant:  'spirit_pack_radiant',   // $5.99
+  spiritSaint:    'spirit_pack_saint',     // $10.99
+  spiritChaos:    'spirit_pack_chaos',     // $19.99
 };
 
 const Monetization = {
@@ -81,7 +87,8 @@ const Monetization = {
           // When not shipping live ads, run the SDK in test mode.
           initializeForTesting: !AD_CONFIG.useLiveAds,
         });
-        await this.showBanner();
+        // No persistent banner — it overlaps the bottom navigation. We only
+        // show ads the player opts into (rewarded) + the occasional interstitial.
       } catch (e) {
         console.warn('AdMob init failed', e);
       }
@@ -114,9 +121,12 @@ const Monetization = {
     });
   },
 
-  /** Full-screen ad shown at natural breaks (e.g. after a breakthrough). */
+  /** Full-screen ad shown at natural breaks (e.g. after a breakthrough).
+   *  DISABLED by design: monetization is rewarded-only (player opts in).
+   *  Flip `autoInterstitials` to true to re-enable. */
+  autoInterstitials: false,
   async showInterstitial() {
-    if (this.adsRemoved) return;
+    if (!this.autoInterstitials || this.adsRemoved) return;
     if (this._admob) {
       try {
         const adId = AD_CONFIG.unit('interstitial', this._isIOS);
@@ -130,15 +140,11 @@ const Monetization = {
     console.log('[SIM] interstitial ad shown');
   },
 
-  async showBanner() {
-    if (this.adsRemoved || !this._admob) return;
-    try {
-      const adId = AD_CONFIG.unit('banner', this._isIOS);
-      await this._admob.showBanner({ adId, position: 'BOTTOM_CENTER', margin: 0 });
-    } catch (e) {
-      console.warn('Banner failed', e);
-    }
-  },
+  /** Banner ads are DISABLED by design — they cover the bottom navigation.
+   *  Monetization is rewarded-only (player opts in) + occasional interstitial.
+   *  Kept as a no-op so any legacy callers don't break or show a banner. */
+  async showBanner() { /* intentionally disabled */ },
+  async hideBanner() { if (this._admob && this._admob.hideBanner) { try { await this._admob.hideBanner(); } catch (e) {} } },
 
   /**
    * Trigger an in-app purchase. Resolves true on success.
@@ -162,9 +168,75 @@ const Monetization = {
     if (productId === IAP_PRODUCTS.removeAds) {
       this.adsRemoved = true;
       localStorage.setItem('ads_removed', '1');
+      if (window.UI) UI.toast('🚫 Ads removed — thank you for supporting the game!');
+    } else if (productId === IAP_PRODUCTS.qiPouch) {
+      // Grant 1 hour of current Qi production as an instant bonus
+      if (window.Game) {
+        const bonus = Math.max(500, Game.qiPerSecond() * 3600);
+        Game._addQi(bonus);
+        Game.persist();
+        if (window.UI) {
+          UI.renderResources();
+          UI.toast(`☯ +${GameNumbers.formatNumber(bonus)} Qi poured into your meridians!`);
+        }
+      }
+    } else if (productId === IAP_PRODUCTS.doubleProd) {
+      if (window.Game) {
+        Game.state.permanentDouble = true;
+        Game.persist();
+        if (window.UI) {
+          UI.renderAll();
+          UI.toast('⚡ Permanent 2× Production unlocked — your Dao is doubled forever!');
+        }
+      }
+    } else {
+      // Spirit Root Packs — look up in GameData
+      const pack = window.GameData && GameData.spiritRootPacks && GameData.spiritRootPacks.find(p => p.productId === productId);
+      if (pack && window.Game) {
+        this._grantSpiritPack(pack);
+      }
     }
-    // Other products (qiPouch, doubleProd) are granted by the caller in game.js
-    // so the economy logic stays in one place.
+  },
+
+  _grantSpiritPack(pack) {
+    // Roll the root
+    const root = GameData.rollSpiritualRoot(pack.guaranteedRoot || pack.rollMode || 'paid');
+    // Apply bonuses
+    if (pack.bonusQi) Game._addQi(pack.bonusQi);
+    if (pack.bonusDao) Game.state.daoComprehension += pack.bonusDao;
+    if (pack.bonusMoney) Game.state.spiritStones = (Game.state.spiritStones || 0) + pack.bonusMoney;
+    if (pack.extraRolls) Game.state.freeRollsLeft = (Game.state.freeRollsLeft || 0) + pack.extraRolls;
+    if (pack.productionBonus) Game.state.packProductionBonus = (Game.state.packProductionBonus || 0) + pack.productionBonus;
+    Game.persist();
+    if (window.UI) {
+      UI.renderAll();
+      UI.showPackGrantResult(pack, root);
+    }
+  },
+
+  /** Purchase a spirit root pack by pack id (looks up productId from GameData). */
+  async purchaseSpiritPack(packId) {
+    const pack = window.GameData && GameData.spiritRootPacks && GameData.spiritRootPacks.find(p => p.id === packId);
+    if (!pack) return false;
+    return this.purchase(pack.productId);
+  },
+
+  /**
+   * Grant a timed 2× Qi production boost via rewarded ad.
+   * Duration: 5 minutes. Shows the ad first; boost applies only on completion.
+   */
+  async showAdBoost() {
+    const watched = await this.showRewardedAd('qi_boost');
+    if (!watched) return false;
+    if (window.Game) {
+      Game.state.qiBoostEndsAt = TimeService.now() + 5 * 60 * 1000; // 5 min
+      Game.persist();
+      if (window.UI) {
+        UI.renderAll();
+        UI.toast('⚡ 2× Qi Production active for 5 minutes!');
+      }
+    }
+    return true;
   },
 };
 

@@ -10,6 +10,34 @@ const LAST_NAMES  = ['Wan','Yu','Chen','Feng','Qing','Hong','Lan','Jian','Mo','X
 const PROFESSIONS = ['Doctor','Pilot','Artist','Engineer','Alchemist','Swordmaster','Scholar','Investor','Musician','Talisman Artist'];
 const TRAITS      = ['Gentle','Ambitious','Witty','Loyal','Mysterious','Cheerful','Diligent','Proud','Kind'];
 
+// -- Story flavour ----------------------------------------------------------
+const ENCOUNTERS = [
+  'You met at the night market, both reaching for the last moonpetal herb.',
+  'Their flying sword nearly clipped you above the neon rooftops — an apology became a conversation.',
+  'You shared a table when the teahouse flooded with rain, and talked until dawn.',
+  'They pulled you from a collapsing cultivation chamber without a second thought.',
+  'You crossed blades in a sect tournament; neither could forget the other.',
+  'A fortune-teller pressed your palms together and simply smiled.',
+  'You both reached for the same forbidden manual in the silent library.',
+  'Their spirit beast took a liking to you long before they did.',
+];
+const BACKSTORIES = [
+  'They carry a quiet grief from a sect that no longer exists.',
+  'Heir to an old bloodline, they seek a partner the elders cannot choose for them.',
+  'They fled an arranged match with a demonic clan and never looked back.',
+  'A prodigy who hides their true cultivation behind an easy smile.',
+  'They guard a secret said to shake the very heavens.',
+  'Once betrayed in love, they are slow to trust but fierce when they do.',
+  'They wander the realms collecting songs, recipes, and broken hearts to mend.',
+  'Rumour says a celestial owes them a favour.',
+];
+const DESTINED_ENCOUNTERS = [
+  'The heavens themselves seemed to arrange this meeting — the air shivered with fate as your eyes met.',
+  'A vision led you here; you knew their face before you ever saw it.',
+  'Threads of red destiny coil between you, visible only to those who have touched the Dao.',
+  'Starlight bent around them as they turned to you, as if the firmament approved.',
+];
+
 const MAX_CHILDREN = 6;
 
 const Family = {
@@ -21,23 +49,43 @@ const Family = {
   },
 
   _name() { return FIRST_NAMES[Math.floor(Math.random()*FIRST_NAMES.length)] + ' ' + LAST_NAMES[Math.floor(Math.random()*LAST_NAMES.length)]; },
+  _pick(a) { return a[Math.floor(Math.random()*a.length)]; },
+
+  /** Build one candidate. rootMode feeds GameData.rollSpiritualRoot; destined = rare ad-unlock. */
+  _makeCandidate(rootMode, charmMin, destined) {
+    const root = GameData.rollSpiritualRoot(rootMode || 'free');
+    const cmin = charmMin || 20;
+    const encounter = destined ? this._pick(DESTINED_ENCOUNTERS) : this._pick(ENCOUNTERS);
+    return {
+      id: 'c' + Date.now() + '_' + Math.floor(Math.random()*1e6),
+      name: this._name(),
+      gender: Math.random() < 0.5 ? 'female' : 'male',
+      root,
+      charm: cmin + Math.floor(Math.random() * (100 - cmin)),
+      profession: this._pick(PROFESSIONS),
+      trait: this._pick(TRAITS),
+      affinity: 0,
+      destined: !!destined,
+      story: encounter + ' ' + this._pick(BACKSTORIES),
+    };
+  },
+
   _seed() {
     const list = [];
-    for (let i = 0; i < 4; i++) {
-      const root = GameData.rollSpiritualRoot();
-      list.push({
-        id: 'c' + Date.now() + '_' + i,
-        name: this._name(),
-        gender: Math.random() < 0.5 ? 'female' : 'male',
-        root, charm: 20 + Math.floor(Math.random()*80),
-        profession: PROFESSIONS[Math.floor(Math.random()*PROFESSIONS.length)],
-        trait: TRAITS[Math.floor(Math.random()*TRAITS.length)],
-        affinity: 0,
-      });
-    }
+    for (let i = 0; i < 4; i++) list.push(this._makeCandidate('free', 20, false));
     this.s().candidates = list;
   },
   refreshCandidates() { this._seed(); Game.persist(); },
+
+  /** Rewarded-ad: meet a rare, high-tier "destined" partner (Heaven root or better). */
+  async meetDestined() {
+    const ok = window.Monetization ? await Monetization.showRewardedAd('meet_destined') : true;
+    if (!ok) return null;
+    const c = this._makeCandidate('min_heaven', 70, true);
+    this.s().candidates.unshift(c); // show at the top
+    Game.persist();
+    return c;
+  },
 
   // -- Bonuses (read by Game.multipliers) ----------------------------------
   /** Household cultivation multiplier: spouse + children. */
@@ -108,19 +156,29 @@ const Family = {
     const s = this.s();
     el.innerHTML = `
       <div class="section-title">Romance</div>
-      <div class="hint">Build Affinity by spending time and ¥. Higher Charm makes you more endearing. Reach 100 Affinity to propose.</div>
+      <div class="hint">Build Affinity by spending time and ¥. Higher Charm makes you more endearing. Reach 100 Affinity to propose. A partner's Spiritual Root strengthens your whole household — and your children inherit it.</div>
+      <button class="ad-boost-btn meet-destined-btn" id="meet-destined">
+        <span class="ad-boost-ico">📺</span>
+        <span class="ad-boost-text">
+          <span class="ad-boost-label">Watch Ad → Meet a Destined One</span>
+          <span class="ad-boost-sub">A rare partner with a Heavenly Root or greater</span>
+        </span>
+      </button>
       <div id="cand-list"></div>
       <button class="btn-ghost" id="meet-new">↻ Meet New People</button>`;
     const list = el.querySelector('#cand-list');
     s.candidates.forEach(c => {
       const card = document.createElement('div');
-      card.className = 'card candidate';
+      card.className = 'card candidate' + (c.destined ? ' destined' : '');
       card.innerHTML = `
         <div class="cand-head">
           <span class="cand-avatar" style="background:${c.root.color}">${c.gender==='female'?'♀':'♂'}</span>
-          <div class="cand-id"><div class="cand-name">${c.name}</div>
-            <div class="cand-meta">${c.trait} · ${c.profession} · <span style="color:${c.root.color}">${c.root.name}</span></div></div>
+          <div class="cand-id">
+            <div class="cand-name">${c.name}${c.destined?' <span class="badge destined-badge">✦ Destined</span>':''}</div>
+            <div class="cand-meta">${c.trait} · ${c.profession} · <span style="color:${c.root.color}">${c.root.name}</span> · ♥ Charm ${c.charm}</div>
+          </div>
         </div>
+        ${c.story ? `<div class="cand-story">“${c.story}”</div>` : ''}
         <div class="progress-track heart"><div class="progress-fill" style="width:${c.affinity}%"></div></div>
         <div class="row-between"><span class="muted">Affinity ${Math.floor(c.affinity)}/100</span></div>
         <div class="btn-row">
@@ -137,6 +195,12 @@ const Family = {
       list.appendChild(card);
     });
     el.querySelector('#meet-new').addEventListener('click', () => { this.refreshCandidates(); this.render(el); });
+    el.querySelector('#meet-destined').addEventListener('click', async (e) => {
+      const btn = e.currentTarget; btn.disabled = true;
+      const c = await this.meetDestined();
+      if (c) UI.toast(`✨ Fate intervenes — ${c.name} appears, bearing a ${c.root.name}!`);
+      this.render(el);
+    });
   },
 
   _renderFamily(el) {

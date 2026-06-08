@@ -32,7 +32,12 @@ const Combat = {
     const realm = Game.state.realm, cb = 1 + Game.state.stagesCleared * 0.05;
     return (60 + realm * realm * 40) * cb;
   },
-  playerAtk() { return (this.baseAtk() + (window.Pets ? Pets.combatAtk() : 0)) * Sect.combatMult(); },
+  playerAtk() {
+    const meridian = (window.Game && Game.meridianMult) ? (1 + Game.meridianMult('combat')) : 1;
+    const perk = (window.Game && Game.perkBonus) ? (1 + Game.perkBonus('combat')) : 1;
+    const pill = (window.Game && Game.buffMult) ? Game.buffMult('combat') : 1;
+    return (this.baseAtk() + (window.Pets ? Pets.combatAtk() : 0)) * Sect.combatMult() * meridian * perk * pill;
+  },
   playerHpMax() { return this.baseHp() + (window.Pets ? Pets.combatHp() : 0); },
 
   // -- Mob scaling ----------------------------------------------------------
