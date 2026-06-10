@@ -40,7 +40,8 @@ const Life = {
   jobPayRate() {
     const j = this.currentJob(); if (!j) return 0;
     const s = this.s();
-    return j.pay * (1 + s.intellect * 0.004) * (1 + this.jobLevel() * 0.1);
+    const moneyMod = (window.Game && Game.moneyMult) ? Game.moneyMult() : 1; // Pill/Heart Dao + Wealthy trait
+    return j.pay * (1 + s.intellect * 0.004) * (1 + this.jobLevel() * 0.1) * moneyMod;
   },
   /** Talent → cultivation multiplier (read by Game.multipliers). */
   talentMult() { return 1 + (this.s().talent || 0) * 0.01; },
@@ -50,21 +51,27 @@ const Life = {
   studyRemaining() { const st = this.s().study; return st ? Math.max(0, st.endsAt - TimeService.now()) / 1000 : 0; },
 
   // -- Actions --------------------------------------------------------------
+  courseCost(c) {
+    const mod = (window.Game && Game.modVal) ? Game.modVal('courseCost') : 1; // Frugal trait
+    return Math.ceil(c.cost * mod);
+  },
   enroll(id) {
     const c = this.course(id), s = this.s();
     if (!c || this.isStudying()) return false;
     if (c.eduLevel !== s.education + 1) return false;      // must take in order
-    if (s.money < c.cost) return false;
-    s.money -= c.cost;
+    const cost = this.courseCost(c);
+    if (s.money < cost) return false;
+    s.money -= cost;
     s.study = { id: c.id, endsAt: TimeService.now() + c.dur * 1000 };
     Game.persist();
     return true;
   },
   _completeStudy() {
     const s = this.s(), c = this.course(s.study.id);
+    const tg = 1 + ((window.Game && Game.modVal) ? Game.modVal('talentGain') : 0); // Prodigy trait
     s.education = c.eduLevel;
     s.intellect += c.grants.intellect || 0;
-    s.talent    += c.grants.talent || 0;
+    s.talent    += Math.round((c.grants.talent || 0) * tg);
     s.charm     += c.grants.charm || 0;
     s.study = null;
     if (window.UI) UI.toast(`🎓 Graduated: ${c.name}! +${c.grants.talent} Talent, +${c.grants.intellect} Intellect`);
@@ -120,11 +127,12 @@ const Life = {
         <div class="progress-track"><div class="progress-fill" style="width:${((1-left/total)*100).toFixed(1)}%"></div></div>
         <div class="hint">${GameNumbers.formatDuration(left)} remaining</div></div>`;
     } else if (next) {
-      const afford = s.money >= next.cost;
+      const price = this.courseCost(next);
+      const afford = s.money >= price;
       body += `<div class="card">
         <div class="card-title">Next: ${next.name}</div>
         <div class="hint">Grants +${next.grants.talent} Talent · +${next.grants.intellect} Intellect · +${next.grants.charm} Charm</div>
-        <div class="row-between"><span class="price">${next.cost ? '¥'+GameNumbers.formatNumber(next.cost) : 'Free'}</span>
+        <div class="row-between"><span class="price">${price ? '¥'+GameNumbers.formatNumber(price) : 'Free'}</span>
           <span class="muted">${GameNumbers.formatDuration(next.dur)}</span></div>
         <button class="btn-primary" id="enroll-btn" ${afford?'':'disabled'}>Enroll</button></div>`;
     } else {

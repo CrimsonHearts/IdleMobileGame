@@ -492,7 +492,120 @@ const GameData = {
     meritEvery: 10,      // +1 heavenly merit every N floors (a slow alt Merit source)
   },
 
-  saveVersion: 4,
+  /* ── Dao Paths (Round 5: depth) ─────────────────────────────────────────
+   * Chosen once at Foundation Establishment and locked for the LIFE (a new
+   * heir re-chooses). Each path is an identity with a clear trade-off so runs
+   * stop playing identically. Modifiers (all optional, default neutral):
+   *   qi          ×global Qi production
+   *   combat      ×combat power (Trials)
+   *   stageCost   ×Qi to advance minor stages (higher = slower power)
+   *   tribChance  +flat tribulation success chance
+   *   lifespan    +years of lifespan per realm
+   *   offline     +offline efficiency
+   *   pillCost    ×Breakthrough Pill ¥ price
+   *   family      ×household (spouse+children) bonus
+   */
+  daoPathRealmReq: 2, // Foundation Establishment
+  daoPaths: [
+    { id: 'sword', name: 'Sword Dao', icon: '🗡️', color: '#c8503f',
+      blurb: 'Slay your way to immortality. Peerless in the Trials, but your worldly economy suffers.',
+      perks: '+60% combat · +20% Qi from Trials loot', drawback: '−20% Qi production',
+      mods: { combat: 1.6, qi: 0.8, trialQi: 1.2 } },
+    { id: 'pill', name: 'Pill Dao', icon: '⚗️', color: '#e7c878',
+      blurb: 'Master of alchemy. Cheaper, mightier pills and a thriving trade — but slow raw cultivation.',
+      perks: '−50% pill cost · +30% money', drawback: '−15% Qi production',
+      mods: { pillCost: 0.5, money: 1.3, qi: 0.85 } },
+    { id: 'body', name: 'Body Refinement', icon: '🛡️', color: '#6fb594',
+      blurb: 'Forge an immortal body. Long-lived and serene against tribulation — at a steep cultivation cost.',
+      perks: '+60yr lifespan/realm · +12% tribulation success', drawback: '×1.6 stage Qi cost',
+      mods: { lifespan: 60, tribChance: 0.12, stageCost: 1.6 } },
+    { id: 'talisman', name: 'Talisman Dao', icon: '📜', color: '#b48ee0',
+      blurb: 'Inscribe the Dao into arrays. Superb automation and offline gains; weaker in active bursts.',
+      perks: '+35% offline · +25% Qi', drawback: '−40% tap power',
+      mods: { offline: 0.35, qi: 1.25, tap: 0.6 } },
+    { id: 'heart', name: 'Heart Dao', icon: '💗', color: '#e8588f',
+      blurb: 'Cultivate bonds and emotion. Your family and legacy bloom; personal power comes slower.',
+      perks: '×1.8 family bonus · +40% charm', drawback: '−10% Qi production',
+      mods: { family: 1.8, charm: 1.4, qi: 0.9 } },
+  ],
+
+  /* ── Spouse / heir traits (Round 5) ─────────────────────────────────────
+   * Candidates roll 1–2 traits. A spouse's traits give passive bonuses; a
+   * child inherits traits from both parents, so partner choice is a build
+   * decision and the heir you raise carries it into the next generation.
+   */
+  traits: [
+    { id: 'ironwill',  name: 'Iron Will',   icon: '🗿', desc: '+8% tribulation success', mods: { tribChance: 0.08 } },
+    { id: 'prodigy',   name: 'Prodigy',     icon: '🧠', desc: '+15% Talent gain',         mods: { talentGain: 0.15 } },
+    { id: 'frugal',    name: 'Frugal',      icon: '💰', desc: '−20% course cost',         mods: { courseCost: 0.8 } },
+    { id: 'wealthy',   name: 'Wealthy',     icon: '🏦', desc: '+25% money income',        mods: { money: 1.25 } },
+    { id: 'spiritual', name: 'Spiritual',   icon: '✨', desc: '+15% Qi production',        mods: { qi: 1.15 } },
+    { id: 'warlike',   name: 'Warlike',     icon: '⚔️', desc: '+20% combat power',         mods: { combat: 1.2 } },
+    { id: 'longevous', name: 'Longevous',   icon: '🐢', desc: '+30yr lifespan per realm',  mods: { lifespan: 30 } },
+    { id: 'charming',  name: 'Charming',    icon: '🌸', desc: '+30% charm',                mods: { charm: 1.3 } },
+    { id: 'lucky',     name: 'Lucky',       icon: '🍀', desc: 'Better fate in events',     mods: { luck: 0.15 } },
+    { id: 'fertile',   name: 'Blessed Line',icon: '👶', desc: 'Children born faster',      mods: { childCd: 0.5 } },
+  ],
+  nurture: {
+    costBase: 1500,      // ¥ to tutor a child the first time
+    costGrowth: 2.2,     // each tutoring level costs more
+    talentPerLevel: 12,  // heir starts life with +Talent per nurture level
+    eduChancePerLevel: 0.34, // each level → +1 starting education tier (rounded)
+    maxLevel: 5,
+  },
+
+  /* ── Karma & life events (Round 5) ──────────────────────────────────────
+   * A Righteous(+) / Demonic(−) axis. Random dilemmas shift karma and grant
+   * or cost resources; both options trade something. Karma gates flavour and
+   * unlocks demonic shortcuts / righteous boons.
+   */
+  karma: {
+    min: -100, max: 100,
+    eventEverySec: 240,   // a life event roughly every 4 min of active play
+    eventChance: 0.5,     // …with this chance when the timer fires
+    righteousAt: 40, demonicAt: -40,
+  },
+  lifeEvents: [
+    { id: 'manual', title: 'A Forbidden Manual',
+      text: 'A dying rogue cultivator offers you a blood-soaked demonic manual. Immense power — at a price to your conscience.',
+      options: [
+        { label: 'Absorb its power', karma: -15, effects: { talent: 25, qiPct: 0.05 }, toast: 'Forbidden knowledge floods your meridians (+Talent, +5% Qi).' },
+        { label: 'Burn it', karma: +10, effects: {}, toast: 'You refuse the demonic path. Your heart-dao steadies.' },
+      ] },
+    { id: 'beggar', title: 'A Starving Family',
+      text: 'A destitute mortal family begs for spirit stones outside the city gate.',
+      options: [
+        { label: 'Give generously (¥5K)', karma: +15, cost: { money: 5000 }, effects: {}, toast: 'Your charity earns the gratitude of heaven.' },
+        { label: 'Ignore them', karma: -6, effects: {}, toast: 'You walk past. Power waits for no one.' },
+        { label: 'Rob them too', karma: -20, effects: { money: 800 }, toast: 'A petty cruelty — but coin is coin.' },
+      ] },
+    { id: 'duel', title: 'A Rival\'s Challenge',
+      text: 'An arrogant young master of a rival clan blocks your path and demands a duel.',
+      options: [
+        { label: 'Crush him', karma: -8, effects: { combatBuffSec: 600, money: 3000 }, toast: 'You teach him his place — and take his purse.' },
+        { label: 'Decline humbly', karma: +6, effects: {}, toast: 'You bow and walk away. Patience is a virtue.' },
+      ] },
+    { id: 'elder', title: 'A Wandering Elder',
+      text: 'A mysterious elder offers cryptic guidance in exchange for respect.',
+      options: [
+        { label: 'Kneel and learn', karma: +8, effects: { qiHours: 2, talent: 8 }, toast: 'The elder imparts an insight (+Talent, +Qi).' },
+        { label: 'Demand his secrets', karma: -10, effects: { talent: 12 }, toast: 'You seize the knowledge by force.' },
+      ] },
+    { id: 'tribOmen', title: 'An Ominous Storm',
+      text: 'Dark clouds gather — a minor tribulation tests your resolve early.',
+      options: [
+        { label: 'Meditate through it', karma: +5, effects: { qiHours: 1 }, toast: 'You weather the omen calmly (+Qi).' },
+        { label: 'Sacrifice lifespan to seize the power', karma: -12, effects: { lifespanLoss: 8, qiPct: 0.10 }, toast: 'You burn 8 years of life for a surge of power (+10% Qi).' },
+      ] },
+    { id: 'orphan', title: 'A Gifted Orphan',
+      text: 'You find an orphan with a rare spirit root, alone in the ruins.',
+      options: [
+        { label: 'Adopt and raise them', karma: +12, effects: { adopt: true }, toast: 'You take the child in — a new heir for your bloodline.' },
+        { label: 'Take their root essence', karma: -25, effects: { talent: 30 }, toast: 'A monstrous act for a monstrous gain (+Talent).' },
+      ] },
+  ],
+
+  saveVersion: 5,
   saveKey: 'xianxia_idle_save_v1',
 };
 

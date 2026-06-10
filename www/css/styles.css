@@ -1087,3 +1087,37 @@ small { font-weight:400; }
   border-radius:14px; background:var(--surface-2); cursor:pointer; font-family:inherit; text-align:left;
   transition:border-color .15s; }
 .heir-card:hover { border-color:var(--jade); background:var(--jade-soft); }
+
+/* -- Depth (Round 5): Dao Paths, traits, karma events -------------------- */
+#path-line { display:flex; flex-wrap:wrap; gap:6px; align-items:center; justify-content:center; margin-bottom:10px; }
+.path-chip { font-size:12px; font-weight:700; padding:3px 10px; border:1px solid; border-radius:999px; background:var(--surface-2); }
+.path-chip.locked { color:var(--faint); border-color:var(--line); font-weight:500; }
+.karma-chip { font-size:12px; font-weight:600; padding:3px 10px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); }
+.path-choose-btn { font-size:12.5px; font-weight:700; padding:5px 12px; border-radius:999px; cursor:pointer;
+  color:#fff; border:none; background:linear-gradient(180deg,#e7b94e,var(--gold-d)); box-shadow:0 3px 10px rgba(199,154,59,0.35);
+  animation:pulse 1.8s infinite; }
+
+.path-list { display:flex; flex-direction:column; gap:10px; margin:12px 0; text-align:left; }
+.path-card { border:1.5px solid; border-radius:14px; padding:12px 14px; background:var(--surface-2); cursor:pointer;
+  font-family:inherit; transition:transform .1s, box-shadow .15s; }
+.path-card:active { transform:scale(.99); }
+.path-card-head { display:flex; align-items:center; gap:8px; }
+.path-ico { font-size:22px; }
+.path-name { font-size:16px; font-weight:800; }
+.path-blurb { font-size:12px; color:var(--muted); line-height:1.5; margin:6px 0; }
+.path-perks { font-size:12px; color:var(--jade-d); font-weight:600; }
+.path-drawback { font-size:12px; color:#c8503f; font-weight:600; margin-top:2px; }
+
+.trait-row { display:flex; flex-wrap:wrap; gap:5px; margin:6px 0 2px; }
+.trait-chip { font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:999px;
+  background:var(--gold-soft); color:var(--gold-d); border:1px solid #efe2bd; }
+
+.event-options { display:flex; flex-direction:column; gap:9px; margin-top:14px; }
+.event-opt { display:flex; justify-content:space-between; align-items:center; gap:10px; text-align:left;
+  padding:13px 14px; border-radius:13px; border:1px solid var(--line); background:var(--surface-2);
+  font-family:inherit; font-size:14px; font-weight:600; color:var(--text); cursor:pointer; transition:border-color .15s; }
+.event-opt:hover:not(:disabled) { border-color:var(--jade); background:var(--jade-soft); }
+.event-opt:disabled { opacity:.45; cursor:default; }
+.ev-karma { font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap; }
+.ev-karma.good { color:var(--jade-d); background:var(--jade-soft); }
+.ev-karma.bad { color:#c8503f; background:#fdeef0; }

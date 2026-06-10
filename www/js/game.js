@@ -68,6 +68,13 @@ const Game = {
       generation: 1,           // which generation of the bloodline is playing
       legacyBonus: 0,          // permanent multiplier accumulated from past lives
 
+      // Depth (Round 5): Dao Path, inherited traits, karma & life events
+      daoPath: null,           // chosen path id (locked for this life)
+      traits: [],              // innate traits inherited from being born an heir
+      karma: 0,                // Righteous(+) / Demonic(−) alignment
+      eventAcc: 0,             // seconds accumulated toward the next life event
+      combatBuffEndsAt: 0,     // wall-clock ms; +50% combat while active
+
       // Daily rewards (Round 3)
       dailyStreak: 0,          // consecutive days claimed
       lastDailyDay: null,      // YYYY-MM-DD string of last claim
@@ -115,6 +122,11 @@ const Game = {
     if (this.state.breakthroughPills === undefined) this.state.breakthroughPills = 0;
     if (this.state.generation === undefined) this.state.generation = 1;
     if (this.state.legacyBonus === undefined) this.state.legacyBonus = 0;
+    if (this.state.daoPath === undefined) this.state.daoPath = null;
+    if (!this.state.traits) this.state.traits = [];
+    if (this.state.karma === undefined) this.state.karma = 0;
+    if (this.state.eventAcc === undefined) this.state.eventAcc = 0;
+    if (this.state.combatBuffEndsAt === undefined) this.state.combatBuffEndsAt = 0;
     if (this.state.dailyStreak === undefined) this.state.dailyStreak = 0;
     if (this.state.lastDailyDay === undefined) this.state.lastDailyDay = null;
     if (!this.state.pillBag) this.state.pillBag = {};
@@ -134,6 +146,80 @@ const Game = {
   },
 
   genderInfo() { return GameData.genders[this.state.gender] || GameData.genders.male; },
+
+  // -------------------------------------------------------------------------
+  // Depth (Round 5): Dao Paths, trait/path modifiers, karma & life events
+  // -------------------------------------------------------------------------
+  _MULT_KEYS: ['qi','combat','money','family','charm','courseCost','pillCost','tap','trialQi','stageCost','childCd'],
+  _ADD_KEYS:  ['tribChance','lifespan','offline','talentGain','luck'],
+
+  currentPath() { return this.state.daoPath ? GameData.daoPaths.find(p => p.id === this.state.daoPath) : null; },
+  canChoosePath() { return !this.state.daoPath && this.state.realm >= GameData.daoPathRealmReq; },
+  choosePath(id) {
+    if (!this.canChoosePath()) return false;
+    if (!GameData.daoPaths.some(p => p.id === id)) return false;
+    this.state.daoPath = id;
+    this.persist();
+    return true;
+  },
+  _trait(id) { return GameData.traits.find(t => t.id === id); },
+
+  /** Combined Dao-Path + inherited-trait + spouse-trait modifiers. */
+  activeMods() {
+    const out = {};
+    this._MULT_KEYS.forEach(k => out[k] = 1);
+    this._ADD_KEYS.forEach(k => out[k] = 0);
+    const apply = mods => {
+      if (!mods) return;
+      for (const k in mods) {
+        if (this._MULT_KEYS.includes(k)) out[k] *= mods[k];
+        else if (this._ADD_KEYS.includes(k)) out[k] += mods[k];
+      }
+    };
+    const p = this.currentPath(); if (p) apply(p.mods);
+    (this.state.traits || []).forEach(id => { const t = this._trait(id); if (t) apply(t.mods); });
+    const sp = this.state.family && this.state.family.spouse;
+    if (sp && sp.traits) sp.traits.forEach(id => { const t = this._trait(id); if (t) apply(t.mods); });
+    return out;
+  },
+  modVal(key) { return this.activeMods()[key]; },
+
+  /** External combat multiplier (path + traits + duel buff) read by Combat. */
+  combatExternalMult() {
+    const buff = (this.state.combatBuffEndsAt && TimeService.now() < this.state.combatBuffEndsAt) ? 1.5 : 1;
+    return this.modVal('combat') * buff;
+  },
+  moneyMult() { return this.modVal('money'); },
+
+  // -- Karma & life events --------------------------------------------------
+  karmaTier() {
+    const k = this.state.karma || 0;
+    if (k >= GameData.karma.righteousAt) return 'righteous';
+    if (k <= GameData.karma.demonicAt) return 'demonic';
+    return 'neutral';
+  },
+  addKarma(d) {
+    this.state.karma = Math.max(GameData.karma.min, Math.min(GameData.karma.max, (this.state.karma || 0) + d));
+  },
+  /** Apply a life-event option's effects (mutates state). */
+  applyEventEffects(eff) {
+    if (!eff) return;
+    if (eff.money && this.state.life) this.state.life.money += eff.money;
+    if (eff.talent && this.state.life) this.state.life.talent += eff.talent;
+    if (eff.qiPct) this.state.questPermanentBonus = (this.state.questPermanentBonus || 0) + eff.qiPct;
+    if (eff.qiHours) this._addQi(this.qiPerSecond() * 3600 * eff.qiHours + 100);
+    if (eff.combatBuffSec) this.state.combatBuffEndsAt = TimeService.now() + eff.combatBuffSec * 1000;
+    if (eff.lifespanLoss && this.state.life) this.state.life.age += eff.lifespanLoss;
+    if (eff.adopt && window.Family && Family.adoptChild) Family.adoptChild();
+  },
+  payEventCost(cost) {
+    if (!cost) return true;
+    if (cost.money) {
+      if (!this.state.life || this.state.life.money < cost.money) return false;
+      this.state.life.money -= cost.money;
+    }
+    return true;
+  },
 
   /** Painted portrait path for a character (falls back to the vector emblem). */
   portraitSrc(gender, rootKey) {
@@ -406,6 +492,12 @@ const Game = {
     m.talent= (window.Life && this.state.life) ? Life.talentMult() : 1;        // Study → Talent
     m.family= (window.Family && this.state.family) ? Family.familyMult() : 1;  // Spouse + children
     m.legacy= 1 + (this.state.legacyBonus || 0);                               // Bloodline generations
+    // Dao Path + trait modifiers (Round 5 depth)
+    const mods = this.activeMods();
+    m.allMult     *= mods.qi;
+    m.tapMult     *= mods.tap;
+    m.offlineBonus += mods.offline;
+    m.family      *= mods.family;
     // Meridian tree (Round 2): Qi, tap, offline, beast bonuses.
     m.allMult    *= (1 + this.meridianMult('qi'));
     m.tapMult    *= (1 + this.meridianMult('tap'));
@@ -561,10 +653,11 @@ const Game = {
   /** True once every minor stage of the current realm has been cleared. */
   realmComplete() { return this.state.stage >= this.stageCount(); },
 
-  /** RunQi needed for the NEXT minor stage (or null if realm minor-complete). */
+  /** Qi needed for the NEXT minor stage (or null if realm minor-complete).
+   *  Body Refinement path raises this (×stageCost). */
   nextStageReq() {
     if (this.realmComplete()) return null;
-    return GameData.stageReq(this.state.realm, this.state.stage);
+    return GameData.stageReq(this.state.realm, this.state.stage) * this.modVal('stageCost');
   },
 
   canAdvanceStage() {
@@ -621,12 +714,18 @@ const Game = {
 
   hasPill() { return (this.state.breakthroughPills || 0) > 0; },
 
+  /** ¥ price of the next Breakthrough Pill (Pill Dao discounts it). */
+  pillPrice() {
+    const next = this.nextRealm();
+    return next ? Math.ceil(next.pillCost * this.modVal('pillCost')) : 0;
+  },
   buyPill() {
     const next = this.nextRealm();
     if (!next || next.pillCost <= 0) return false;
     const life = this.state.life;
-    if (!life || life.money < next.pillCost) return false;
-    life.money -= next.pillCost;
+    const price = this.pillPrice();
+    if (!life || life.money < price) return false;
+    life.money -= price;
     this.state.breakthroughPills = (this.state.breakthroughPills || 0) + 1;
     return true;
   },
@@ -636,7 +735,8 @@ const Game = {
     const t = GameData.tribulation;
     if (!this.pillRequired()) return 1; // tutorial realms are guaranteed
     const life = this.state.life || {};
-    const c = t.baseChance + (life.talent || 0) * t.talentBonus + (life.intellect || 0) * t.intellectBonus;
+    const c = t.baseChance + (life.talent || 0) * t.talentBonus + (life.intellect || 0) * t.intellectBonus
+            + this.modVal('tribChance');
     return Math.min(t.maxChance, c);
   },
 
@@ -707,7 +807,7 @@ const Game = {
   // each realm caps your age; outlive it and the bloodline continues through
   // a chosen heir, who inherits their root, part of the estate, and a legacy.
   // -------------------------------------------------------------------------
-  lifespan() { return this.currentRealm().lifespan; },
+  lifespan() { return Math.round(this.currentRealm().lifespan + this.modVal('lifespan') * this.state.realm); },
 
   isDying() {
     const life = this.state.life;
@@ -734,13 +834,17 @@ const Game = {
     this.state.legacyBonus = (this.state.legacyBonus || 0) + this.pendingLegacyGain(heir);
     this.state.generation = (this.state.generation || 1) + 1;
 
-    // New body inherits the heir's identity & root (or rolls a descendant).
+    // New body inherits the heir's identity, root & traits (or rolls a descendant).
+    let nurtureLvl = 0;
     if (heir) {
       this.state.name = heir.name;
       this.state.gender = heir.gender;
       this.state.spiritualRoot = heir.root;
+      this.state.traits = (heir.traits || []).slice();
+      nurtureLvl = heir.nurture || 0;
     } else {
       this.state.spiritualRoot = GameData.rollSpiritualRoot();
+      this.state.traits = [];
     }
 
     // Cultivation dies with the body; dao + legacy persist in the bloodline.
@@ -748,16 +852,22 @@ const Game = {
     this.state.qi = 0; this.state.runQi = 0;
     this.state.upgrades = {};
     this.state.breakthroughPills = 0;
+    this.state.daoPath = null;          // the heir forges their own path
+    this.state.combatBuffEndsAt = 0;
     GameData.generators.forEach(g => { this.state.owned[g.id] = 0; });
 
-    // Life restarts young, with an inheritance; the new soul studies anew.
+    // Life restarts young, with an inheritance and the fruits of upbringing.
     if (this.state.life) {
+      const N = GameData.nurture;
       this.state.life.money *= L.inheritMoney;
       this.state.life.age = GameData.aging.startAge;
       this.state.life.ageAcc = 0;
-      this.state.life.education = 0; this.state.life.study = null;
+      this.state.life.education = Math.min((window.Life && Life.courses ? Life.courses.length : 5),
+        Math.round(nurtureLvl * N.eduChancePerLevel));
+      this.state.life.study = null;
       this.state.life.jobId = null; this.state.life.jobXp = 0;
-      this.state.life.intellect = 0; this.state.life.charm = 0; this.state.life.talent = 0;
+      this.state.life.intellect = 0; this.state.life.charm = 0;
+      this.state.life.talent = nurtureLvl * N.talentPerLevel; // tutoring pays off
     }
     if (this.state.family) this.state.family = { candidates: [], spouse: null, children: [], childCooldown: 0 };
     if (window.Family) Family.init();
@@ -798,6 +908,9 @@ const Game = {
 
     // Passive sect contribution while you hold membership.
     if (window.Sect && this.state.sect) Sect.addContribution(dtSec * 1);
+
+    // Karma life events: roll on a timer once the character exists.
+    if (window.Events && this.state.characterCreated) Events.tick(dtSec);
 
     // Hidden mechanic: lucky number check.
     if (window.Quests) Quests.checkLuckyNumbers();

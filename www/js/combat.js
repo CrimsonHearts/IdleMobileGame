@@ -36,7 +36,8 @@ const Combat = {
     const meridian = (window.Game && Game.meridianMult) ? (1 + Game.meridianMult('combat')) : 1;
     const perk = (window.Game && Game.perkBonus) ? (1 + Game.perkBonus('combat')) : 1;
     const pill = (window.Game && Game.buffMult) ? Game.buffMult('combat') : 1;
-    return (this.baseAtk() + (window.Pets ? Pets.combatAtk() : 0)) * Sect.combatMult() * meridian * perk * pill;
+    const path = (window.Game && Game.combatExternalMult) ? Game.combatExternalMult() : 1; // Dao Path + traits + duel buff
+    return (this.baseAtk() + (window.Pets ? Pets.combatAtk() : 0)) * Sect.combatMult() * meridian * perk * pill * path;
   },
   playerHpMax() { return this.baseHp() + (window.Pets ? Pets.combatHp() : 0); },
 

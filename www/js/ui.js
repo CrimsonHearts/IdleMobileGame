@@ -737,6 +737,9 @@ const UI = {
     this.el.realm.textContent = tier.realm;
     this.el.stageName.textContent = tier.stage;
 
+    // -- Dao Path + Karma line --------------------------------------------
+    this.renderPathLine();
+
     const next = Game.nextRealm();
     const realmComplete = Game.realmComplete();
     const canAdvance = Game.canAdvanceStage();
@@ -784,9 +787,9 @@ const UI = {
       const showPillBtn = realmComplete && needPill && !hasPill;
       this.el.pillBtn.style.display = showPillBtn ? '' : 'none';
       if (showPillBtn) {
-        const afford = Game.state.life && Game.state.life.money >= next.pillCost;
-        this.el.pillBtn.disabled = !afford;
-        this.el.pillBtn.textContent = `Buy Breakthrough Pill — ¥${GameNumbers.formatNumber(next.pillCost)}`;
+        const price = Game.pillPrice();
+        this.el.pillBtn.disabled = !(Game.state.life && Game.state.life.money >= price);
+        this.el.pillBtn.textContent = `Buy Breakthrough Pill — ¥${GameNumbers.formatNumber(price)}`;
       }
 
       this.el.breakBtn.style.display = realmComplete ? '' : 'none';
@@ -817,6 +820,97 @@ const UI = {
     });
     this.el.breakBtn.parentNode.insertBefore(btn, this.el.breakBtn);
     this.el.pillBtn = btn;
+  },
+
+  /** Dao Path chooser banner + karma indicator, at the top of the realm card. */
+  renderPathLine() {
+    if (!this.el.pathLine) {
+      const div = document.createElement('div');
+      div.id = 'path-line';
+      const card = document.getElementById('realm-progress') || this.el.breakInfo.parentNode;
+      card.insertBefore(div, card.firstChild);
+      this.el.pathLine = div;
+    }
+    const el = this.el.pathLine;
+    const path = Game.currentPath();
+    const tier = Game.karmaTier();
+    const karmaLabel = tier === 'righteous' ? '☯ Righteous' : tier === 'demonic' ? '🩸 Demonic' : '⚖ Neutral';
+    const karmaColor = tier === 'righteous' ? 'var(--jade-d)' : tier === 'demonic' ? '#c8503f' : 'var(--muted)';
+    let html = `<span class="karma-chip" style="color:${karmaColor}">${karmaLabel} (${Game.state.karma|0})</span>`;
+    if (path) {
+      html = `<span class="path-chip" style="border-color:${path.color};color:${path.color}">${path.icon} ${path.name}</span>` + html;
+      el.innerHTML = html;
+      el.onclick = null;
+    } else if (Game.canChoosePath()) {
+      el.innerHTML = `<button class="path-choose-btn">✦ Choose your Dao Path</button>` + html;
+      el.querySelector('.path-choose-btn').onclick = () => this.showPathChooser();
+    } else {
+      const r = GameData.daoPaths.length ? GameData.realms[GameData.daoPathRealmReq].name : '';
+      html = `<span class="path-chip locked">Dao Path unlocks at ${r}</span>` + html;
+      el.innerHTML = html;
+    }
+  },
+
+  showPathChooser() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <h2>Choose Your Dao Path</h2>
+        <p class="hint">A pivotal, <b>permanent</b> choice for this life — it shapes your strengths and weaknesses. A future heir may choose differently.</p>
+        <div class="path-list">
+          ${GameData.daoPaths.map(p => `
+            <button class="path-card" data-id="${p.id}" style="border-color:${p.color}">
+              <div class="path-card-head"><span class="path-ico">${p.icon}</span>
+                <span class="path-name" style="color:${p.color}">${p.name}</span></div>
+              <div class="path-blurb">${p.blurb}</div>
+              <div class="path-perks">✦ ${p.perks}</div>
+              <div class="path-drawback">▼ ${p.drawback}</div>
+            </button>`).join('')}
+        </div>
+        <button class="btn-ghost" id="path-cancel">Decide later</button>
+      </div>`;
+    overlay.querySelectorAll('.path-card').forEach(b => b.addEventListener('click', () => {
+      const p = GameData.daoPaths.find(x => x.id === b.dataset.id);
+      if (Game.choosePath(b.dataset.id)) {
+        overlay.remove();
+        this.renderAll();
+        this.toast(`${p.icon} You walk the ${p.name}. Your destiny is set.`);
+      }
+    }));
+    overlay.querySelector('#path-cancel').addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+  },
+
+  /** A karma life event: dilemma with consequential choices. */
+  showLifeEvent(ev, done) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const money = (Game.state.life && Game.state.life.money) || 0;
+    overlay.innerHTML = `
+      <div class="modal">
+        <h2>${ev.title}</h2>
+        <p>${ev.text}</p>
+        <div class="event-options">
+          ${ev.options.map((o, i) => {
+            const afford = !o.cost || !o.cost.money || money >= o.cost.money;
+            const k = o.karma > 0 ? `<span class="ev-karma good">+${o.karma} karma</span>`
+                    : o.karma < 0 ? `<span class="ev-karma bad">${o.karma} karma</span>` : '';
+            return `<button class="event-opt" data-i="${i}" ${afford ? '' : 'disabled'}>
+              <span>${o.label}</span>${k}</button>`;
+          }).join('')}
+        </div>
+      </div>`;
+    overlay.querySelectorAll('.event-opt').forEach(b => b.addEventListener('click', () => {
+      const res = Events.resolve(ev, parseInt(b.dataset.i, 10));
+      if (res && res.ok) {
+        overlay.remove();
+        if (typeof done === 'function') done();
+        this.renderAll();
+        if (res.opt.toast) this.toast(res.opt.toast);
+      }
+    }));
+    document.body.appendChild(overlay);
   },
 
   /** Lifespan reached: choose an heir and continue the bloodline. */
