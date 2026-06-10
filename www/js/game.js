@@ -957,16 +957,46 @@ const Game = {
     const capped = elapsed > cap;
     const effective = Math.min(elapsed, cap);
 
+    // --- Qi from generators (at reduced offline efficiency) ------------
     const m = this.multipliers();
     const sectOffline = (window.Sect && Sect.offlineBonus) ? Sect.offlineBonus() : 0;
     const efficiency = Math.min(1, GameData.offline.efficiency + m.offlineBonus + sectOffline);
     const gained = this.qiPerSecond() * effective * efficiency;
-
     this._addQi(gained);
+
+    // --- Career: salary is contractual — full pay while away ------------
+    let money = 0;
+    if (window.Life && this.state.life && this.state.life.jobId) {
+      money = Life.jobPayRate() * effective;
+      this.state.life.money += money;
+      this.state.life.jobXp += effective; // job experience accrues too
+    }
+    // (Study completion needs no handling here: course endsAt is wall-clock,
+    //  so Life.tick finishes any due course on the first tick after boot.
+    //  Aging is intentionally active-only — you never return to find
+    //  yourself dead; in seclusion, time flows differently.)
+
+    // --- Trials: your cultivator kept fighting (full simulation) --------
+    let stones = 0, eggs = 0, zones = 0;
+    if (window.Combat && this.combatUnlocked() && !this.state.combat.paused && effective >= 10) {
+      const s0 = this.state.spiritStones, e0 = this.state.beastEggs, z0 = this.state.combat.zone;
+      for (let i = 0; i < Math.floor(effective); i++) Combat.tick(1);
+      stones = this.state.spiritStones - s0;
+      eggs = this.state.beastEggs - e0;
+      zones = this.state.combat.zone - z0;
+    }
+
+    // --- Sect contribution + family timers ------------------------------
+    let contribution = 0;
+    if (window.Sect && this.state.sect) { contribution = effective; Sect.addContribution(effective); }
+    if (this.state.family && this.state.family.childCooldown > 0) {
+      this.state.family.childCooldown = Math.max(0, this.state.family.childCooldown - effective);
+    }
+
     this.state.lastSaved = now;
     if (now > this.state.maxSeenTime) this.state.maxSeenTime = now;
 
-    return { seconds: elapsed, gained, capped, cheated: false };
+    return { seconds: elapsed, gained, money, stones, eggs, zones, contribution, capped, cheated: false };
   },
 
   persist() {

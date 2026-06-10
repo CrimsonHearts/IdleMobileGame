@@ -1121,3 +1121,10 @@ small { font-weight:400; }
 .ev-karma { font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap; }
 .ev-karma.good { color:var(--jade-d); background:var(--jade-soft); }
 .ev-karma.bad { color:#c8503f; background:#fdeef0; }
+
+/* -- Offline progress report ---------------------------------------------- */
+.offline-report { margin-top:12px; text-align:left; }
+.offline-row { display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:9px 12px; border-radius:10px; background:var(--surface-2); border:1px solid var(--line);
+  font-size:13px; color:var(--muted); margin-bottom:6px; }
+.offline-row b { color:var(--text); }

@@ -1886,9 +1886,15 @@ const UI = {
       return;
     }
     if (result.seconds < GameData.offline.minSecondsToShow || result.gained <= 0) return;
-    const msg = `🧘 While you were away (${GameNumbers.formatDuration(result.seconds)}` +
-      (result.capped ? ', capped at 8h' : '') +
-      `) you cultivated <b>${GameNumbers.formatNumber(result.gained)}</b> ${GameData.theme.currencyIcon} Qi.`;
+    const F = GameNumbers.formatNumber;
+    const rows = [`<div class="offline-row"><span>🧘 Cultivated</span><b>${F(result.gained)} Qi</b></div>`];
+    if (result.money > 0)  rows.push(`<div class="offline-row"><span>💼 Salary earned</span><b>¥${F(result.money)}</b></div>`);
+    if (result.stones > 0) rows.push(`<div class="offline-row"><span>⚔️ Trials loot</span><b>${F(result.stones)} Stones${result.eggs > 0 ? ' · ' + result.eggs + ' Egg' + (result.eggs > 1 ? 's' : '') : ''}</b></div>`);
+    if (result.zones > 0)  rows.push(`<div class="offline-row"><span>⛰ Zones advanced</span><b>+${result.zones}</b></div>`);
+    if (result.contribution > 0) rows.push(`<div class="offline-row"><span>⛩ Sect contribution</span><b>+${F(result.contribution)}</b></div>`);
+    const msg = `While you were away (${GameNumbers.formatDuration(result.seconds)}` +
+      (result.capped ? ', capped at 8h' : '') + `):` +
+      `<div class="offline-report">${rows.join('')}</div>`;
     // Rewarded-ad monetization hook: offline runs at 50% efficiency, so we
     // offer the other half in exchange for watching a rewarded video.
     this.modal('Welcome Back, Cultivator', msg, {
