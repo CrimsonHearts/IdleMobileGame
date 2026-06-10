@@ -998,7 +998,67 @@ const UI = {
     if (this.worldSub === 'trials')      this.renderTrials();
     else if (this.worldSub === 'beasts') this.renderBeasts();
     else if (this.worldSub === 'sect')   this.renderSect();
+    else if (this.worldSub === 'gear')   this.renderArtifacts();
     else if (this.worldSub === 'realm')  this.renderSecretRealm();
+  },
+
+  // ======================================================================
+  // GEAR — artifact loadout + inventory
+  // ======================================================================
+  renderArtifacts() {
+    const el = document.getElementById('sub-gear');
+    if (!el || !window.Artifacts) return;
+    const A = GameData.artifacts;
+    const rar = id => A.rarities.find(r => r.id === id) || A.rarities[0];
+    const setName = id => (A.sets.find(s => s.id === id) || {}).name || id;
+    const statLine = a => {
+      const p = [];
+      if (a.atk) p.push(`⚔${GameNumbers.formatNumber(a.atk)}`);
+      if (a.hp)  p.push(`♥${GameNumbers.formatNumber(a.hp)}`);
+      if (a.qi)  p.push(`☯+${(a.qi*100).toFixed(1)}%`);
+      return p.join(' · ');
+    };
+
+    // Equipped loadout (4 slots) + active set bonuses.
+    const eq = Artifacts.equipped();
+    const slotsHtml = A.slots.map(s => {
+      const a = eq[s.id];
+      if (!a) return `<div class="gear-slot empty"><span class="gear-slot-ico">${s.icon}</span>
+        <span class="gear-slot-main"><b>${s.name}</b><span class="muted">— empty —</span></span></div>`;
+      const r = rar(a.rarity);
+      return `<div class="gear-slot" style="border-color:${r.color}">
+        <span class="gear-slot-ico">${s.icon}</span>
+        <span class="gear-slot-main"><b style="color:${r.color}">${r.name} ${s.name}</b>
+          <span class="muted">${statLine(a)} · ${setName(a.set)} set</span></span>
+        <button class="btn-mini" data-unequip="${s.id}">Remove</button></div>`;
+    }).join('');
+
+    const counts = Artifacts.setCounts();
+    const setHtml = Object.keys(counts).filter(id => counts[id] >= 2)
+      .map(id => `<span class="trait-chip">${setName(id)} ×${counts[id]} active</span>`).join('') || '<span class="muted">No set bonus active (equip 2+ of a set)</span>';
+
+    const inv = Artifacts.s().inventory.slice().sort((a, b) => Artifacts.score(b) - Artifacts.score(a));
+    const invHtml = inv.length ? inv.map(a => {
+      const r = rar(a.rarity);
+      return `<div class="gear-item" style="border-left-color:${r.color}">
+        <span class="gear-item-main"><b style="color:${r.color}">${r.name} ${A.slots.find(s=>s.id===a.slot).name}</b>
+          <span class="muted">${statLine(a)} · ${setName(a.set)}</span></span>
+        <span class="gear-item-btns">
+          <button class="btn-mini" data-equip="${a.id}">Equip</button>
+          <button class="btn-mini ghost" data-salvage="${a.id}">♻${GameNumbers.formatNumber(Artifacts.salvageValue(a))}</button>
+        </span></div>`;
+    }).join('') : '<div class="hint">No artifacts yet. Win Trials & Secret Realm fights — bosses almost always drop gear.</div>';
+
+    el.innerHTML = `
+      <div class="section-title">⚜️ Artifacts <small>ATK +${GameNumbers.formatNumber(Artifacts.atk())} · HP +${GameNumbers.formatNumber(Artifacts.hp())} · Qi +${(Artifacts.qiPct()*100).toFixed(1)}%</small></div>
+      <div class="gear-loadout">${slotsHtml}</div>
+      <div class="gear-sets">${setHtml}</div>
+      <div class="section-title small">Satchel (${inv.length}/${A.invCap})</div>
+      <div class="gear-inv">${invHtml}</div>`;
+
+    el.querySelectorAll('[data-equip]').forEach(b => b.addEventListener('click', () => { Artifacts.equip(b.dataset.equip); this.renderArtifacts(); this.renderResources(); }));
+    el.querySelectorAll('[data-unequip]').forEach(b => b.addEventListener('click', () => { Artifacts.unequip(b.dataset.unequip); this.renderArtifacts(); this.renderResources(); }));
+    el.querySelectorAll('[data-salvage]').forEach(b => b.addEventListener('click', () => { Artifacts.salvage(b.dataset.salvage); this.renderArtifacts(); this.renderResources(); }));
   },
 
   /** Emoji fallback for beast/mob sprite ids. */
@@ -1891,6 +1951,7 @@ const UI = {
     if (result.money > 0)  rows.push(`<div class="offline-row"><span>💼 Salary earned</span><b>¥${F(result.money)}</b></div>`);
     if (result.stones > 0) rows.push(`<div class="offline-row"><span>⚔️ Trials loot</span><b>${F(result.stones)} Stones${result.eggs > 0 ? ' · ' + result.eggs + ' Egg' + (result.eggs > 1 ? 's' : '') : ''}</b></div>`);
     if (result.zones > 0)  rows.push(`<div class="offline-row"><span>⛰ Zones advanced</span><b>+${result.zones}</b></div>`);
+    if (result.artifacts > 0) rows.push(`<div class="offline-row"><span>⚜️ Artifacts found</span><b>+${result.artifacts}</b></div>`);
     if (result.contribution > 0) rows.push(`<div class="offline-row"><span>⛩ Sect contribution</span><b>+${F(result.contribution)}</b></div>`);
     const msg = `While you were away (${GameNumbers.formatDuration(result.seconds)}` +
       (result.capped ? ', capped at 8h' : '') + `):` +

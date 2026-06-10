@@ -36,10 +36,11 @@ const Combat = {
     const meridian = (window.Game && Game.meridianMult) ? (1 + Game.meridianMult('combat')) : 1;
     const perk = (window.Game && Game.perkBonus) ? (1 + Game.perkBonus('combat')) : 1;
     const pill = (window.Game && Game.buffMult) ? Game.buffMult('combat') : 1;
-    const path = (window.Game && Game.combatExternalMult) ? Game.combatExternalMult() : 1; // Dao Path + traits + duel buff
-    return (this.baseAtk() + (window.Pets ? Pets.combatAtk() : 0)) * Sect.combatMult() * meridian * perk * pill * path;
+    const path = (window.Game && Game.combatExternalMult) ? Game.combatExternalMult() : 1; // Dao Path + traits + duel buff + artifact sets
+    const gear = (window.Game && Game.gearAtk) ? Game.gearAtk() : 0;
+    return (this.baseAtk() + (window.Pets ? Pets.combatAtk() : 0) + gear) * Sect.combatMult() * meridian * perk * pill * path;
   },
-  playerHpMax() { return this.baseHp() + (window.Pets ? Pets.combatHp() : 0); },
+  playerHpMax() { return this.baseHp() + (window.Pets ? Pets.combatHp() : 0) + (window.Game && Game.gearHp ? Game.gearHp() : 0); },
 
   // -- Mob scaling ----------------------------------------------------------
   isBossWave(wave) { return wave % 10 === 0; },
@@ -78,7 +79,10 @@ const Combat = {
     let egg = false;
     const eggChance = mob.boss ? 1 : 0.04;
     if (Math.random() < eggChance) { Game.state.beastEggs += 1; egg = true; }
-    this._pushLog(`Defeated ${mob.name} · +${GameNumbers.formatNumber(stones)} Stones${egg ? ' · +1 Beast Egg!' : ''}`);
+    // Artifact drop (zone-scaled). Suppressed log during offline batch sim.
+    let art = null;
+    if (window.Artifacts) art = Artifacts.rollDrop(c.zone, mob.boss);
+    this._pushLog(`Defeated ${mob.name} · +${GameNumbers.formatNumber(stones)} Stones${egg ? ' · +1 Beast Egg!' : ''}${art ? ' · ✦ Artifact!' : ''}`);
   },
 
   _pushLog(line) {

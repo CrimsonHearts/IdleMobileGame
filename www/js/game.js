@@ -84,6 +84,9 @@ const Game = {
       buffs: [],               // [{ buff, mult, endsAt }]
       secretRealm: { lastRunDay: null, highestFloor: 0 },
 
+      // Artifacts / equipment (Round 6)
+      artifacts: { inventory: [], equipped: { weapon: null, robe: null, talisman: null, ring: null } },
+
       // Anti-cheat audit fields:
       maxSeenTime: TimeService.now(), // highest wall-clock ever observed
       cheatFlags: 0,                  // count of suspicious backward jumps
@@ -132,6 +135,7 @@ const Game = {
     if (!this.state.pillBag) this.state.pillBag = {};
     if (!this.state.buffs) this.state.buffs = [];
     if (!this.state.secretRealm) this.state.secretRealm = { lastRunDay: null, highestFloor: 0 };
+    if (!this.state.artifacts) this.state.artifacts = { inventory: [], equipped: { weapon: null, robe: null, talisman: null, ring: null } };
     this._lastTickMono = TimeService.monotonicNow();
   },
 
@@ -187,8 +191,12 @@ const Game = {
   /** External combat multiplier (path + traits + duel buff) read by Combat. */
   combatExternalMult() {
     const buff = (this.state.combatBuffEndsAt && TimeService.now() < this.state.combatBuffEndsAt) ? 1.5 : 1;
-    return this.modVal('combat') * buff;
+    const gear = window.Artifacts ? Artifacts.combatMult() : 1; // artifact set bonuses
+    return this.modVal('combat') * buff * gear;
   },
+  /** Flat combat stats from equipped artifacts (read by Combat). */
+  gearAtk() { return window.Artifacts ? Artifacts.atk() : 0; },
+  gearHp()  { return window.Artifacts ? Artifacts.hp() : 0; },
   moneyMult() { return this.modVal('money'); },
 
   // -- Karma & life events --------------------------------------------------
@@ -498,6 +506,8 @@ const Game = {
     m.tapMult     *= mods.tap;
     m.offlineBonus += mods.offline;
     m.family      *= mods.family;
+    // Artifacts: equipped Qi% + set bonuses (Round 6)
+    if (window.Artifacts) m.allMult *= (1 + Artifacts.qiPct());
     // Meridian tree (Round 2): Qi, tap, offline, beast bonuses.
     m.allMult    *= (1 + this.meridianMult('qi'));
     m.tapMult    *= (1 + this.meridianMult('tap'));
@@ -977,13 +987,15 @@ const Game = {
     //  yourself dead; in seclusion, time flows differently.)
 
     // --- Trials: your cultivator kept fighting (full simulation) --------
-    let stones = 0, eggs = 0, zones = 0;
+    let stones = 0, eggs = 0, zones = 0, artifacts = 0;
     if (window.Combat && this.combatUnlocked() && !this.state.combat.paused && effective >= 10) {
       const s0 = this.state.spiritStones, e0 = this.state.beastEggs, z0 = this.state.combat.zone;
+      const a0 = window.Artifacts ? this.state.artifacts.inventory.length : 0;
       for (let i = 0; i < Math.floor(effective); i++) Combat.tick(1);
       stones = this.state.spiritStones - s0;
       eggs = this.state.beastEggs - e0;
       zones = this.state.combat.zone - z0;
+      artifacts = window.Artifacts ? (this.state.artifacts.inventory.length - a0) : 0;
     }
 
     // --- Sect contribution + family timers ------------------------------
@@ -996,7 +1008,7 @@ const Game = {
     this.state.lastSaved = now;
     if (now > this.state.maxSeenTime) this.state.maxSeenTime = now;
 
-    return { seconds: elapsed, gained, money, stones, eggs, zones, contribution, capped, cheated: false };
+    return { seconds: elapsed, gained, money, stones, eggs, zones, artifacts, contribution, capped, cheated: false };
   },
 
   persist() {

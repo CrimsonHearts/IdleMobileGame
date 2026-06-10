@@ -605,7 +605,42 @@ const GameData = {
       ] },
   ],
 
-  saveVersion: 5,
+  /* ── Artifacts / equipment (Round 6 depth) ──────────────────────────────
+   * 4 slots × 5 rarities, drawn from Trials & Secret Realm loot. Matching SET
+   * pieces escalate bonuses, so the loadout becomes a build decision. */
+  artifacts: {
+    invCap: 40,
+    dropChance: 0.05, bossDropChance: 0.5,
+    slots: [
+      { id: 'weapon',   name: 'Weapon',   icon: '🗡️' },
+      { id: 'robe',     name: 'Robe',     icon: '🥋' },
+      { id: 'talisman', name: 'Talisman', icon: '📿' },
+      { id: 'ring',     name: 'Ring',     icon: '💍' },
+    ],
+    // Per-slot stat emphasis (atk / hp / qi weighting).
+    slotWeights: {
+      weapon:   { atk: 1.0, hp: 0.1, qi: 0.2 },
+      robe:     { atk: 0.1, hp: 1.0, qi: 0.2 },
+      talisman: { atk: 0.2, hp: 0.2, qi: 1.0 },
+      ring:     { atk: 0.5, hp: 0.5, qi: 0.5 },
+    },
+    rarities: [
+      { id: 'common', name: 'Common',    color: '#9aa3ad', statMult: 1.0,  weight: 50 },
+      { id: 'rare',   name: 'Rare',      color: '#3fa7e0', statMult: 1.8,  weight: 28 },
+      { id: 'epic',   name: 'Epic',      color: '#a567e0', statMult: 3.2,  weight: 14 },
+      { id: 'legend', name: 'Legendary', color: '#e7a93f', statMult: 5.5,  weight: 6  },
+      { id: 'mythic', name: 'Mythic',    color: '#e0533f', statMult: 9.0,  weight: 2  },
+    ],
+    sets: [
+      { id: 'azure',   name: 'Azure Dragon',   color: '#3fa7e0' },
+      { id: 'phoenix', name: 'Vermilion Phoenix', color: '#e0533f' },
+      { id: 'tortoise',name: 'Black Tortoise', color: '#6fb594' },
+      { id: 'tiger',   name: 'White Tiger',    color: '#e7c878' },
+    ],
+    setBonus: { two: { combat: 0.15, qi: 0.05 }, four: { combat: 0.45, qi: 0.15 } },
+  },
+
+  saveVersion: 6,
   saveKey: 'xianxia_idle_save_v1',
 };
 
