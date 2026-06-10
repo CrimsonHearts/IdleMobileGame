@@ -21,6 +21,29 @@ raise children who inherit Spiritual Roots. Clean modern (light) UI.
 
 ---
 
+## ⚖️ Progression 2.0 (simulation-tuned)
+
+The original curve let a greedy player clear half the realm ladder in ~5 hours.
+The current design adds friction and real decisions (verified with a
+greedy-player simulator):
+
+- **Stages consume Qi** — cultivating your base *spends* energy, creating a
+  genuine choice between buying facilities (economy) and advancing stages (power).
+- **Tamed prestige math** — dao gain is `(runQi/10⁴)^0.22` and realm
+  requirements grow **×400** per realm (was ×100 with `^0.4`).
+- **Risky Tribulations** — from Foundation up, ascension requires a
+  **Breakthrough Pill** (bought with career ¥ — the life-sim funds cultivation)
+  and rolls a success chance (55% base, raised by Talent/Intellect, capped 92%).
+  Failure burns the pill and scatters 30% of this life's Qi.
+- **Lifespan & generations** — each realm caps your age (80 → 100 → 150 → …).
+  Outlive it and you die, continuing as your **chosen heir**: they inherit
+  their Spiritual Root, 50% of the estate, and a permanent **bloodline legacy**
+  (+4%/realm reached, +2%/sibling, +1% per 5 stages). Children are strategy.
+  (This *bloodline succession* is separate from the voluntary realm-9
+  **Reincarnation** prestige.)
+
+---
+
 ## ▶️ Run it locally
 
 Everything runs on your machine. Two ways to launch the game:

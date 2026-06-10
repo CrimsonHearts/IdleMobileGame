@@ -63,21 +63,53 @@ const GameData = {
     // Stage-name sets reused across realms.
     const NINE = ['1st Layer','2nd Layer','3rd Layer','4th Layer','5th Layer','6th Layer','7th Layer','8th Layer','9th Layer'];
     const QUAD = ['Early Stage','Middle Stage','Late Stage','Great Perfection'];
+    /* reqQi grows x400 per realm (was x100 — a greedy-player simulation cleared
+     * half the ladder in ~5h). lifespan: max age while in this realm.
+     * pillCost: ¥ price of the Breakthrough Pill required to attempt ascension
+     * INTO this realm (0 = free tutorial tribulation). */
     return [
-      { name: 'Mortal',                   reqQi: 0,    stages: ['Mortal Body','Qi Sensing'] },
-      { name: 'Qi Condensation',          reqQi: 1e3,  stages: NINE },
-      { name: 'Foundation Establishment', reqQi: 1e5,  stages: QUAD },
-      { name: 'Core Formation',           reqQi: 1e7,  stages: QUAD },
-      { name: 'Nascent Soul',             reqQi: 1e9,  stages: QUAD },
-      { name: 'Soul Formation',           reqQi: 1e11, stages: QUAD },
-      { name: 'Void Refinement',          reqQi: 1e13, stages: QUAD },
-      { name: 'Body Integration',         reqQi: 1e15, stages: QUAD },
-      { name: 'Great Ascension',          reqQi: 1e17, stages: QUAD },
-      { name: 'Immortal Ascension',       reqQi: 1e19, stages: ['Tribulation','Half-Immortal','True Immortal','Golden Immortal'] },
+      { name: 'Mortal',                   reqQi: 0,       lifespan: 80,    pillCost: 0,      stages: ['Mortal Body','Qi Sensing'] },
+      { name: 'Qi Condensation',          reqQi: 1e3,     lifespan: 100,   pillCost: 0,      stages: NINE },
+      { name: 'Foundation Establishment', reqQi: 4e5,     lifespan: 150,   pillCost: 2e3,    stages: QUAD },
+      { name: 'Core Formation',           reqQi: 1.6e8,   lifespan: 250,   pillCost: 1.6e4,  stages: QUAD },
+      { name: 'Nascent Soul',             reqQi: 6.4e10,  lifespan: 450,   pillCost: 1.28e5, stages: QUAD },
+      { name: 'Soul Formation',           reqQi: 2.56e13, lifespan: 850,   pillCost: 1.02e6, stages: QUAD },
+      { name: 'Void Refinement',          reqQi: 1.02e16, lifespan: 1650,  pillCost: 8.2e6,  stages: QUAD },
+      { name: 'Body Integration',         reqQi: 4.1e18,  lifespan: 3250,  pillCost: 6.6e7,  stages: QUAD },
+      { name: 'Great Ascension',          reqQi: 1.64e21, lifespan: 6450,  pillCost: 5.2e8,  stages: QUAD },
+      { name: 'Immortal Ascension',       reqQi: 6.55e23, lifespan: 12850, pillCost: 4.2e9,  stages: ['Tribulation','Half-Immortal','True Immortal','Golden Immortal'] },
     ];
   })(),
 
-  /* RunQi (Qi earned this life) required to reach a given minor stage.
+  /* -- Heavenly Tribulation (breakthrough attempt) -------------------------
+   * From Foundation Establishment onward, ascension requires a Breakthrough
+   * Pill (bought with ¥ — the life-sim funds cultivation) and has a success
+   * chance raised by Talent and Intellect. Failure consumes the pill and
+   * scatters part of this life's accumulated runQi (reducing the dao payout).
+   */
+  tribulation: {
+    baseChance: 0.55,
+    talentBonus: 0.0008,    // +0.08% per Talent
+    intellectBonus: 0.0004, // +0.04% per Intellect
+    maxChance: 0.92,        // heaven always keeps a sliver of danger
+    failRunQiLoss: 0.30,    // lose 30% of runQi on failure
+  },
+
+  // -- Lifespan & generations ----------------------------------------------
+  aging: {
+    secondsPerYear: 600,    // 10 min of play = 1 year (was 150s — too fast for mortality)
+    startAge: 18,
+  },
+  legacy: {
+    perRealm: 0.04,         // +4% permanent per realm index reached at death
+    perSibling: 0.02,       // +2% per non-heir child
+    perFiveStages: 0.01,    // +1% per 5 minor stages the elder had cleared
+    descendantFactor: 0.5,  // no-heir fallback earns half legacy
+    inheritMoney: 0.5,      // heir keeps 50% of money
+  },
+
+  /* Qi CONSUMED to cultivate to a given minor stage (spending, not just a
+   * threshold — creates the spend-on-stages vs spend-on-generators decision).
    * Stages are spread geometrically between this realm's anchor and the next
    * realm's requirement; the major Tribulation becomes available once every
    * minor stage of the realm is cleared.
@@ -268,11 +300,12 @@ const GameData = {
   daoBonusPerPoint: 0.02, // +2% global production per point
 
   /* Dao Comprehension earned when breaking through, based on lifetime Qi this
-   * run. Tuned so each realm yields a meaningful jump.
+   * run. Exponent tamed from 0.4 → 0.22: the old curve let dao compound faster
+   * than realm requirements grew, collapsing the whole ladder in hours.
    */
   daoGainFor(lifetimeQiThisRun) {
-    if (lifetimeQiThisRun < 1e3) return 0;
-    return Math.floor(Math.pow(lifetimeQiThisRun / 1e3, 0.4));
+    if (lifetimeQiThisRun < 1e4) return 0;
+    return Math.floor(Math.pow(lifetimeQiThisRun / 1e4, 0.22));
   },
 
   /* -- Upgrades ------------------------------------------------------------

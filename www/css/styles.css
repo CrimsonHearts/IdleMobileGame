@@ -1077,3 +1077,13 @@ small { font-weight:400; }
   background:linear-gradient(135deg,var(--pc,#e7b94e),var(--gold-d));
   padding:9px 13px; border-radius:11px; box-shadow:0 3px 8px rgba(199,154,59,.35);
 }
+
+/* -- Progression 2.0: breakthrough pills + bloodline succession ----------- */
+#pill-btn { width:100%; padding:11px; border-radius:13px; margin-bottom:8px; border:1px solid #f3c8d8;
+  cursor:pointer; font-family:inherit; font-size:13.5px; font-weight:700; color:#b34a72; background:#fdeff4; }
+#pill-btn:disabled { opacity:.5; cursor:default; }
+.heir-list { display:flex; flex-direction:column; gap:8px; margin:12px 0; }
+.heir-card { display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--line);
+  border-radius:14px; background:var(--surface-2); cursor:pointer; font-family:inherit; text-align:left;
+  transition:border-color .15s; }
+.heir-card:hover { border-color:var(--jade); background:var(--jade-soft); }

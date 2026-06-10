@@ -85,9 +85,15 @@ const Life = {
     const s = this.s();
     if (s.jobId) { s.money += this.jobPayRate() * dt; s.jobXp += dt; }
     if (s.study && TimeService.now() >= s.study.endsAt) this._completeStudy();
-    // Aging: +1 year per 150s of play (flavour + gating).
+    // Aging: GameData.aging.secondsPerYear of play = 1 year. Lifespan is real:
+    // outlive your realm's limit and the bloodline continues through an heir.
+    const spy = GameData.aging.secondsPerYear;
     s.ageAcc += dt;
-    if (s.ageAcc >= 150) { s.ageAcc -= 150; s.age += 1; if (window.Family) Family.ageUp(); }
+    if (s.ageAcc >= spy) {
+      s.ageAcc -= spy; s.age += 1;
+      if (window.Family) Family.ageUp();
+      if (Game.isDying() && window.UI) UI.showDeathModal();
+    }
   },
 
   // ======================================================================

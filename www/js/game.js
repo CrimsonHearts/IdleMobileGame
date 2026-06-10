@@ -63,6 +63,11 @@ const Game = {
       heavenlyPerks: {},       // perk id -> level
       reincarnations: 0,       // number of past lives
 
+      // Progression 2.0: tribulation pills + bloodline generations
+      breakthroughPills: 0,    // consumables for tribulation attempts (bought with ¥)
+      generation: 1,           // which generation of the bloodline is playing
+      legacyBonus: 0,          // permanent multiplier accumulated from past lives
+
       // Daily rewards (Round 3)
       dailyStreak: 0,          // consecutive days claimed
       lastDailyDay: null,      // YYYY-MM-DD string of last claim
@@ -107,6 +112,9 @@ const Game = {
     if (this.state.heavenlyMerit === undefined) this.state.heavenlyMerit = 0;
     if (!this.state.heavenlyPerks) this.state.heavenlyPerks = {};
     if (this.state.reincarnations === undefined) this.state.reincarnations = 0;
+    if (this.state.breakthroughPills === undefined) this.state.breakthroughPills = 0;
+    if (this.state.generation === undefined) this.state.generation = 1;
+    if (this.state.legacyBonus === undefined) this.state.legacyBonus = 0;
     if (this.state.dailyStreak === undefined) this.state.dailyStreak = 0;
     if (this.state.lastDailyDay === undefined) this.state.lastDailyDay = null;
     if (!this.state.pillBag) this.state.pillBag = {};
@@ -397,6 +405,7 @@ const Game = {
     m.pet   = (window.Pets && Pets.qiMult) ? Pets.qiMult() : 1;                // Spirit Beast bond (legacy)
     m.talent= (window.Life && this.state.life) ? Life.talentMult() : 1;        // Study → Talent
     m.family= (window.Family && this.state.family) ? Family.familyMult() : 1;  // Spouse + children
+    m.legacy= 1 + (this.state.legacyBonus || 0);                               // Bloodline generations
     // Meridian tree (Round 2): Qi, tap, offline, beast bonuses.
     m.allMult    *= (1 + this.meridianMult('qi'));
     m.tapMult    *= (1 + this.meridianMult('tap'));
@@ -435,7 +444,7 @@ const Game = {
   /** Combined permanent global multiplier. */
   globalMult() {
     const m = this.multipliers();
-    return m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family;
+    return m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family * m.legacy;
   },
 
   /** Number of generators owned at the "mastered" depth (for synergy). */
@@ -457,13 +466,13 @@ const Game = {
       if (owned) base += g.baseProd * owned * GameData.genMilestoneMultiplier(owned);
     });
     base *= this.synergyMult();
-    return base * m.allMult * m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family;
+    return base * m.allMult * m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family * m.legacy;
   },
 
   /** Qi gained per manual meditate tap. */
   qiPerTap() {
     const m = this.multipliers();
-    return GameData.tap.baseGain * m.tapMult * m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family;
+    return GameData.tap.baseGain * m.tapMult * m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family * m.legacy;
   },
 
   generatorCost(g, count = 1) {
@@ -560,12 +569,14 @@ const Game = {
 
   canAdvanceStage() {
     const req = this.nextStageReq();
-    return req !== null && this.state.runQi >= req;
+    return req !== null && this.state.qi >= req;
   },
 
-  /** Advance one minor stage: permanent +5% Cultivation Base, no reset. */
+  /** Advance one minor stage: CONSUMES the Qi (spend on power vs economy),
+   *  grants permanent +5% Cultivation Base, no reset. */
   advanceStage() {
     if (!this.canAdvanceStage()) return false;
+    this.state.qi -= this.nextStageReq();
     this.state.stage += 1;
     this.state.stagesCleared += 1;
     const result = {
@@ -597,8 +608,41 @@ const Game = {
   },
 
   // -- Major breakthrough (Heavenly Tribulation = prestige) -----------------
-  canBreakThrough() {
+  /** All minor stages cleared and a next realm exists (pill checked separately). */
+  realmReadyForTribulation() {
     return this.realmComplete() && !!this.nextRealm();
+  },
+
+  /** Does ascending to the next realm require a Breakthrough Pill? */
+  pillRequired() {
+    const next = this.nextRealm();
+    return !!next && next.pillCost > 0;
+  },
+
+  hasPill() { return (this.state.breakthroughPills || 0) > 0; },
+
+  buyPill() {
+    const next = this.nextRealm();
+    if (!next || next.pillCost <= 0) return false;
+    const life = this.state.life;
+    if (!life || life.money < next.pillCost) return false;
+    life.money -= next.pillCost;
+    this.state.breakthroughPills = (this.state.breakthroughPills || 0) + 1;
+    return true;
+  },
+
+  /** Success chance for the tribulation attempt (raised by Talent/Intellect). */
+  tribulationChance() {
+    const t = GameData.tribulation;
+    if (!this.pillRequired()) return 1; // tutorial realms are guaranteed
+    const life = this.state.life || {};
+    const c = t.baseChance + (life.talent || 0) * t.talentBonus + (life.intellect || 0) * t.intellectBonus;
+    return Math.min(t.maxChance, c);
+  },
+
+  /** Pill in hand (or not needed) + realm complete = may attempt. */
+  canBreakThrough() {
+    return this.realmReadyForTribulation() && (!this.pillRequired() || this.hasPill());
   },
 
   /** Dao Comprehension that a Tribulation would currently award. */
@@ -610,6 +654,15 @@ const Game = {
 
   breakThrough() {
     if (!this.canBreakThrough()) return false;
+
+    // The Tribulation is risky: consume the pill, then roll for success.
+    if (this.pillRequired()) this.state.breakthroughPills -= 1;
+    if (Math.random() > this.tribulationChance()) {
+      this.state.runQi *= (1 - GameData.tribulation.failRunQiLoss);
+      this.persist();
+      return { failed: true };
+    }
+
     const runQiAtBreak = this.state.runQi;
     const realmIndex   = this.state.realm;
 
@@ -647,6 +700,69 @@ const Game = {
     this.state.runQi = 0;
     GameData.generators.forEach(g => { this.state.owned[g.id] = 0; });
     return { gain, realm: GameData.realms[this.state.realm], quality, conditionsHit };
+  },
+
+  // -------------------------------------------------------------------------
+  // Lifespan & bloodline succession (distinct from voluntary Reincarnation):
+  // each realm caps your age; outlive it and the bloodline continues through
+  // a chosen heir, who inherits their root, part of the estate, and a legacy.
+  // -------------------------------------------------------------------------
+  lifespan() { return this.currentRealm().lifespan; },
+
+  isDying() {
+    const life = this.state.life;
+    return !!life && life.age >= this.lifespan() && !!this.nextRealm();
+  },
+
+  /** Legacy bonus the CURRENT character would leave behind on death. */
+  pendingLegacyGain(heir) {
+    const L = GameData.legacy;
+    const fam = this.state.family || { children: [] };
+    const siblings = Math.max(0, fam.children.length - (heir ? 1 : 0));
+    let gain = this.state.realm * L.perRealm
+             + siblings * L.perSibling
+             + Math.floor(this.state.stagesCleared / 5) * L.perFiveStages;
+    if (!heir) gain *= L.descendantFactor; // dao scatters without a bloodline heir
+    return gain;
+  },
+
+  /** Die and continue as `heir` (a child object) or, with no children, as a
+   *  distant descendant. Keeps: dao, merit, perks, meridians, legacy, money
+   *  share. Resets: body cultivation, education, career, family. */
+  passToHeir(heir) {
+    const L = GameData.legacy;
+    this.state.legacyBonus = (this.state.legacyBonus || 0) + this.pendingLegacyGain(heir);
+    this.state.generation = (this.state.generation || 1) + 1;
+
+    // New body inherits the heir's identity & root (or rolls a descendant).
+    if (heir) {
+      this.state.name = heir.name;
+      this.state.gender = heir.gender;
+      this.state.spiritualRoot = heir.root;
+    } else {
+      this.state.spiritualRoot = GameData.rollSpiritualRoot();
+    }
+
+    // Cultivation dies with the body; dao + legacy persist in the bloodline.
+    this.state.realm = 0; this.state.stage = 0; this.state.stagesCleared = 0;
+    this.state.qi = 0; this.state.runQi = 0;
+    this.state.upgrades = {};
+    this.state.breakthroughPills = 0;
+    GameData.generators.forEach(g => { this.state.owned[g.id] = 0; });
+
+    // Life restarts young, with an inheritance; the new soul studies anew.
+    if (this.state.life) {
+      this.state.life.money *= L.inheritMoney;
+      this.state.life.age = GameData.aging.startAge;
+      this.state.life.ageAcc = 0;
+      this.state.life.education = 0; this.state.life.study = null;
+      this.state.life.jobId = null; this.state.life.jobXp = 0;
+      this.state.life.intellect = 0; this.state.life.charm = 0; this.state.life.talent = 0;
+    }
+    if (this.state.family) this.state.family = { candidates: [], spouse: null, children: [], childCooldown: 0 };
+    if (window.Family) Family.init();
+    this.persist();
+    return { generation: this.state.generation, legacy: this.state.legacyBonus };
   },
 
   // -------------------------------------------------------------------------

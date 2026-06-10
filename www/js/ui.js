@@ -17,6 +17,7 @@ const UI = {
       qps: $('qps'),
       money: $('money-amount'),
       age: $('age-val'),
+      gen: $('gen-val'),
       studyPanel: $('tab-study'),
       workPanel: $('tab-work'),
       lifePanel: $('tab-life'),
@@ -224,6 +225,13 @@ const UI = {
         ${nextFq ? `<span class="fq-next">Cultivate to ${(nextFq.minRatio).toFixed(1)}× req Qi for <b style="color:${nextFq.color}">${nextFq.name}</b></span>` : ''}
       </div>` : '';
 
+    const needPill = Game.pillRequired();
+    const chance = (Game.tribulationChance() * 100).toFixed(0);
+    const riskHtml = needPill
+      ? `<p class="hint" style="margin-top:6px">Success chance: <b>${chance}%</b> (raised by Talent & Intellect) ·
+         consumes <b>1 Breakthrough Pill</b>.<br>On failure the pill is lost and
+         ${(GameData.tribulation.failRunQiLoss * 100).toFixed(0)}% of this life's Qi scatters.</p>`
+      : '';
     overlay.innerHTML = `
       <div class="modal">
         <h2>⚡ Heavenly Tribulation</h2>
@@ -231,15 +239,22 @@ const UI = {
            You will gain <b>+${GameNumbers.formatNumber(gain)} Dao Comprehension</b>,
            granting <b>+${(gain * GameData.daoBonusPerPoint * 100).toFixed(0)}%</b> permanent production.<br><br>
            Your Qi and all generators will reset. Your progress and Spiritual Root remain.</p>
+        ${riskHtml}
         ${fqHtml}
         <button class="btn-primary" id="confirm-tribulation" style="background:linear-gradient(180deg,#e7b94e,var(--gold-d));box-shadow:0 4px 14px rgba(199,154,59,0.4)">
-          ⚡ Face the Tribulation
+          ⚡ Face the Tribulation${needPill ? ` (${chance}%)` : ''}
         </button>
         <button class="btn-ghost" id="cancel-tribulation" style="margin-top:8px">Not yet</button>
       </div>`;
     overlay.querySelector('#confirm-tribulation').addEventListener('click', () => {
       overlay.remove();
       const result = Game.breakThrough();
+      if (result && result.failed) {
+        Game.persist();
+        this.renderAll();
+        this.toast('⛈ The Tribulation lightning proved too fierce — the attempt failed. Recover and try again.');
+        return;
+      }
       if (result) {
         this.breakthroughFlash();
         Game.persist();
@@ -274,7 +289,8 @@ const UI = {
     this.el.qi.textContent = GameNumbers.formatNumber(Game.state.qi);
     this.el.qps.textContent = GameNumbers.formatRate(Game.qiPerSecond());
     if (this.el.money && Game.state.life) this.el.money.textContent = GameNumbers.formatNumber(Game.state.life.money);
-    if (this.el.age && Game.state.life) this.el.age.textContent = Game.state.life.age;
+    if (this.el.age && Game.state.life) this.el.age.textContent = Game.state.life.age + '/' + Game.lifespan();
+    if (this.el.gen) this.el.gen.textContent = Game.state.generation || 1;
     this.el.dao.textContent = GameNumbers.formatNumber(Game.state.daoComprehension);
     this.el.tapGain.textContent = '+' + GameNumbers.formatNumber(Game.qiPerTap());
   },
@@ -726,49 +742,130 @@ const UI = {
     const canAdvance = Game.canAdvanceStage();
     const canBreak = Game.canBreakThrough();
 
-    // -- Progress bar: toward next minor stage, or toward Tribulation ------
+    // -- Progress bar: Qi held toward the next stage's cost -----------------
     if (!realmComplete) {
       const req = Game.nextStageReq();
-      this.el.progressFill.style.width = (Math.min(1, Game.state.runQi / req) * 100).toFixed(1) + '%';
+      this.el.progressFill.style.width = (Math.min(1, Game.state.qi / req) * 100).toFixed(1) + '%';
       this.el.progressLabel.textContent =
-        GameNumbers.formatNumber(Game.state.runQi) + ' / ' + GameNumbers.formatNumber(req) + ' Qi (this life)';
+        GameNumbers.formatNumber(Game.state.qi) + ' / ' + GameNumbers.formatNumber(req) + ' Qi held';
     } else {
       this.el.progressFill.style.width = '100%';
       this.el.progressLabel.textContent = next ? 'Cultivation perfected — Tribulation awaits' : 'Peak of cultivation';
     }
 
-    // -- Minor breakthrough button ----------------------------------------
+    // -- Minor breakthrough button (consumes Qi) ----------------------------
     this.el.advanceBtn.style.display = (!realmComplete) ? '' : 'none';
     this.el.advanceBtn.disabled = !canAdvance;
     this.el.advanceBtn.classList.toggle('ready', canAdvance);
     if (!realmComplete) {
       const realm = Game.currentRealm();
       const nextStage = realm.stages[Game.state.stage];
+      const cost = GameNumbers.formatNumber(Game.nextStageReq());
       this.el.advanceBtn.textContent = canAdvance
-        ? `⬆ Breakthrough → ${nextStage}`
-        : `Need ${GameNumbers.formatNumber(Game.nextStageReq())} Qi → ${nextStage}`;
+        ? `⬆ Cultivate → ${nextStage} (spend ${cost} Qi)`
+        : `Gather ${cost} Qi → ${nextStage}`;
     }
 
-    // -- Major Tribulation button -----------------------------------------
+    // -- Major Tribulation: pill + success chance ----------------------------
     if (!next) {
-      this.el.breakBtn.style.display = realmComplete ? 'none' : 'none';
+      this.el.breakBtn.style.display = 'none';
+      if (this.el.pillBtn) this.el.pillBtn.style.display = 'none';
       this.el.breakInfo.innerHTML = realmComplete
         ? '☯ You have reached the peak of immortal cultivation.'
         : 'Climb every stage of this realm to perfect your cultivation.';
     } else {
+      const needPill = Game.pillRequired();
+      const hasPill = Game.hasPill();
+      const chance = (Game.tribulationChance() * 100).toFixed(0);
+      const gain = Game.pendingDaoGain();
+
+      // Pill purchase button lives next to the tribulation button.
+      this.ensurePillButton();
+      const showPillBtn = realmComplete && needPill && !hasPill;
+      this.el.pillBtn.style.display = showPillBtn ? '' : 'none';
+      if (showPillBtn) {
+        const afford = Game.state.life && Game.state.life.money >= next.pillCost;
+        this.el.pillBtn.disabled = !afford;
+        this.el.pillBtn.textContent = `Buy Breakthrough Pill — ¥${GameNumbers.formatNumber(next.pillCost)}`;
+      }
+
       this.el.breakBtn.style.display = realmComplete ? '' : 'none';
       this.el.breakBtn.disabled = !canBreak;
       this.el.breakBtn.classList.toggle('ready', canBreak);
-      const gain = Game.pendingDaoGain();
+      this.el.breakBtn.textContent = needPill
+        ? `⚡ Heavenly Tribulation (${chance}% — uses 1 pill)`
+        : `⚡ Heavenly Tribulation`;
       this.el.breakInfo.innerHTML = realmComplete
-        ? `⚡ Face the Heavenly Tribulation to ascend to <b>${next.name}</b> for <b>+${GameNumbers.formatNumber(gain)}</b> Dao.`
+        ? (needPill && !hasPill
+            ? `A <b>Breakthrough Pill</b> is needed to withstand the Tribulation to <b>${next.name}</b>. Earn ¥ through your career.`
+            : `⚡ Face the Heavenly Tribulation to ascend to <b>${next.name}</b> for <b>+${GameNumbers.formatNumber(gain)}</b> Dao. Success: <b>${chance}%</b>.`)
         : `Advance through all stages of <b>${tier.realm}</b>, then face Tribulation to ascend to <b>${next.name}</b>.`;
     }
   },
 
+  /** Lazily insert the pill-purchase button above the tribulation button. */
+  ensurePillButton() {
+    if (this.el.pillBtn) return;
+    const btn = document.createElement('button');
+    btn.id = 'pill-btn';
+    btn.addEventListener('click', () => {
+      if (Game.buyPill()) {
+        Game.persist();
+        this.renderAll();
+        this.toast('💊 Breakthrough Pill acquired. The Tribulation awaits.');
+      }
+    });
+    this.el.breakBtn.parentNode.insertBefore(btn, this.el.breakBtn);
+    this.el.pillBtn = btn;
+  },
+
+  /** Lifespan reached: choose an heir and continue the bloodline. */
+  showDeathModal() {
+    if (this._deathShown) return;
+    this._deathShown = true;
+    const children = (Game.state.family && Game.state.family.children) || [];
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+
+    const heirCards = children.length
+      ? children.map((c, i) => `
+          <button class="heir-card" data-i="${i}">
+            <span class="li-icon" style="color:${c.root.color}">${c.gender === 'female' ? '👧' : '👦'}</span>
+            <span class="li-main"><span class="li-name">${c.name}</span>
+              <span class="li-sub" style="color:${c.root.color}">${c.root.name}</span></span>
+          </button>`).join('')
+      : `<p class="hint">You leave no children. A distant descendant will inherit a
+         scattered fraction of your dao (+${(Game.pendingLegacyGain(null) * 100).toFixed(0)}% legacy).</p>`;
+
+    const legacyWithHeir = children.length ? (Game.pendingLegacyGain(children[0]) * 100).toFixed(0) : null;
+    overlay.innerHTML = `
+      <div class="modal">
+        <h2>⏳ Your Lifespan Ends</h2>
+        <p>At age <b>${Game.state.life.age}</b>, ${Game.state.name}'s dao reaches its mortal limit.
+           Dao Comprehension and your family legacy pass on to the next generation${legacyWithHeir !== null ? ` (<b>+${legacyWithHeir}%</b> permanent legacy)` : ''}.</p>
+        ${children.length ? '<p class="hint">Choose your heir:</p>' : ''}
+        <div class="heir-list">${heirCards}</div>
+        ${children.length ? '' : '<button class="modal-close" id="descendant-btn">Continue the Bloodline</button>'}
+      </div>`;
+
+    const finish = (heir) => {
+      const r = Game.passToHeir(heir);
+      overlay.remove();
+      this._deathShown = false;
+      this.applyGenderEmblem();
+      this.renderAll();
+      this.toast(`🕯 Generation ${r.generation} begins. Bloodline legacy: +${(r.legacy * 100).toFixed(0)}% — honor your ancestors.`);
+    };
+    overlay.querySelectorAll('.heir-card').forEach(b =>
+      b.addEventListener('click', () => finish(children[parseInt(b.dataset.i, 10)])));
+    const d = overlay.querySelector('#descendant-btn');
+    if (d) d.addEventListener('click', () => finish(null));
+    document.body.appendChild(overlay);
+  },
+
   multAll() {
     const m = Game.multipliers();
-    return m.allMult * m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family;
+    return m.allMult * m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family * m.legacy;
   },
 
 
