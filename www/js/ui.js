@@ -1000,7 +1000,66 @@ const UI = {
     else if (this.worldSub === 'beasts') this.renderBeasts();
     else if (this.worldSub === 'sect')   this.renderSect();
     else if (this.worldSub === 'gear')   this.renderArtifacts();
+    else if (this.worldSub === 'market') this.renderMarket();
     else if (this.worldSub === 'realm')  this.renderSecretRealm();
+  },
+
+  // ======================================================================
+  // MARKET — drifting-price ¥ economy
+  // ======================================================================
+  renderMarket() {
+    const el = document.getElementById('sub-market');
+    if (!el || !window.Market) return;
+    Market.drift(false); // refresh if the cadence elapsed
+    const amt = this.marketBuyAmt || 1;
+    const money = (Game.state.life && Game.state.life.money) || 0;
+    const arrow = t => t > 0 ? '<span class="mk-up">▲</span>' : t < 0 ? '<span class="mk-dn">▼</span>' : '<span class="mk-flat">▬</span>';
+    const qtyFor = id => amt === 'max' ? Math.max(1, Market.maxAffordable(id)) : amt;
+
+    let html = `<div class="section-title">🏪 Spirit Market <small>¥${GameNumbers.formatNumber(money)}</small></div>
+      <div class="hint">Prices drift every minute — buy low. A scaling sink for your career earnings.</div>
+      <div class="buy-amt-row">
+        ${[1,10,100,'max'].map(n => `<button class="buy-amt-btn${(this.marketBuyAmt||1)===n?' on':''}" data-amt="${n}">${n==='max'?'Max':'×'+n}</button>`).join('')}
+      </div>
+      <div class="mk-list">`;
+    GameData.market.goods.forEach(g => {
+      const unit = Market.price(g.id);
+      const qty = qtyFor(g.id);
+      const cost = unit * qty;
+      const afford = money >= cost && qty > 0;
+      html += `<div class="mk-item">
+        <span class="mk-ico">${g.icon}</span>
+        <span class="mk-main"><span class="mk-name">${g.name} ${arrow(Market.trend(g.id))}</span>
+          <span class="muted">¥${GameNumbers.formatNumber(unit)}/ea · ${g.desc}</span></span>
+        <button class="btn-mini buy" data-buy="${g.id}" ${afford?'':'disabled'}>Buy ${qty>1?'×'+qty+' ':''}¥${GameNumbers.formatNumber(cost)}</button>
+      </div>`;
+    });
+    html += `</div><div class="section-title small">Sell Surplus</div><div class="mk-list">`;
+    GameData.market.sellable.forEach(d => {
+      const have = Game.state[d.from] || 0;
+      const sp = Market.sellPrice(d.id);
+      const qty = amt === 'max' ? have : Math.min(amt, have);
+      html += `<div class="mk-item">
+        <span class="mk-ico">${d.icon}</span>
+        <span class="mk-main"><span class="mk-name">${d.name}</span><span class="muted">Have ${GameNumbers.formatNumber(have)} · sells ¥${GameNumbers.formatNumber(sp)}/ea</span></span>
+        <button class="btn-mini sell" data-sell="${d.id}" ${qty>0?'':'disabled'}>Sell ${qty>1?'×'+qty+' ':''}¥${GameNumbers.formatNumber(sp*qty)}</button>
+      </div>`;
+    });
+    html += `</div>`;
+    el.innerHTML = html;
+
+    el.querySelectorAll('.buy-amt-btn').forEach(b => b.addEventListener('click', () => {
+      this.marketBuyAmt = b.dataset.amt === 'max' ? 'max' : parseInt(b.dataset.amt, 10);
+      this.renderMarket();
+    }));
+    el.querySelectorAll('[data-buy]').forEach(b => b.addEventListener('click', () => {
+      if (Market.buy(b.dataset.buy, qtyFor(b.dataset.buy))) { this.renderMarket(); this.renderResources(); this.toast('🏪 Purchase complete.'); }
+    }));
+    el.querySelectorAll('[data-sell]').forEach(b => b.addEventListener('click', () => {
+      const have = Game.state[GameData.market.sellable.find(x=>x.id===b.dataset.sell).from] || 0;
+      const q = (this.marketBuyAmt||1)==='max' ? have : Math.min(this.marketBuyAmt||1, have);
+      if (Market.sell(b.dataset.sell, q)) { this.renderMarket(); this.renderResources(); }
+    }));
   },
 
   // ======================================================================

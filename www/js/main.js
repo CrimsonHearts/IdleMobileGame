@@ -18,6 +18,7 @@
   if (window.Life) Life.init();
   if (window.Family) Family.init();
   if (window.Quests) Quests.init();
+  if (window.Market) Market.init();
 
   // 3. Apply offline progress with anti-cheat checks.
   const offline = Game.applyOffline();

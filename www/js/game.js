@@ -87,6 +87,9 @@ const Game = {
       // Artifacts / equipment (Round 6)
       artifacts: { inventory: [], equipped: { weapon: null, robe: null, talisman: null, ring: null } },
 
+      // Market (Round 8): drifting prices
+      market: null,
+
       // Anti-cheat audit fields:
       maxSeenTime: TimeService.now(), // highest wall-clock ever observed
       cheatFlags: 0,                  // count of suspicious backward jumps
@@ -136,6 +139,7 @@ const Game = {
     if (!this.state.buffs) this.state.buffs = [];
     if (!this.state.secretRealm) this.state.secretRealm = { lastRunDay: null, highestFloor: 0 };
     if (!this.state.artifacts) this.state.artifacts = { inventory: [], equipped: { weapon: null, robe: null, talisman: null, ring: null } };
+    if (window.Market) Market.init();
     this._lastTickMono = TimeService.monotonicNow();
   },
 
@@ -930,6 +934,9 @@ const Game = {
 
     // Karma life events: roll on a timer once the character exists.
     if (window.Events && this.state.characterCreated) Events.tick(dtSec);
+
+    // Market prices drift on their own cadence.
+    if (window.Market && this.state.market) Market.drift(false);
 
     // Hidden mechanic: lucky number check.
     if (window.Quests) Quests.checkLuckyNumbers();

@@ -674,7 +674,26 @@ const GameData = {
     setBonus: { two: { combat: 0.15, qi: 0.05 }, four: { combat: 0.45, qi: 0.15 } },
   },
 
-  saveVersion: 6,
+  /* ── Market (Round 8) ───────────────────────────────────────────────────
+   * A scaling ¥ sink with drifting prices: buy resources low, dump surplus.
+   * Prices random-walk within a band around a realm-scaled base, so checking
+   * the market and timing purchases matters. */
+  market: {
+    driftEverySec: 60,      // prices step on this cadence
+    driftAmt: 0.10,         // ±10% per step
+    bandLow: 0.55, bandHigh: 1.6,
+    sellRate: 0.70,         // you sell to the market at 70% of current price
+    realmScale: 1.8,        // base price ×1.8 per realm reached
+    goods: [
+      { id: 'stones', name: 'Spirit Stones', icon: '💎', base: 80,    give: { stones: 1 },  desc: 'Refine pets & sect perks.' },
+      { id: 'egg',    name: 'Beast Egg',     icon: '🥚', base: 9000,  give: { eggs: 1 },    desc: 'Tame a new spirit beast.' },
+      { id: 'pill',   name: 'Breakthrough Pill', icon: '💊', base: 0, dynamic: 'pill', give: { pill: 1 }, desc: 'Stock up when prices dip.' },
+      { id: 'qi',     name: 'Qi Infusion',   icon: '☯', base: 60000, give: { qiHours: 1 },  desc: 'Instantly gain 1 hour of Qi output.' },
+    ],
+    sellable: [ { id: 'stones', name: 'Spirit Stones', icon: '💎', from: 'spiritStones' } ],
+  },
+
+  saveVersion: 7,
   saveKey: 'xianxia_idle_save_v1',
 };
 
