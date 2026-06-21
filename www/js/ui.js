@@ -1511,6 +1511,8 @@ const UI = {
         this.renderAll();
         overlay.remove();
         this.toast(`☯ Welcome, ${Game.state.name}. Your ${bestRoot.name} Root awakens!`);
+        // First-session onboarding (once).
+        if (window.Tutorial) setTimeout(() => Tutorial.start(), 350);
       });
 
       // Portrait

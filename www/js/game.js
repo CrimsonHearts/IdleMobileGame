@@ -74,6 +74,7 @@ const Game = {
       karma: 0,                // Righteous(+) / Demonic(−) alignment
       eventAcc: 0,             // seconds accumulated toward the next life event
       combatBuffEndsAt: 0,     // wall-clock ms; +50% combat while active
+      tutorialDone: false,     // first-session onboarding shown
 
       // Daily rewards (Round 3)
       dailyStreak: 0,          // consecutive days claimed
@@ -133,6 +134,7 @@ const Game = {
     if (this.state.karma === undefined) this.state.karma = 0;
     if (this.state.eventAcc === undefined) this.state.eventAcc = 0;
     if (this.state.combatBuffEndsAt === undefined) this.state.combatBuffEndsAt = 0;
+    if (this.state.tutorialDone === undefined) this.state.tutorialDone = false;
     if (this.state.dailyStreak === undefined) this.state.dailyStreak = 0;
     if (this.state.lastDailyDay === undefined) this.state.lastDailyDay = null;
     if (!this.state.pillBag) this.state.pillBag = {};
