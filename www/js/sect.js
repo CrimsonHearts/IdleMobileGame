@@ -11,23 +11,23 @@
  * ========================================================================= */
 
 const SECTS_DATA = [
-  { id: 'sword',   name: 'Azure Cloud Sword Sect', seal: 'S', color: '#6fb594',
+  { id: 'sword',   name: 'Azure Cloud Sword Sect', seal: 'S', color: '#6fb594', align: 'orthodox',
     desc: 'Disciples temper flying swords and sword-intent. Masters of combat.',
     bonusDesc: '+30% combat power, +10% Qi production',
     qiMult: 1.10, combatMult: 1.30, petMult: 1.0, offlineBonus: 0 },
-  { id: 'pill',    name: 'Cinnabar Pill Sect',     seal: 'P', color: '#e7c878',
+  { id: 'pill',    name: 'Cinnabar Pill Sect',     seal: 'P', color: '#e7c878', align: 'orthodox',
     desc: 'Alchemists who refine Qi into pills. Renowned for steady cultivation.',
     bonusDesc: '+15% Qi production, +25% offline efficiency',
     qiMult: 1.15, combatMult: 1.0, petMult: 1.0, offlineBonus: 0.25 },
-  { id: 'beast',   name: 'Myriad Beast Sect',      seal: 'B', color: '#5aa9e6',
+  { id: 'beast',   name: 'Myriad Beast Sect',      seal: 'B', color: '#5aa9e6', align: 'neutral',
     desc: 'Beast-tamers who bond with spirit beasts. Their companions are peerless.',
     bonusDesc: '+35% spirit-beast bonuses, +15% combat power',
     qiMult: 1.0, combatMult: 1.15, petMult: 1.35, offlineBonus: 0 },
-  { id: 'talisman',name: 'Grand Void Talisman Sect', seal: 'T', color: '#b48ee0',
+  { id: 'talisman',name: 'Grand Void Talisman Sect', seal: 'T', color: '#b48ee0', align: 'orthodox',
     desc: 'Scholars who inscribe the Dao onto talismans. Balanced and wise.',
     bonusDesc: '+25% Qi production',
     qiMult: 1.25, combatMult: 1.0, petMult: 1.0, offlineBonus: 0 },
-  { id: 'demon',   name: 'Blood Demon Sect',       seal: 'D', color: '#c8503f',
+  { id: 'demon',   name: 'Blood Demon Sect',       seal: 'D', color: '#c8503f', align: 'demonic',
     desc: 'A heterodox path of slaughter. Immense power at a price.',
     bonusDesc: '+50% combat power, +30% Spirit Stone drops, −10% Qi production',
     qiMult: 0.90, combatMult: 1.50, petMult: 1.0, offlineBonus: 0, lootMult: 1.30 },
@@ -116,11 +116,27 @@ const Sect = {
   lootMult()    { const s = this.current(); return s ? (s.lootMult || 1) : 1; },
 
   // -- Membership ----------------------------------------------------------
+  /** Karma gate: orthodox sects reject the demonic; the Blood Demon Sect
+   *  rejects the righteous. Returns { ok, reason }. */
+  joinRequirement(sectId) {
+    const s = SECTS_DATA.find(x => x.id === sectId);
+    if (!s) return { ok: false, reason: 'Unknown sect.' };
+    const tier = (window.Game && Game.karmaTier) ? Game.karmaTier() : 'neutral';
+    if (s.align === 'orthodox' && tier === 'demonic')
+      return { ok: false, reason: 'Orthodox sects will not accept one walking the Demonic path. Redeem your karma first.' };
+    if (s.align === 'demonic' && tier === 'righteous')
+      return { ok: false, reason: 'The Blood Demon Sect scorns the righteous. Your karma is too pure.' };
+    return { ok: true };
+  },
+  canJoin(sectId) { return this.joinRequirement(sectId).ok; },
+
   async join(sectId) {
+    if (!this.canJoin(sectId)) return { ok: false };
     await this.backend.join(sectId);
     // Switching sects forfeits contribution (defection penalty).
     Game.state.sect = { id: sectId, contribution: 0, joinedAt: TimeService.now() };
     Game.persist();
+    return { ok: true };
   },
   async leave() {
     await this.backend.leave();

@@ -69,7 +69,7 @@ const Combat = {
   // -- Loot -----------------------------------------------------------------
   _loot(mob) {
     const c = Game.state.combat;
-    const lootMult = Sect.lootMult();
+    const lootMult = Sect.lootMult() * ((window.Game && Game.karmaLootMult) ? Game.karmaLootMult() : 1);
     const stones = Math.max(1, Math.round(mob.maxHp * 0.04 * lootMult));
     Game.state.spiritStones += stones;
     // A little Qi too.

@@ -836,7 +836,8 @@ const UI = {
     const tier = Game.karmaTier();
     const karmaLabel = tier === 'righteous' ? '☯ Righteous' : tier === 'demonic' ? '🩸 Demonic' : '⚖ Neutral';
     const karmaColor = tier === 'righteous' ? 'var(--jade-d)' : tier === 'demonic' ? '#c8503f' : 'var(--muted)';
-    let html = `<span class="karma-chip" style="color:${karmaColor}">${karmaLabel} (${Game.state.karma|0})</span>`;
+    const perk = (Game.karmaMods && Game.karmaMods().desc) ? Game.karmaMods().desc : '';
+    let html = `<span class="karma-chip" style="color:${karmaColor}" title="${perk}">${karmaLabel} (${Game.state.karma|0})${tier!=='neutral' ? ' · '+perk : ''}</span>`;
     if (path) {
       html = `<span class="path-chip" style="border-color:${path.color};color:${path.color}">${path.icon} ${path.name}</span>` + html;
       el.innerHTML = html;
@@ -1270,24 +1271,29 @@ const UI = {
     let html = `<div class="section-title">🏯 Join a Sect</div>
       <div class="hint">Pledge to one of the great cultivation orders for a permanent bonus. Earn Contribution over time and through Trials to rise in rank.</div>
       <div class="sect-list">`;
+    const alignTag = a => a === 'orthodox' ? '<span class="align-chip good">Orthodox</span>'
+                        : a === 'demonic'  ? '<span class="align-chip bad">Demonic</span>'
+                        : '<span class="align-chip">Neutral</span>';
     Sect.data.forEach(s => {
+      const req = Sect.joinRequirement(s.id);
       html += `
-        <div class="card sect-option" style="border-color:${s.color}">
+        <div class="card sect-option${req.ok ? '' : ' locked'}" style="border-color:${s.color}">
           <div class="sect-head">
             <div class="sect-seal" style="background:${s.color}">${s.seal}</div>
-            <div class="sect-info"><div class="card-title">${s.name}</div>
+            <div class="sect-info"><div class="card-title">${s.name} ${alignTag(s.align)}</div>
               <div class="hint">${s.desc}</div></div>
           </div>
           <div class="sect-bonus" style="color:${s.color}">✦ ${s.bonusDesc}</div>
-          <button class="btn-primary sm" data-join="${s.id}">Pledge</button>
+          ${req.ok
+            ? `<button class="btn-primary sm" data-join="${s.id}">Pledge</button>`
+            : `<div class="sect-locked">🔒 ${req.reason}</div>`}
         </div>`;
     });
     html += `</div>`;
     el.innerHTML = html;
     el.querySelectorAll('button[data-join]').forEach(b => b.addEventListener('click', () => {
-      Sect.join(b.dataset.join).then(() => {
-        this.toast(`🏯 You joined the ${Sect.current().name}!`);
-        this.renderSect(); this.renderResources();
+      Sect.join(b.dataset.join).then(r => {
+        if (r && r.ok) { this.toast(`🏯 You joined the ${Sect.current().name}!`); this.renderSect(); this.renderResources(); }
       });
     }));
   },

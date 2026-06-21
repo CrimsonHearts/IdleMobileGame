@@ -192,7 +192,7 @@ const Game = {
   combatExternalMult() {
     const buff = (this.state.combatBuffEndsAt && TimeService.now() < this.state.combatBuffEndsAt) ? 1.5 : 1;
     const gear = window.Artifacts ? Artifacts.combatMult() : 1; // artifact set bonuses
-    return this.modVal('combat') * buff * gear;
+    return this.modVal('combat') * buff * gear * (this.karmaMods().combat || 1);
   },
   /** Flat combat stats from equipped artifacts (read by Combat). */
   gearAtk() { return window.Artifacts ? Artifacts.atk() : 0; },
@@ -209,6 +209,11 @@ const Game = {
   addKarma(d) {
     this.state.karma = Math.max(GameData.karma.min, Math.min(GameData.karma.max, (this.state.karma || 0) + d));
   },
+  /** Passive bonuses from the current karma tier (read by multipliers/combat). */
+  karmaMods() {
+    return GameData.karma.tierBonus[this.karmaTier()] || GameData.karma.tierBonus.neutral;
+  },
+  karmaLootMult() { return this.karmaMods().loot || 1; },
   /** Apply a life-event option's effects (mutates state). */
   applyEventEffects(eff) {
     if (!eff) return;
@@ -508,6 +513,10 @@ const Game = {
     m.family      *= mods.family;
     // Artifacts: equipped Qi% + set bonuses (Round 6)
     if (window.Artifacts) m.allMult *= (1 + Artifacts.qiPct());
+    // Karma alignment perks (Round 7)
+    const km = this.karmaMods();
+    m.allMult *= km.qi;
+    m.offlineBonus += km.offline;
     // Meridian tree (Round 2): Qi, tap, offline, beast bonuses.
     m.allMult    *= (1 + this.meridianMult('qi'));
     m.tapMult    *= (1 + this.meridianMult('tap'));
@@ -746,7 +755,7 @@ const Game = {
     if (!this.pillRequired()) return 1; // tutorial realms are guaranteed
     const life = this.state.life || {};
     const c = t.baseChance + (life.talent || 0) * t.talentBonus + (life.intellect || 0) * t.intellectBonus
-            + this.modVal('tribChance');
+            + this.modVal('tribChance') + (this.karmaMods().tribChance || 0);
     return Math.min(t.maxChance, c);
   },
 

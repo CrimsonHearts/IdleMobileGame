@@ -15,10 +15,19 @@ const Events = {
     }
   },
 
+  /** Events available at the current karma tier (neutral events always show;
+   *  align-tagged events only appear when you're on that path). */
+  pool() {
+    const tier = (window.Game && Game.karmaTier) ? Game.karmaTier() : 'neutral';
+    return GameData.lifeEvents.filter(e => !e.align || e.align === tier);
+  },
+
   /** Force a random event (used by the timer; also handy for testing). */
   trigger() {
     if (!window.UI || !UI.showLifeEvent) return null;
-    const ev = GameData.lifeEvents[Math.floor(Math.random() * GameData.lifeEvents.length)];
+    const pool = this.pool();
+    const ev = pool[Math.floor(Math.random() * pool.length)];
+    if (!ev) return null;
     this._active = true;
     UI.showLifeEvent(ev, () => { this._active = false; });
     return ev;

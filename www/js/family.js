@@ -90,6 +90,22 @@ const Family = {
   _seed() {
     const list = [];
     for (let i = 0; i < 4; i++) list.push(this._makeCandidate('free', 20, false));
+    // Karma draws a like-minded soul: the righteous attract a virtuous immortal,
+    // the demonic attract an alluring devil. Only one appears, at the top.
+    const tier = (window.Game && Game.karmaTier) ? Game.karmaTier() : 'neutral';
+    if (tier === 'righteous') {
+      const c = this._makeCandidate('min_heaven', 65, false);
+      c.name = 'Fairy ' + c.name.split(' ')[0];
+      c.profession = 'Immortal Disciple'; c.trait = 'Virtuous';
+      c.traits = ['spiritual', 'ironwill']; c.aligned = 'righteous';
+      list.unshift(c);
+    } else if (tier === 'demonic') {
+      const c = this._makeCandidate('min_heaven', 65, false);
+      c.name = 'Devil ' + c.name.split(' ')[0];
+      c.profession = 'Demon Cultivator'; c.trait = 'Seductive';
+      c.traits = ['warlike', 'lucky']; c.aligned = 'demonic';
+      list.unshift(c);
+    }
     this.s().candidates = list;
   },
   refreshCandidates() { this._seed(); Game.persist(); },

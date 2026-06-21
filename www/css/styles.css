@@ -1145,3 +1145,12 @@ small { font-weight:400; }
 .gear-item-main .muted { font-size:11px; }
 .gear-item-btns { display:flex; gap:6px; flex-shrink:0; }
 .btn-mini.ghost { background:transparent; color:var(--muted); }
+
+/* -- Karma consequences (Round 7) ---------------------------------------- */
+.align-chip { font-size:10px; font-weight:700; padding:1px 7px; border-radius:999px; vertical-align:middle;
+  background:var(--surface-2); color:var(--muted); border:1px solid var(--line); }
+.align-chip.good { color:var(--jade-d); background:var(--jade-soft); border-color:#cdebd9; }
+.align-chip.bad  { color:#c8503f; background:#fdeef0; border-color:#f3c8d0; }
+.sect-option.locked { opacity:.72; }
+.sect-locked { font-size:12px; color:#c8503f; background:#fdeef0; border:1px solid #f3c8d0;
+  border-radius:10px; padding:8px 11px; line-height:1.45; }

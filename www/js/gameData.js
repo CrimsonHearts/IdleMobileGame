@@ -564,6 +564,12 @@ const GameData = {
     eventEverySec: 240,   // a life event roughly every 4 min of active play
     eventChance: 0.5,     // …with this chance when the timer fires
     righteousAt: 40, demonicAt: -40,
+    // Passive alignment perks once you commit to a path.
+    tierBonus: {
+      righteous: { qi: 1.10, offline: 0.10, tribChance: 0.05, combat: 1.0,  loot: 1.0,  desc: '+10% Qi · +10% offline · +5% tribulation' },
+      demonic:   { qi: 1.0,  offline: 0.0,  tribChance: 0.0,   combat: 1.25, loot: 1.20, desc: '+25% combat · +20% loot' },
+      neutral:   { qi: 1.0,  offline: 0.0,  tribChance: 0.0,   combat: 1.0,  loot: 1.0,  desc: 'no alignment perks' },
+    },
   },
   lifeEvents: [
     { id: 'manual', title: 'A Forbidden Manual',
@@ -602,6 +608,34 @@ const GameData = {
       options: [
         { label: 'Adopt and raise them', karma: +12, effects: { adopt: true }, toast: 'You take the child in — a new heir for your bloodline.' },
         { label: 'Take their root essence', karma: -25, effects: { talent: 30 }, toast: 'A monstrous act for a monstrous gain (+Talent).' },
+      ] },
+
+    // ── Righteous-only events (appear once your karma is Righteous) ──────
+    { id: 'envoy', align: 'righteous', title: 'An Immortal Envoy',
+      text: 'Drawn by your virtue, a celestial envoy descends to bless your cultivation.',
+      options: [
+        { label: 'Accept the heavenly blessing', karma: +8, effects: { qiPct: 0.08, qiHours: 4 }, toast: 'Heaven smiles upon you (+8% Qi).' },
+        { label: 'Humbly decline the honor', karma: +14, effects: { talent: 15 }, toast: 'Your humility deepens your Dao heart (+Talent).' },
+      ] },
+    { id: 'plague', align: 'righteous', title: 'A Mortal Plague',
+      text: 'A plague ravages a nearby mortal town. You could spend days brewing a cure.',
+      options: [
+        { label: 'Cure them all (¥20K)', karma: +20, cost: { money: 20000 }, effects: { qiHours: 6 }, toast: 'Ten thousand prayers of gratitude bolster your dao.' },
+        { label: 'Leave — mortals are beneath you', karma: -18, effects: {}, toast: 'You turn away. Something in your heart hardens.' },
+      ] },
+
+    // ── Demonic-only events (appear once your karma is Demonic) ─────────
+    { id: 'sacrifice', align: 'demonic', title: 'A Blood Sacrifice',
+      text: 'Your demonic arts whisper of a forbidden rite — sacrifice the captured cultivators for raw power.',
+      options: [
+        { label: 'Perform the rite', karma: -15, effects: { qiPct: 0.12, combatBuffSec: 900 }, toast: 'Stolen life-force surges through you (+12% Qi, combat fury).' },
+        { label: 'Spare them this once', karma: +10, effects: { money: 4000 }, toast: 'A flicker of mercy — you ransom them instead.' },
+      ] },
+    { id: 'devour', align: 'demonic', title: 'Devour the Core',
+      text: 'A defeated rival\'s golden core lies before you, pulsing. Devouring it is heresy — and a shortcut.',
+      options: [
+        { label: 'Devour the core', karma: -22, effects: { talent: 40, lifespanLoss: 5 }, toast: 'Forbidden power floods you (+Talent) — but at a cost to your lifespan.' },
+        { label: 'Refine it slowly instead', karma: +6, effects: { qiHours: 5 }, toast: 'You take the patient path (+Qi).' },
       ] },
   ],
 
