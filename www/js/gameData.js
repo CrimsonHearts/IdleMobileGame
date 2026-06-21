@@ -63,21 +63,22 @@ const GameData = {
     // Stage-name sets reused across realms.
     const NINE = ['1st Layer','2nd Layer','3rd Layer','4th Layer','5th Layer','6th Layer','7th Layer','8th Layer','9th Layer'];
     const QUAD = ['Early Stage','Middle Stage','Late Stage','Great Perfection'];
-    /* reqQi grows x400 per realm (was x100 — a greedy-player simulation cleared
-     * half the ladder in ~5h). lifespan: max age while in this realm.
-     * pillCost: ¥ price of the Breakthrough Pill required to attempt ascension
-     * INTO this realm (0 = free tutorial tribulation). */
+    /* reqQi uses a PROGRESSIVE ratio (×300 → ×1300 per realm) so onboarding
+     * stays snappy (realms 1–5 ≈ minutes/hours even after depth multipliers)
+     * while upper realms become a multi-day wall — verified by a 48h full-loop
+     * sim. lifespan: max age in this realm. pillCost: ¥ for the Breakthrough
+     * Pill required to ascend INTO this realm (0 = free tutorial tribulation). */
     return [
       { name: 'Mortal',                   reqQi: 0,       lifespan: 80,    pillCost: 0,      stages: ['Mortal Body','Qi Sensing'] },
       { name: 'Qi Condensation',          reqQi: 1e3,     lifespan: 100,   pillCost: 0,      stages: NINE },
-      { name: 'Foundation Establishment', reqQi: 4e5,     lifespan: 150,   pillCost: 2e3,    stages: QUAD },
-      { name: 'Core Formation',           reqQi: 1.6e8,   lifespan: 250,   pillCost: 1.6e4,  stages: QUAD },
-      { name: 'Nascent Soul',             reqQi: 6.4e10,  lifespan: 450,   pillCost: 1.28e5, stages: QUAD },
-      { name: 'Soul Formation',           reqQi: 2.56e13, lifespan: 850,   pillCost: 1.02e6, stages: QUAD },
-      { name: 'Void Refinement',          reqQi: 1.02e16, lifespan: 1650,  pillCost: 8.2e6,  stages: QUAD },
-      { name: 'Body Integration',         reqQi: 4.1e18,  lifespan: 3250,  pillCost: 6.6e7,  stages: QUAD },
-      { name: 'Great Ascension',          reqQi: 1.64e21, lifespan: 6450,  pillCost: 5.2e8,  stages: QUAD },
-      { name: 'Immortal Ascension',       reqQi: 6.55e23, lifespan: 12850, pillCost: 4.2e9,  stages: ['Tribulation','Half-Immortal','True Immortal','Golden Immortal'] },
+      { name: 'Foundation Establishment', reqQi: 3e5,     lifespan: 150,   pillCost: 2e3,    stages: QUAD },
+      { name: 'Core Formation',           reqQi: 1.2e8,   lifespan: 250,   pillCost: 1.6e4,  stages: QUAD },
+      { name: 'Nascent Soul',             reqQi: 6.2e10,  lifespan: 450,   pillCost: 1.28e5, stages: QUAD },
+      { name: 'Soul Formation',           reqQi: 4.0e13,  lifespan: 850,   pillCost: 1.02e6, stages: QUAD },
+      { name: 'Void Refinement',          reqQi: 3.2e16,  lifespan: 1650,  pillCost: 1.0e7,  stages: QUAD },
+      { name: 'Body Integration',         reqQi: 3.1e19,  lifespan: 3250,  pillCost: 1.0e8,  stages: QUAD },
+      { name: 'Great Ascension',          reqQi: 3.4e22,  lifespan: 6450,  pillCost: 1.0e9,  stages: QUAD },
+      { name: 'Immortal Ascension',       reqQi: 4.4e25, lifespan: 12850, pillCost: 4.2e9,  stages: ['Tribulation','Half-Immortal','True Immortal','Golden Immortal'] },
     ];
   })(),
 
