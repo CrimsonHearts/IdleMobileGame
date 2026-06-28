@@ -13,6 +13,7 @@
     "cap:add:ios": "npm i @capacitor/core @capacitor/ios && npx cap add ios",
     "cap:sync": "npx cap sync",
     "open:android": "npx cap open android",
+    "run:android": "bash tools/run-android.sh",
     "release:android": "npx cap sync android && cd android && ./gradlew bundleRelease && echo '\\n✅ AAB ready: android/app/build/outputs/bundle/release/app-release.aab'",
     "open:ios": "npx cap open ios"
   },
