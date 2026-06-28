@@ -14,11 +14,11 @@ const COURSES = [
 ];
 
 const JOBS = [
-  { id: 'courier',   name: 'Spirit Courier',       reqEdu: 0, pay: 1,    icon: '🛵' },
-  { id: 'clerk',     name: 'Corp Office Clerk',     reqEdu: 2, pay: 9,    icon: '💼' },
-  { id: 'engineer',  name: 'Qi-Tech Engineer',      reqEdu: 3, pay: 70,   icon: '🔧' },
-  { id: 'alchemist', name: 'Licensed Alchemist',    reqEdu: 4, pay: 650,  icon: '⚗️' },
-  { id: 'exec',      name: 'Corporate Cultivator',  reqEdu: 5, pay: 6000, icon: '🏢' },
+  { id: 'courier',   name: 'Spirit Courier',       reqEdu: 0, pay: 2,     icon: '🛵' },
+  { id: 'clerk',     name: 'Corp Office Clerk',     reqEdu: 2, pay: 18,    icon: '💼' },
+  { id: 'engineer',  name: 'Qi-Tech Engineer',      reqEdu: 3, pay: 140,   icon: '🔧' },
+  { id: 'alchemist', name: 'Licensed Alchemist',    reqEdu: 4, pay: 1300,  icon: '⚗️' },
+  { id: 'exec',      name: 'Corporate Cultivator',  reqEdu: 5, pay: 12000, icon: '🏢' },
 ];
 
 const Life = {

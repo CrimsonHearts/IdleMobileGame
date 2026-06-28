@@ -11,15 +11,32 @@ becomes a multi-day wall:
 | Realm | Reached (sim) |
 |-------|---------------|
 | Qi Condensation | ~2 min |
-| Foundation | ~28 min |
-| Core Formation | ~50 min |
-| Nascent Soul | ~1.3 h |
-| Soul Formation | ~2 h |
-| Void Refinement | ~8 h |
-| Body Integration+ | days (not reached in a 48 h sim) |
+| Foundation | ~17 min |
+| Core Formation | ~32 min |
+| Nascent Soul | ~52 min |
+| Soul Formation | ~1.4 h |
+| Void Refinement | ~5.5 h |
+| Body Integration+ | days (not reached in a 48 h sim — stalls at Void Refinement stage 2/4) |
 
 A best/rarer root and the deep multiplier stack make this faster; the upper
 realms are intentionally gated for long-term + offline + generational play.
+
+### Income/pill pass (2026-06-28)
+Players reported Work pay, Qi generators, and Breakthrough Pill cost all felt
+stingy in real (non-bot) play, even though the bot-optimal sim above showed
+pills were never actually a blocking wall — the gap was a "bot vs. real
+player" experience problem, not a literal pacing wall. Three independent
+levers were nudged to soften the early/mid grind without touching the
+late-game wall or the realm `reqQi` curve above:
+- `generators[].baseProd` × 1.5 (all 10 generators).
+- `life.js` `JOBS[].pay` × 2 (all 5 jobs).
+- `realms[].pillCost` × 0.55 (~45% cheaper) for Foundation through Immortal
+  Ascension; `reqQi` thresholds are untouched.
+
+Re-running the 48 h sim after the change confirms Body Integration (reqQi
+3.1e19) is still unreached — the bot-optimal player stalls at Void
+Refinement stage 2/4 for the remaining ~43 simulated hours, so the back half
+of the ladder is still a multi-day wall. Only the front half sped up.
 
 ## Multiplier stack (no double-counting)
 Production = `generators × allMult × (root × stage × dao × sect × pet × talent ×
