@@ -111,84 +111,105 @@
     <!-- Per-realm atmospheric backdrop (painted vista + themed gradient + drifting motes) -->
     <div id="realm-backdrop"><div id="realm-vista"></div></div>
 
-    <!-- Top status bar -->
+    <!-- Top bar: H1 Parchment -->
     <header id="topbar">
-      <img class="avatar" id="avatar-img" src="assets/cultivator.svg" alt="" draggable="false" />
-      <div class="topbar-id">
-        <div class="char-name-row">
-          <span id="char-name">Cultivator</span>
-          <span class="root-chip" id="char-root">Mortal Root</span>
+      <div class="tb-row1">
+        <img class="avatar" id="avatar-img" src="assets/cultivator.svg" alt="" draggable="false"/>
+        <div class="topbar-id">
+          <div class="char-name-row">
+            <span id="char-name">Cultivator</span>
+            <span class="root-chip" id="char-root">Mortal Root</span>
+          </div>
+          <div class="realm-line"><span id="realm-name">Mortal</span> · <span id="stage-name">Mortal Body</span></div>
         </div>
-        <div class="realm-line"><span id="realm-name">Mortal</span> · <span id="stage-name">Mortal Body</span></div>
+        <div class="age-badge">Age <b id="age-val">18/80</b> · Gen <b id="gen-val">1</b></div>
       </div>
-      <div class="topbar-meta">
-        <div class="meta-pill">Age <b id="age-val">18/80</b> · Gen <b id="gen-val">1</b></div>
-        <div class="meta-pill gold"><b id="dao-amount">0</b> Dao</div>
+      <div class="tb-res">
+        <div class="res-chip">
+          <span class="res-ico">☯</span>
+          <div class="res-vals"><b id="qi-amount">0</b><small id="qps">0/s</small></div>
+        </div>
+        <div class="res-chip">
+          <span class="res-ico">¥</span>
+          <div class="res-vals"><b id="money-amount">0</b><small id="mps" style="display:none"></small></div>
+        </div>
+        <div class="res-chip" id="cult-bonus-wrap" style="cursor:pointer" title="Tap to see breakdown">
+          <span class="res-ico">⚡</span>
+          <div class="res-vals"><b>+<span id="cb-bonus">0</span>%</b><small>Cultivation</small></div>
+        </div>
       </div>
+      <b id="dao-amount" style="display:none">0</b>
     </header>
-
-    <!-- Quick-action bar: Shop + Quests always visible -->
-    <div id="quick-actions">
-      <button id="shop-btn" class="qa-btn qa-shop">🛒 <span>Shop</span></button>
-      <button id="quest-btn" class="qa-btn qa-quest">📜 <span>Quests</span><span id="quest-badge" class="quest-badge" style="display:none"></span></button>
-      <button id="daily-btn" class="qa-btn qa-daily">🎁 <span>Daily</span><span id="daily-badge" class="quest-badge" style="display:none">!</span></button>
-    </div>
-
-    <!-- Currency strip (always visible) -->
-    <section id="status-strip">
-      <span class="cur"><b id="qi-amount">0</b> Qi <small id="qps">0/s</small></span>
-      <span class="cur"><b id="money-amount">0</b> ¥</span>
-      <span class="cur">Cultivation <b>+<span id="cb-bonus">0</span>%</b></span>
-    </section>
 
     <!-- Tab content -->
     <main id="content">
 
       <!-- ===== CULTIVATE ===== -->
       <section class="tab-panel active" id="tab-cultivate">
-        <section id="realm-progress">
-          <div class="progress-track"><div id="realm-progress-fill"></div></div>
-          <div id="realm-progress-label">0 / 1.00K Qi</div>
-          <p id="breakthrough-info"></p>
-          <button id="advance-btn" style="display:none">⬆ Minor Breakthrough</button>
-          <button id="breakthrough-btn" disabled>⚡ Heavenly Tribulation</button>
-        </section>
 
-        <section id="tap-zone">
-          <button id="meditate-btn">
-            <img class="tap-emblem" id="tap-emblem" src="assets/cultivator.svg" alt="Meditating cultivator" draggable="false" />
-            <span class="tap-label">Meditate</span>
-            <span class="tap-gain" id="tap-gain">+1</span>
-          </button>
-        </section>
+        <!-- Stage: hero + FABs + progress overlay at bottom -->
+        <div id="cultivate-stage">
+          <div class="stage-fabs stage-fabs-l">
+            <button id="quest-btn" class="fab-btn qa-btn qa-quest">
+              <span class="fab-ico">📜</span>
+              <span class="fab-lbl">Quests</span>
+              <span id="quest-badge" class="quest-badge" style="display:none"></span>
+            </button>
+            <button class="fab-btn" id="boost-qi-btn">
+              <span class="fab-ico">📺</span>
+              <span class="fab-lbl" id="boost-qi-status">2× Boost</span>
+            </button>
+          </div>
 
-        <!-- Rewarded-ad boosts -->
-        <div id="ad-boosts">
-          <button class="ad-boost-btn" id="boost-qi-btn">
-            <span class="ad-boost-ico">📺</span>
-            <span class="ad-boost-text">
-              <span class="ad-boost-label">Watch Ad → 2× Qi</span>
-              <span class="ad-boost-sub" id="boost-qi-status">5 min production boost</span>
-            </span>
-          </button>
-          <button class="ad-boost-btn" id="boost-stage-btn">
-            <span class="ad-boost-ico">⬆</span>
-            <span class="ad-boost-text">
-              <span class="ad-boost-label">Watch Ad → Stage Aid</span>
-              <span class="ad-boost-sub">−30% next stage requirement</span>
-            </span>
-          </button>
+          <div id="tap-zone">
+            <button id="meditate-btn">
+              <img class="tap-emblem" id="tap-emblem" src="assets/cultivator.svg" alt="Meditating cultivator" draggable="false"/>
+              <span class="tap-label">Meditate</span>
+              <span class="tap-gain" id="tap-gain">+1</span>
+            </button>
+          </div>
+
+          <div class="stage-fabs stage-fabs-r">
+            <button id="shop-btn" class="fab-btn qa-btn qa-shop">
+              <span class="fab-ico">🛒</span>
+              <span class="fab-lbl">Shop</span>
+            </button>
+            <button id="daily-btn" class="fab-btn qa-btn qa-daily">
+              <span class="fab-ico">🎁</span>
+              <span class="fab-lbl">Daily</span>
+              <span id="daily-badge" class="quest-badge" style="display:none">!</span>
+            </button>
+            <button class="fab-btn" id="boost-stage-btn">
+              <span class="fab-ico">⬆</span>
+              <span class="fab-lbl ad-boost-sub">Stage Aid</span>
+            </button>
+          </div>
+
+          <!-- Progress overlay: always shows bar+label; buttons appear only when ready -->
+          <section id="realm-progress">
+            <div class="rp-bar-row">
+              <div class="progress-track"><div id="realm-progress-fill"></div></div>
+              <span id="realm-progress-label">0 / 1.00K Qi</span>
+            </div>
+            <p id="breakthrough-info"></p>
+            <button id="advance-btn" style="display:none">⬆ Minor Breakthrough</button>
+            <button id="breakthrough-btn" style="display:none" disabled>⚡ Heavenly Tribulation</button>
+          </section>
         </div>
 
-        <div class="section-title">⛩ Cultivation Grounds</div>
-        <div id="synergy-banner" class="synergy-banner" style="display:none"></div>
-        <div class="buy-amount-row">
-          <span>Buy:</span>
-          <button class="buy-amount-btn active" data-amount="1">×1</button>
-          <button class="buy-amount-btn" data-amount="10">×10</button>
-          <button class="buy-amount-btn" data-amount="max">MAX</button>
+        <!-- Generators: compact header + list -->
+        <div id="cultivate-list">
+          <div class="cultivate-header">
+            <span class="cul-title">⛩ Grounds</span>
+            <div id="synergy-banner" class="synergy-banner" style="display:none"></div>
+            <div class="buy-amount-row">
+              <button class="buy-amount-btn active" data-amount="1">×1</button>
+              <button class="buy-amount-btn" data-amount="10">×10</button>
+              <button class="buy-amount-btn" data-amount="max">MAX</button>
+            </div>
+          </div>
+          <div id="shop-list"></div>
         </div>
-        <div id="shop-list"></div>
       </section>
 
       <!-- ===== STUDY ===== -->
@@ -237,14 +258,14 @@
 
     </main>
 
-    <!-- Bottom navigation -->
+    <!-- Bottom navigation: N3 icon-only frosted -->
     <nav id="bottom-nav">
-      <button class="nav-btn active" data-tab="cultivate"><span class="nav-ico">🧘</span><span>Cultivate</span></button>
-      <button class="nav-btn" data-tab="study"><span class="nav-ico">🎓</span><span>Study</span></button>
-      <button class="nav-btn" data-tab="work"><span class="nav-ico">💼</span><span>Work</span></button>
-      <button class="nav-btn" data-tab="life"><span class="nav-ico">❤️</span><span>Life</span></button>
-      <button class="nav-btn" data-tab="world"><span class="nav-ico">⚔️</span><span>World</span></button>
-      <button class="nav-btn" data-tab="techniques"><span class="nav-ico">📜</span><span>Arts</span></button>
+      <button class="nav-btn active" data-tab="cultivate"><span class="nav-ico">🧘</span></button>
+      <button class="nav-btn" data-tab="study"><span class="nav-ico">🎓</span></button>
+      <button class="nav-btn" data-tab="work"><span class="nav-ico">💼</span></button>
+      <button class="nav-btn" data-tab="life"><span class="nav-ico">❤️</span></button>
+      <button class="nav-btn" data-tab="world"><span class="nav-ico">⚔️</span></button>
+      <button class="nav-btn" data-tab="techniques"><span class="nav-ico">📜</span></button>
     </nav>
 
   </div>
@@ -266,7 +287,7 @@
   <script src="js/game.js"></script>
   <script src="js/monetization.js"></script>
   <script src="js/ui.js"></script>
-  <script src="js/tutorial.js"></script>
+  <script src="js/onboarding.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

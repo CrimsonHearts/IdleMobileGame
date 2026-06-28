@@ -183,7 +183,7 @@ See **`docs/STORE-CHECKLIST.md`** for the full publishing walkthrough.
 - [x] Redesigned tabbed UI (Cultivate / Sect / Beasts / Trials / Arts)
 - [x] Real AdMob IDs wired (App ID + Rewarded unit) behind dev/live switch
 - [x] Illustrated portraits, realm art, and app icons
-- [x] Onboarding tutorial (first-session guided walkthrough)
+- [x] Onboarding: guided tutorial (spotlight coach-marks) + progressive feature unlocks — tabs reveal as milestones are hit, veterans grandfathered (`www/js/onboarding.js`; test: `node tools/test-onboarding.mjs`)
 - [x] Store listing assets (icons, feature graphic, screenshots, copy)
 - [ ] Online sects backend (Firebase/Supabase — see docs/SECT-ONLINE.md, needs your project)
 - [ ] In-app purchases (Play Billing) — products defined, needs Console setup

@@ -26,6 +26,7 @@ const UI = {
       charName: $('char-name'),
       charRoot: $('char-root'),
       cbBonus: $('cb-bonus'),
+      mps: $('mps'),
       dao: $('dao-amount'),
       tapBtn: $('meditate-btn'),
       tapEmblem: $('tap-emblem'),
@@ -49,6 +50,7 @@ const UI = {
       const res = Game.meditate();
       const gain = (res && typeof res === 'object') ? res.gain : res;
       const crit = !!(res && res.crit);
+      if (navigator.vibrate) navigator.vibrate(crit ? [12, 8, 20] : 12);
       this.floatText(e, (crit ? '✦ CRIT +' : '+') + GameNumbers.formatNumber(gain) + ' ' + GameData.theme.currencyIcon, crit);
       this.flashQiCounter();
       this.renderResources();
@@ -117,6 +119,13 @@ const UI = {
     const dailyBtn = document.getElementById('daily-btn');
     if (dailyBtn) dailyBtn.addEventListener('click', () => this.showDaily());
 
+    // Avatar → Cultivation Record
+    if (this.el.avatar) this.el.avatar.addEventListener('click', () => this.showStats());
+
+    // Cultivation % → multiplier breakdown
+    const cultWrap = document.getElementById('cult-bonus-wrap');
+    if (cultWrap) cultWrap.addEventListener('click', () => this.showCultivationBreakdown());
+
     // Ad boost buttons on Cultivate tab.
     const boostQiBtn = document.getElementById('boost-qi-btn');
     if (boostQiBtn) boostQiBtn.addEventListener('click', () => this.doAdBoostQi());
@@ -133,9 +142,12 @@ const UI = {
     if (!Game.state.characterCreated) {
       this.showCharacterCreation();
     } else {
-      // Returning player: surface the daily reward if it's a new day.
+      // Returning player: surface the daily reward if it's a new day
+      // (not while the Daily feature is still onboarding-locked).
       this.updateDailyBadge();
-      if (Game.dailyAvailable()) setTimeout(() => this.showDaily(), 600);
+      if (Game.dailyAvailable()) setTimeout(() => {
+        if (!window.Onboarding || Onboarding.isUnlocked('daily')) this.showDaily();
+      }, 600);
     }
   },
 
@@ -257,6 +269,7 @@ const UI = {
       }
       if (result) {
         this.breakthroughFlash();
+        if (navigator.vibrate) navigator.vibrate([30, 25, 60]);
         Game.persist();
         this.renderAll();
         const fqMsg = result.quality && result.quality.bonus > 0
@@ -288,7 +301,14 @@ const UI = {
   renderResources() {
     this.el.qi.textContent = GameNumbers.formatNumber(Game.state.qi);
     this.el.qps.textContent = GameNumbers.formatRate(Game.qiPerSecond());
-    if (this.el.money && Game.state.life) this.el.money.textContent = GameNumbers.formatNumber(Game.state.life.money);
+    if (this.el.money && Game.state.life) {
+      this.el.money.textContent = GameNumbers.formatNumber(Game.state.life.money);
+      if (this.el.mps && window.Life) {
+        const rate = Life.jobPayRate();
+        if (rate > 0) { this.el.mps.textContent = GameNumbers.formatRate(rate); this.el.mps.style.display = ''; }
+        else this.el.mps.style.display = 'none';
+      }
+    }
     if (this.el.age && Game.state.life) this.el.age.textContent = Game.state.life.age + '/' + Game.lifespan();
     if (this.el.gen) this.el.gen.textContent = Game.state.generation || 1;
     this.el.dao.textContent = GameNumbers.formatNumber(Game.state.daoComprehension);
@@ -535,9 +555,13 @@ const UI = {
       overlay.remove();
       if (res) {
         this.breakthroughFlash();
+        if (navigator.vibrate) navigator.vibrate([30, 25, 60]);
         this.renderAll();
         this.toast(`🌀 Reborn! +${GameNumbers.formatNumber(res.merit)} Heavenly Merit · Life #${res.reincarnations + 1}`);
         this.renderHeaven();
+        if (res.reincarnations === 3 && !localStorage.getItem('pti_rated_app')) {
+          setTimeout(() => this.askRating(), 800);
+        }
       }
     });
     overlay.querySelector('#cancel-re').addEventListener('click', () => overlay.remove());
@@ -756,8 +780,8 @@ const UI = {
       this.el.progressLabel.textContent = next ? 'Cultivation perfected — Tribulation awaits' : 'Peak of cultivation';
     }
 
-    // -- Minor breakthrough button (consumes Qi) ----------------------------
-    this.el.advanceBtn.style.display = (!realmComplete) ? '' : 'none';
+    // -- Minor breakthrough button: only visible when requirement is met ------
+    this.el.advanceBtn.style.display = (!realmComplete && canAdvance) ? 'block' : 'none';
     this.el.advanceBtn.disabled = !canAdvance;
     this.el.advanceBtn.classList.toggle('ready', canAdvance);
     if (!realmComplete) {
@@ -775,7 +799,7 @@ const UI = {
       if (this.el.pillBtn) this.el.pillBtn.style.display = 'none';
       this.el.breakInfo.innerHTML = realmComplete
         ? '☯ You have reached the peak of immortal cultivation.'
-        : 'Climb every stage of this realm to perfect your cultivation.';
+        : '';
     } else {
       const needPill = Game.pillRequired();
       const hasPill = Game.hasPill();
@@ -792,7 +816,7 @@ const UI = {
         this.el.pillBtn.textContent = `Buy Breakthrough Pill — ¥${GameNumbers.formatNumber(price)}`;
       }
 
-      this.el.breakBtn.style.display = realmComplete ? '' : 'none';
+      this.el.breakBtn.style.display = (realmComplete && canBreak) ? 'block' : 'none';
       this.el.breakBtn.disabled = !canBreak;
       this.el.breakBtn.classList.toggle('ready', canBreak);
       this.el.breakBtn.textContent = needPill
@@ -802,7 +826,7 @@ const UI = {
         ? (needPill && !hasPill
             ? `A <b>Breakthrough Pill</b> is needed to withstand the Tribulation to <b>${next.name}</b>. Earn ¥ through your career.`
             : `⚡ Face the Heavenly Tribulation to ascend to <b>${next.name}</b> for <b>+${GameNumbers.formatNumber(gain)}</b> Dao. Success: <b>${chance}%</b>.`)
-        : `Advance through all stages of <b>${tier.realm}</b>, then face Tribulation to ascend to <b>${next.name}</b>.`;
+        : '';
     }
   },
 
@@ -846,8 +870,7 @@ const UI = {
       el.innerHTML = `<button class="path-choose-btn">✦ Choose your Dao Path</button>` + html;
       el.querySelector('.path-choose-btn').onclick = () => this.showPathChooser();
     } else {
-      const r = GameData.daoPaths.length ? GameData.realms[GameData.daoPathRealmReq].name : '';
-      html = `<span class="path-chip locked">Dao Path unlocks at ${r}</span>` + html;
+      // Path not yet available — just show the karma chip, hide the locked placeholder.
       el.innerHTML = html;
     }
   },
@@ -1403,9 +1426,7 @@ const UI = {
             <div class="creation-emblem"><img id="creation-portrait" src="${g.emblem}" alt="cultivator"/></div>
             <div class="gacha-root-result ${isRolling ? 'rolling' : ''}" style="border-color:${currentRoot.color}">
               <div class="root-rarity-bar" style="background:${currentRoot.color}"></div>
-              <div class="root-name" style="color:${currentRoot.color}">${currentRoot.name}
-                <span class="root-cn">${currentRoot.nameCN || ''}</span>
-              </div>
+              <div class="root-name" style="color:${currentRoot.color}">${currentRoot.name}</div>
               <div class="root-mult">×${currentRoot.mult.toFixed(1)} Production</div>
               <div class="root-desc">${currentRoot.desc}</div>
             </div>
@@ -1511,8 +1532,6 @@ const UI = {
         this.renderAll();
         overlay.remove();
         this.toast(`☯ Welcome, ${Game.state.name}. Your ${bestRoot.name} Root awakens!`);
-        // First-session onboarding (once).
-        if (window.Tutorial) setTimeout(() => Tutorial.start(), 350);
       });
 
       // Portrait
@@ -1618,11 +1637,11 @@ const UI = {
       if (left > 0) {
         qiBtn.classList.add('active-boost');
         qiBtn.disabled = true;
-        qiStatus.textContent = `⚡ Active — ${GameNumbers.formatDuration(left)} remaining`;
+        qiStatus.textContent = `⚡ ${GameNumbers.formatDuration(left)}`;
       } else {
         qiBtn.classList.remove('active-boost');
         qiBtn.disabled = false;
-        qiStatus.textContent = '5 min production boost';
+        qiStatus.textContent = '2× Qi 5min';
       }
     }
     // Stage aid button
@@ -1630,8 +1649,8 @@ const UI = {
     if (stageBtn) {
       stageBtn.classList.toggle('active-boost', !!this._stageAidActive);
       stageBtn.querySelector('.ad-boost-sub').textContent = this._stageAidActive
-        ? '✓ Active — advance to apply'
-        : '−30% next stage requirement';
+        ? '✓ Applied'
+        : 'Stage Aid';
     }
   },
 
@@ -1903,7 +1922,7 @@ const UI = {
         <h2>🔮 Root Awakened!</h2>
         <div class="gacha-root-result" style="border-color:${root.color};margin:1rem auto;max-width:260px">
           <div class="root-rarity-bar" style="background:${root.color}"></div>
-          <div class="root-name" style="color:${root.color}">${root.name} <span class="root-cn">${root.nameCN||''}</span></div>
+          <div class="root-name" style="color:${root.color}">${root.name}</div>
           <div class="root-mult">×${root.mult.toFixed(1)} Production</div>
           <div class="root-desc">${root.desc}</div>
         </div>
@@ -2058,6 +2077,117 @@ const UI = {
       });
     }
     overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+  },
+
+  // -- Cultivation speed breakdown ------------------------------------------
+  showCultivationBreakdown() {
+    const m = Game.multipliers();
+    const pct = v => (v >= 1 ? '+' : '') + ((v - 1) * 100).toFixed(0) + '%';
+    const x = v => v.toFixed(2) + '×';
+    const rows = [
+      ['Spiritual Root',       x(m.root)],
+      ['Stages Cleared',       x(m.stage)],
+      ['Dao Comprehension',    x(m.dao)],
+      ['Talent (Study)',       x(m.talent)],
+      ['Spirit Beasts',        x(m.pet)],
+      ['Sect Blessing',        x(m.sect)],
+      ['Family Bond',          x(m.family)],
+      ['Bloodline Legacy',     x(m.legacy)],
+      ['All-Mult (buffs/perks/pills)', x(m.allMult)],
+    ].filter(([, v]) => v !== '1.00×');
+    const total = Game.qiPerSecond();
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="text-align:left">
+        <h2 style="text-align:center">⚡ Cultivation Speed</h2>
+        <p style="text-align:center;color:var(--muted);font-size:13px;margin:0 0 12px">Every multiplier stacks multiplicatively.</p>
+        <div class="card" style="padding:10px 14px">
+          ${rows.map(([label, val]) => `
+            <div class="row-between" style="padding:4px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:13px">${label}</span>
+              <b style="color:var(--jade-d)">${val}</b>
+            </div>`).join('')}
+          <div class="row-between" style="padding:6px 0;margin-top:2px">
+            <span style="font-size:13px;font-weight:700">Total Qi/s</span>
+            <b style="color:var(--gold-d)">${GameNumbers.formatRate(total)}</b>
+          </div>
+        </div>
+        <button class="modal-close" style="margin-top:8px">Close</button>
+      </div>`;
+    overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+  },
+
+  // -- Cultivation Record (stats) -------------------------------------------
+  showStats() {
+    const s = Game.state;
+    const totalOwned = GameData.generators.reduce((n, g) => n + (s.owned[g.id] || 0), 0);
+    const techs = Object.keys(s.upgrades || {}).length;
+    const merids = Object.keys(s.meridians || {}).length;
+    const perks = Object.keys(s.heavenlyPerks || {}).length;
+    const fam = s.family || {};
+    const children = (fam.children || []).length;
+    const highestRealm = (s.foundationBonuses || []).reduce((m, b) => Math.max(m, b.realm || 0), s.realm);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="text-align:left">
+        <h2 style="text-align:center">📜 Cultivation Record</h2>
+        <div class="stat-row" style="margin:10px 0 14px">
+          <div class="stat"><span class="stat-v">${GameNumbers.formatNumber(s.lifetimeQi)}</span><span class="stat-k">Lifetime Qi</span></div>
+          <div class="stat"><span class="stat-v">${GameNumbers.formatNumber(s.totalTaps || 0)}</span><span class="stat-k">Meditations</span></div>
+          <div class="stat"><span class="stat-v">${s.stagesCleared}</span><span class="stat-k">Stages Cleared</span></div>
+          <div class="stat"><span class="stat-v">${s.reincarnations}</span><span class="stat-k">Past Lives</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🏆 Milestones</div>
+          <div class="hint">Highest Realm: <b>${GameData.realms[highestRealm] ? GameData.realms[highestRealm].name : 'Mortal'}</b></div>
+          <div class="hint">Dao Comprehension: <b>${GameNumbers.formatNumber(s.daoComprehension)}</b></div>
+          <div class="hint">Heavenly Merit: <b>${GameNumbers.formatNumber(s.heavenlyMerit)}</b></div>
+          <div class="hint">Secret Realm Best Floor: <b>${(s.secretRealm && s.secretRealm.highestFloor) || 0}</b></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🧬 Collections</div>
+          <div class="hint">Generators Owned: <b>${totalOwned}</b></div>
+          <div class="hint">Techniques Learned: <b>${techs}/${GameData.upgrades.length}</b></div>
+          <div class="hint">Meridians Opened: <b>${merids}/${GameData.meridians.length}</b></div>
+          <div class="hint">Heavenly Perks: <b>${perks}/${GameData.heavenlyPerks.length}</b></div>
+          <div class="hint">Children Raised: <b>${children}</b></div>
+        </div>
+        <button class="modal-close" style="margin-top:6px">Close</button>
+      </div>`;
+    overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+  },
+
+  // -- Rate-my-app prompt ----------------------------------------------------
+  askRating() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="text-align:center">
+        <div style="font-size:40px;margin:4px 0">⭐</div>
+        <h2>Enjoying Path to Immortality?</h2>
+        <p>Your rating helps other cultivators discover the game. If you have feedback, we'd love to hear it.</p>
+        <div style="display:flex;gap:8px;margin:14px 0">
+          <button class="btn-ghost" id="rate-later" style="flex:1">Later</button>
+          <button class="btn-primary" id="rate-now" style="flex:1;background:linear-gradient(135deg,#f0c040,var(--gold-d))!important;box-shadow:0 4px 12px rgba(199,154,59,0.35)!important">Rate ★★★★★</button>
+        </div>
+      </div>`;
+    overlay.querySelector('#rate-later').addEventListener('click', () => {
+      localStorage.setItem('pti_rated_app', 'later');
+      overlay.remove();
+    });
+    overlay.querySelector('#rate-now').addEventListener('click', () => {
+      localStorage.setItem('pti_rated_app', 'rated');
+      overlay.remove();
+      const storeUrl = window.__gameStoreUrl || '#';
+      if (storeUrl !== '#') window.open(storeUrl, '_blank');
+      else this.toast('⭐ Thank you! (Set __gameStoreUrl to open the real store page.)');
+    });
     document.body.appendChild(overlay);
   },
 };

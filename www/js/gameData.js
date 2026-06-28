@@ -289,7 +289,7 @@ const GameData = {
       color: '#c8503f',
       desc: 'You broke through in the same run you descended from the last realm — lightning speed.',
       bonus: 0.12,
-      check: (state) => state.runQi > 0 && state.realm >= 1 && (state.breakthroughConditions || []).filter(c => c.condId === 'swift').length === 0,
+      check: (state) => state.runQi > 0 && state.realm >= 1 && Array.isArray(state.breakthroughConditionsHit) && !state.breakthroughConditionsHit.includes('swift'),
     },
   ],
 

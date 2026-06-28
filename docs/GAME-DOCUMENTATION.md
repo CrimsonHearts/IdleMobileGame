@@ -399,6 +399,32 @@ Per-realm **atmospheric backdrop** (themed gradient + drifting motes + painted
 vista) cross-fades as you ascend; the meditate-orb aura & breakthrough flash
 re-tint to the realm accent.
 
+### Onboarding: tutorial + progressive feature unlocks (`onboarding.js`)
+
+New players start with **only the Cultivate tab**; everything else reveals
+itself as state-based milestones are hit, each with a celebration (modal for
+tabs, toast for quick-actions) and a pulsing **NEW** dot until first visited:
+
+| Feature | Unlocks when |
+|---|---|
+| 📜 Quests (quick action) | first generator owned |
+| 🎓 Study | first minor stage cleared |
+| 💼 Work | first course completed (education ≥ 1) |
+| 📜 Arts | 250 lifetime Qi |
+| ⚔️ World | combat unlocked (`Game.combatUnlocked()`) |
+| ❤️ Life · 🛒 Shop · 🎁 Daily | first major breakthrough (realm ≥ 1) |
+
+A **guided tutorial** (non-blocking spotlight + tooltip, skippable) walks the
+first minutes: meditate → buy a generator → advance a stage → first
+Tribulation. A one-time **contextual hint** explains the Breakthrough-Pill
+gate when it first appears at the Foundation Establishment tribulation.
+
+Progress persists in `state.onboarding` (`unlocked/seen/steps/hints/skipped`).
+Saves created before this system (or any save with `characterCreated` at first
+`Onboarding.init()`) are **grandfathered**: everything unlocks silently.
+Conditions are pure functions of state — add a feature by appending to
+`Onboarding.FEATURES`. Headless test: `node tools/test-onboarding.mjs`.
+
 ---
 
 ## 15. Save State Schema
@@ -426,6 +452,8 @@ saves load safely. Key fields (`Game.newState()`):
   heavenlyMerit, heavenlyPerks{id:lvl}, reincarnations, dailyStreak, lastDailyDay,
   // R4
   pillBag{id:n}, buffs[{buff,mult,endsAt}], secretRealm{lastRunDay,highestFloor},
+  // onboarding (tutorial + progressive feature unlocks)
+  onboarding{ready, unlocked{}, seen{}, steps{}, hints{}, skipped},
   // anti-cheat
   lastSaved, createdAt, maxSeenTime, cheatFlags
 }

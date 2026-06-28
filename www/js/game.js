@@ -20,7 +20,7 @@ const Game = {
       characterCreated: false,
       name: 'Nameless Cultivator',
       gender: 'male',
-      spiritualRoot: GameData.spiritualRoots[0], // {key,name,nameCN,mult,...}
+      spiritualRoot: GameData.spiritualRoots[0], // {key,name,mult,...}
 
       qi: 0,
       lifetimeQi: 0,        // total Qi earned across ALL runs (stats)
@@ -91,6 +91,11 @@ const Game = {
       // Market (Round 8): drifting prices
       market: null,
 
+      // Onboarding: progressive feature unlocks + guided tutorial progress
+      onboarding: { ready: false, unlocked: {}, seen: {}, steps: {}, hints: {}, skipped: false },
+
+      totalTaps: 0,                  // lifetime meditate taps (stats)
+
       // Anti-cheat audit fields:
       maxSeenTime: TimeService.now(), // highest wall-clock ever observed
       cheatFlags: 0,                  // count of suspicious backward jumps
@@ -108,6 +113,10 @@ const Game = {
     if (this.state.stagesCleared === undefined) this.state.stagesCleared = 0;
     if (this.state.characterCreated === undefined) this.state.characterCreated = false;
     if (!this.state.spiritualRoot) this.state.spiritualRoot = GameData.spiritualRoots[0];
+    // Old saves stored the root as a string key — resolve to the object.
+    if (typeof this.state.spiritualRoot === 'string') {
+      this.state.spiritualRoot = GameData.spiritualRoots.find(r => r.key === this.state.spiritualRoot) || GameData.spiritualRoots[0];
+    }
     if (this.state.spiritStones === undefined) this.state.spiritStones = 0;
     if (this.state.beastEggs === undefined) this.state.beastEggs = 0;
     if (this.state.sect === undefined) this.state.sect = null;
@@ -142,6 +151,22 @@ const Game = {
     if (!this.state.secretRealm) this.state.secretRealm = { lastRunDay: null, highestFloor: 0 };
     if (!this.state.artifacts) this.state.artifacts = { inventory: [], equipped: { weapon: null, robe: null, talisman: null, ring: null } };
     if (window.Market) Market.init();
+    if (!this.state.onboarding) this.state.onboarding = { ready: false, unlocked: {}, seen: {}, steps: {}, hints: {}, skipped: false };
+    if (this.state.totalTaps === undefined) this.state.totalTaps = 0;
+    // Numeric null-guards: old saves could store null instead of 0.
+    if (this.state.qi == null || isNaN(this.state.qi)) this.state.qi = 0;
+    if (this.state.lifetimeQi == null || isNaN(this.state.lifetimeQi)) this.state.lifetimeQi = 0;
+    if (this.state.money == null || isNaN(this.state.money)) this.state.money = 0;
+    if (this.state.runQi == null || isNaN(this.state.runQi)) this.state.runQi = 0;
+    if (this.state.daoComprehension == null || isNaN(this.state.daoComprehension)) this.state.daoComprehension = 0;
+    // Life field migrations: age added after initial life system shipped.
+    if (this.state.life && this.state.life.age === undefined) this.state.life.age = GameData.aging.startAge;
+    if (this.state.life && this.state.life.age === null) this.state.life.age = GameData.aging.startAge;
+    // jobId renamed from job in older saves.
+    if (this.state.life && this.state.life.jobId === undefined) {
+      this.state.life.jobId = this.state.life.job || null;
+      delete this.state.life.job;
+    }
     this._lastTickMono = TimeService.monotonicNow();
   },
 
@@ -614,6 +639,7 @@ const Game = {
       gain *= GameData.meridianCritMult;
     }
     this._addQi(gain);
+    this.state.totalTaps = (this.state.totalTaps || 0) + 1;
     // Hidden mechanic: 0.5% chance of Cultivation Insight (2× production for 60s).
     if (!this.state.insightEndsAt || TimeService.now() >= this.state.insightEndsAt) {
       if (Math.random() < 0.005) {

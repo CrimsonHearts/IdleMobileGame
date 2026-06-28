@@ -25,6 +25,7 @@
 
   // 4. Build & render UI.
   UI.init();
+  if (window.Onboarding) Onboarding.init();
   UI.showWelcomeBack(offline);
 
   // 5. Main loop via requestAnimationFrame (falls back to setInterval).
@@ -35,6 +36,8 @@
     if (ts - lastRender > 100) {
       lastRender = ts;
       UI.tickRender();
+      // Onboarding: feature unlocks, tutorial spotlight, contextual hints.
+      if (window.Onboarding) Onboarding.tick();
       // Check quests and notify on any newly completed ones.
       if (window.Quests) {
         const newlyDone = Quests.checkAll();

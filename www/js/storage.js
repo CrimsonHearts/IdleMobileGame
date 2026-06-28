@@ -6,9 +6,13 @@
  * ========================================================================= */
 
 const Storage = {
+  _OLD_KEY: 'xianxia_idle_save_v1',
+
   save(state) {
     try {
       localStorage.setItem(GameData.saveKey, JSON.stringify(state));
+      // Migrate: remove old key once we've written to the new one.
+      try { localStorage.removeItem(this._OLD_KEY); } catch (_) {}
       return true;
     } catch (e) {
       console.warn('Save failed', e);
@@ -18,7 +22,9 @@ const Storage = {
 
   load() {
     try {
-      const raw = localStorage.getItem(GameData.saveKey);
+      let raw = localStorage.getItem(GameData.saveKey);
+      // Fallback: if no save under the new key, try the old key.
+      if (!raw) raw = localStorage.getItem(this._OLD_KEY);
       if (!raw) return null;
       const data = JSON.parse(raw);
       if (!data || typeof data !== 'object') return null;
@@ -30,7 +36,10 @@ const Storage = {
   },
 
   wipe() {
-    try { localStorage.removeItem(GameData.saveKey); } catch (_) {}
+    try {
+      localStorage.removeItem(GameData.saveKey);
+      localStorage.removeItem(this._OLD_KEY);
+    } catch (_) {}
   },
 };
 
