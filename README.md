@@ -77,7 +77,7 @@ Generator details: **[tools/README.md](tools/README.md)**
 ```
 www/                  # the entire game (this is what ships inside the app)
   index.html
-  css/styles.css      # ink-wash (水墨) xianxia theme
+  css/styles.css      # ink-wash xianxia theme
   js/
     numbers.js        # big-number formatting (1.23M, 9.87Qa …)
     gameData.js       # ★ all balance & theme content — edit here to tune
@@ -171,23 +171,24 @@ See **`docs/STORE-CHECKLIST.md`** for the full publishing walkthrough.
 
 - [x] Core idle loop (meditate, generators, cost scaling, QPS)
 - [x] Offline progress + clock anti-cheat
-- [x] Character creation: gender (male/female) + Spiritual Root (灵根)
-- [x] Two-tier cultivation: minor stages (修为) + major realms
-- [x] Prestige via Heavenly Tribulation (天劫 → Dao Comprehension 道韵)
+- [x] Character creation: gender (male/female) + Spiritual Root
+- [x] Two-tier cultivation: minor stages + major realms
+- [x] Prestige via Heavenly Tribulation → Dao Comprehension
 - [x] Upgrades / techniques
 - [x] Save system + autosave
 - [x] Illustrated ink-wash xianxia art (landscape, cultivator emblems, icons)
-- [x] Sect system 宗门 (join, unique bonuses, ranks, contribution) + online-ready backend
-- [x] Spirit Beasts 灵兽 (collect, level, deploy; boost cultivation + fight)
-- [x] Trials 历练 — idle auto-battle vs demonic beasts (zones, waves, bosses, loot)
+- [x] Sect system (join, unique bonuses, ranks, contribution) + online-ready backend
+- [x] Spirit Beasts (collect, level, deploy; boost cultivation + fight)
+- [x] Trials — idle auto-battle vs demonic beasts (zones, waves, bosses, loot)
 - [x] Redesigned tabbed UI (Cultivate / Sect / Beasts / Trials / Arts)
 - [x] Real AdMob IDs wired (App ID + Rewarded unit) behind dev/live switch
+- [x] Illustrated portraits, realm art, and app icons
+- [x] Onboarding tutorial (first-session guided walkthrough)
+- [x] Store listing assets (icons, feature graphic, screenshots, copy)
 - [ ] Online sects backend (Firebase/Supabase — see docs/SECT-ONLINE.md, needs your project)
 - [ ] In-app purchases (Play Billing) — products defined, needs Console setup
-- [ ] Deeper "Reincarnation 转世" meta-prestige + skill tree (optional 4th layer)
+- [ ] Deeper Reincarnation meta-prestige + skill tree (optional 4th layer)
 - [ ] Cloud save (Play Games / Game Center)
 - [ ] More content: sub-realms, alchemy minigame, sect/disciples, events
-- [ ] Illustrated art assets, sound, music
-- [ ] App icons & store screenshots
-- [ ] Localization (English ⇄ 中文)
+- [ ] Sound & music
 ```

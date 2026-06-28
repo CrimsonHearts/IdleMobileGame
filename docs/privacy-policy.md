@@ -1,6 +1,6 @@
-# Privacy Policy — Path to Immortality (仙途)
+# Privacy Policy — Path to Immortality
 
-_Last updated: 2026-06-06_
+_Last updated: 2026-06-28_
 
 > **DRAFT.** Review with a legal professional and replace the bracketed
 > placeholders before publishing. Both Google Play and the Apple App Store
@@ -54,4 +54,4 @@ We may update this policy; the "Last updated" date will change accordingly.
 
 ## Contact
 
-Questions: **[your contact email]**
+Questions: **derwin.lim@gmail.com**

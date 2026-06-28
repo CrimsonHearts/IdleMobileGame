@@ -84,18 +84,62 @@ valid signature. Sideloaded `.apk`s (path A) are what require v2/v3 directly.
 
 ## C. Assets still to create (can be done in-repo)
 
-- [ ] App icon (1024×1024 master → all sizes)
-- [ ] Feature graphic (1024×500, Play)
-- [ ] Screenshots (phone + tablet)
-- [ ] Short & full store descriptions (EN + 中文)
+- [x] App icon (1024×1024 master → all sizes) — `www/assets/icon-{48,72,96,144,192,512,1024}.png`
+- [x] Feature graphic (1024×500, Play) — `docs/store-assets/feature-graphic-1024x500.png`
+- [x] Screenshots (phone) — `docs/store-assets/screenshots/` (4 shots from a live build)
+- [ ] Screenshots (tablet) — optional for Play, skip unless you ship a tablet layout
+- [x] Short & full store descriptions (English) — see section D below
 - [ ] Promo/preview video (optional)
 
-> Current art is CSS + emoji placeholders. Real illustrated assets can be
-> dropped into `www/assets/` and referenced from the CSS/HTML.
+> Illustrated portraits, realm art, and the app icon are already in
+> `www/assets/`. The listing screenshots are point-in-time captures of the
+> live UI; retake them after any visual change (any headless-browser
+> screenshot tool against `npm run serve` works).
 
 ---
 
-## D. What only YOU can ultimately do (recap)
+## D. Store listing copy (ready to paste)
+
+**App title:** Path to Immortality
+
+**Short description** (≤80 chars, Play "short description" field):
+> Idle cultivation life-sim — meditate, romance, and ascend the generations.
+
+**Full description** (Play "full description" field, no length issue at ~1,400 chars):
+> Begin as a mortal with nothing but a spark of Qi. Meditate to gather power,
+> build a cultivation ground that keeps producing while you're away, and push
+> through the realms — from Qi Condensation to the legendary Heavenly
+> Tribulation — to ascend toward immortality.
+>
+> Path to Immortality is a full idle life-sim:
+> • **Cultivate** — tap to meditate, automate your growth with facilities, and
+>   clear every stage of each realm before facing its Tribulation.
+> • **Choose a Dao Path** — Sword, Pill, Body, Talisman, or Heart — each one
+>   reshapes how you play for the rest of that life.
+> • **Study & Work** — raise your Talent and earn money to fund pills,
+>   facilities, and your family.
+> • **Live a whole life** — romance a partner, raise an heir, and pass your
+>   bloodline's strength to the next generation when your lifespan ends.
+> • **Walk a karmic path** — righteous or demonic choices unlock different
+>   events, sects, and partners.
+> • **Explore the wider world** — auto-battle Trials, tame Spirit Beasts,
+>   join a Sect, equip and upgrade Artifacts, and trade on the drifting-price
+>   Spirit Market.
+> • **Never lose progress** — a trusted-time offline system keeps your Qi,
+>   career, combat, and family progressing while you're away, with a fair cap
+>   and built-in protection against clock manipulation.
+>
+> No pay-to-win pressure — optional ads speed things up, nothing is required
+> to keep climbing the path to immortality.
+
+**Category:** Games → Simulation (alt: Role Playing)
+**Content rating questionnaire:** no violence against real people, mild
+fantasy combat (auto-battler, no gore), simulated romance/marriage (no
+explicit content), in-app purchases, ads.
+
+---
+
+## E. What only YOU can ultimately do (recap)
 
 1. Create & pay for the developer accounts ($25 Google one-time, $99/yr Apple).
 2. Provide identity, tax, and bank details so the stores can pay you.
