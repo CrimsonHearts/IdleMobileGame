@@ -17,7 +17,7 @@ const STORY_BEATS = [
   },
   {
     id: 'first_tribulation', speaker: 'mentor', name: 'Granny Su', icon: '🍵',
-    trigger: () => Game.state.realm >= 1,
+    trigger: () => Game.state.realm >= 2,
     lines: [
       "You felt that, didn't you — the sky itself testing your resolve. That was no metaphor. The Heavens really do judge.",
       "Be proud, but don't get comfortable. Tribulations only get crueler from here, and someone out there is watching who clears them, and how fast.",
@@ -88,7 +88,7 @@ const STORY_BEATS = [
 const Story = {
   defs: STORY_BEATS,
 
-  s() { return Game.state.story; },
+  s() { this.init(); return Game.state.story; },
   fresh() { return { seen: {} }; },
   init() { if (!Game.state.story) Game.state.story = this.fresh(); },
 

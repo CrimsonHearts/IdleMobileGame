@@ -1852,6 +1852,8 @@ const UI = {
     const queue = this._storyQueue;
     if (!queue || !queue.length) { this._storyShowing = false; return; }
     this._storyShowing = true;
+    // Don't bury another modal (tribulation, onboarding unlock, …) — wait for it to close.
+    if (document.querySelector('.modal-overlay')) { setTimeout(() => this._advanceStory(), 300); return; }
     this._renderStoryLine(queue.shift(), 0);
   },
 
