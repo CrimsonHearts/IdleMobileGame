@@ -429,7 +429,7 @@ Conditions are pure functions of state — add a feature by appending to
 
 ## 15. Save State Schema
 
-Saved to `localStorage` under `GameData.saveKey` (`xianxia_idle_save_v1`).
+Saved to `localStorage` under `GameData.saveKey` (`xianxia_idle_save_v2`).
 Migrations are additive — `Game.init()` backfills any missing field, so old
 saves load safely. Key fields (`Game.newState()`):
 
