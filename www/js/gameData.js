@@ -695,7 +695,7 @@ const GameData = {
   },
 
   saveVersion: 7,
-  saveKey: 'xianxia_idle_save_v1',
+  saveKey: 'xianxia_idle_save_v2',
 };
 
 window.GameData = GameData;
