@@ -207,8 +207,8 @@ const QUEST_DEFS = [
     title: 'Industrial Cultivator',
     desc:  'Own at least one of every Cultivation Ground.',
     check: () => GameData.generators.every(g => (Game.state.owned[g.id] || 0) >= 1),
-    reward: { qi: 100000 },
-    rewardText: '+100,000 Qi',
+    reward: { qi: 5e7, permanentBonus: 0.05 },
+    rewardText: '+50,000,000 Qi & permanent +5% production',
   },
   {
     id: 'dynasty', category: 'achievement', icon: '👨‍👩‍👧‍👦',

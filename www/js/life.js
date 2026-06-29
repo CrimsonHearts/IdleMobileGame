@@ -69,12 +69,13 @@ const Life = {
   _completeStudy() {
     const s = this.s(), c = this.course(s.study.id);
     const tg = 1 + ((window.Game && Game.modVal) ? Game.modVal('talentGain') : 0); // Prodigy trait
+    const talentGain = Math.round((c.grants.talent || 0) * tg);
     s.education = c.eduLevel;
     s.intellect += c.grants.intellect || 0;
-    s.talent    += Math.round((c.grants.talent || 0) * tg);
+    s.talent    += talentGain;
     s.charm     += c.grants.charm || 0;
     s.study = null;
-    if (window.UI) UI.toast(`🎓 Graduated: ${c.name}! +${c.grants.talent} Talent, +${c.grants.intellect} Intellect`);
+    if (window.UI) UI.toast(`🎓 Graduated: ${c.name}! +${talentGain} Talent, +${c.grants.intellect} Intellect`);
     Game.persist();
   },
 

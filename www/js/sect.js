@@ -131,6 +131,7 @@ const Sect = {
   canJoin(sectId) { return this.joinRequirement(sectId).ok; },
 
   async join(sectId) {
+    if (Game.state.sect && Game.state.sect.id === sectId) return { ok: true };
     if (!this.canJoin(sectId)) return { ok: false };
     await this.backend.join(sectId);
     // Switching sects forfeits contribution (defection penalty).

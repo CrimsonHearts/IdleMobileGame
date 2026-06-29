@@ -97,13 +97,13 @@ const Family = {
       const c = this._makeCandidate('min_heaven', 65, false);
       c.name = 'Fairy ' + c.name.split(' ')[0];
       c.profession = 'Immortal Disciple'; c.trait = 'Virtuous';
-      c.traits = ['spiritual', 'ironwill']; c.aligned = 'righteous';
+      c.traits = ['spiritual', 'ironwill'];
       list.unshift(c);
     } else if (tier === 'demonic') {
       const c = this._makeCandidate('min_heaven', 65, false);
       c.name = 'Devil ' + c.name.split(' ')[0];
       c.profession = 'Demon Cultivator'; c.trait = 'Seductive';
-      c.traits = ['warlike', 'lucky']; c.aligned = 'demonic';
+      c.traits = ['warlike', 'lucky'];
       list.unshift(c);
     }
     this.s().candidates = list;
@@ -136,7 +136,11 @@ const Family = {
     const charmMod = window.Game && Game.modVal ? Game.modVal('charm') : 1;
     cand.affinity = Math.min(100, cand.affinity + base * (1 + charm * 0.01) * charmMod);
   },
-  chat(id) { const c = this._find(id); if (c) { this._gain(c, 4); Game.persist(); } return c; },
+  chat(id) {
+    const c = this._find(id);
+    if (c && !(c.chatCooldown > 0)) { this._gain(c, 4); c.chatCooldown = 8; Game.persist(); }
+    return c;
+  },
   date(id) { const c = this._find(id); if (c && Life.s().money >= 200) { Life.s().money -= 200; this._gain(c, 14); Game.persist(); } return c; },
   gift(id) { const c = this._find(id); if (c && Life.s().money >= 1000) { Life.s().money -= 1000; this._gain(c, 30); Game.persist(); } return c; },
   _find(id) { return this.s().candidates.find(c => c.id === id); },
@@ -265,19 +269,28 @@ const Family = {
         <div class="progress-track heart"><div class="progress-fill" style="width:${c.affinity}%"></div></div>
         <div class="row-between"><span class="muted">Affinity ${Math.floor(c.affinity)}/100</span></div>
         <div class="btn-row">
-          <button class="btn-mini" data-a="chat">Chat</button>
+          <button class="btn-mini" data-a="chat" ${c.chatCooldown>0?'disabled':''}>${c.chatCooldown>0?`Chat… ${Math.ceil(c.chatCooldown)}s`:'Chat'}</button>
           <button class="btn-mini" data-a="date" ${Life.s().money>=200?'':'disabled'}>Date ¥200</button>
           <button class="btn-mini" data-a="gift" ${Life.s().money>=1000?'':'disabled'}>Gift ¥1K</button>
           <button class="btn-primary sm" data-a="marry" ${c.affinity>=100?'':'disabled'}>Propose 💍</button>
         </div>`;
       card.querySelectorAll('button[data-a]').forEach(b => b.addEventListener('click', () => {
         const a = b.dataset.a;
-        if (a === 'marry') { if (this.marry(c.id)) { UI.toast(`💍 You married ${c.name}!`); this.render(el); UI.renderResources(); } return; }
+        if (a === 'marry') {
+          const others = s.candidates.filter(x => x.id !== c.id && x.affinity > 0);
+          if (others.length && !confirm(`Marrying ${c.name} will end things with everyone else you've been seeing. Continue?`)) return;
+          if (this.marry(c.id)) { UI.toast(`💍 You married ${c.name}!`); this.render(el); UI.renderResources(); }
+          return;
+        }
         this[a](c.id); this.render(el); UI.renderResources();
       }));
       list.appendChild(card);
     });
-    el.querySelector('#meet-new').addEventListener('click', () => { this.refreshCandidates(); this.render(el); });
+    el.querySelector('#meet-new').addEventListener('click', () => {
+      const invested = s.candidates.some(c => c.affinity > 0);
+      if (invested && !confirm('Meeting new people will end things with everyone you\'ve been getting to know. Continue?')) return;
+      this.refreshCandidates(); this.render(el);
+    });
     el.querySelector('#meet-destined').addEventListener('click', async (e) => {
       const btn = e.currentTarget; btn.disabled = true;
       const c = await this.meetDestined();
@@ -333,7 +346,11 @@ const Family = {
     });
   },
 
-  tick(dt) { if (this.s().childCooldown > 0) this.s().childCooldown = Math.max(0, this.s().childCooldown - dt); },
+  tick(dt) {
+    const s = this.s();
+    if (s.childCooldown > 0) s.childCooldown = Math.max(0, s.childCooldown - dt);
+    s.candidates.forEach(c => { if (c.chatCooldown > 0) c.chatCooldown = Math.max(0, c.chatCooldown - dt); });
+  },
 };
 
 window.Family = Family;

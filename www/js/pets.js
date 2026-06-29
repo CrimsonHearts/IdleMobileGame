@@ -25,11 +25,13 @@ const PETS_DATA = [
 ];
 
 const MAX_ACTIVE_PETS = 3;
+const MAX_PET_LEVEL = 30;
 
 const Pets = {
   data: PETS_DATA,
   rarity: PET_RARITY,
   MAX_ACTIVE: MAX_ACTIVE_PETS,
+  MAX_LEVEL: MAX_PET_LEVEL,
 
   get(id) { return PETS_DATA.find(p => p.id === id); },
   _owned() { return Game.state.pets.owned; },
@@ -74,7 +76,10 @@ const Pets = {
     const p = this.rollPet();
     const owned = this._owned();
     let duplicate = false;
-    if (owned[p.id]) { owned[p.id].level += 1; duplicate = true; } // dupe → +1 level
+    if (owned[p.id]) { // dupe → +1 level (capped)
+      if (owned[p.id].level < MAX_PET_LEVEL) owned[p.id].level += 1;
+      duplicate = true;
+    }
     else {
       owned[p.id] = { level: 1 };
       if (this.active().length < MAX_ACTIVE_PETS) Game.state.pets.active.push(p.id);
@@ -90,7 +95,7 @@ const Pets = {
   },
 
   levelUp(id) {
-    if (!this.isOwned(id)) return false;
+    if (!this.isOwned(id) || this.levelOf(id) >= MAX_PET_LEVEL) return false;
     const cost = this.levelUpCost(id);
     if (Game.state.spiritStones < cost) return false;
     Game.state.spiritStones -= cost;

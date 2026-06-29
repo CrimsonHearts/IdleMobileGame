@@ -78,7 +78,7 @@ const GameData = {
       { name: 'Void Refinement',          reqQi: 3.2e16,  lifespan: 1650,  pillCost: 5.5e6,  stages: QUAD },
       { name: 'Body Integration',         reqQi: 3.1e19,  lifespan: 3250,  pillCost: 5.5e7,  stages: QUAD },
       { name: 'Great Ascension',          reqQi: 3.4e22,  lifespan: 6450,  pillCost: 5.5e8,  stages: QUAD },
-      { name: 'Immortal Ascension',       reqQi: 4.4e25, lifespan: 12850, pillCost: 2.3e9,  stages: ['Tribulation','Half-Immortal','True Immortal','Golden Immortal'] },
+      { name: 'Immortal Ascension',       reqQi: 4.4e25, lifespan: 12850, pillCost: 5.5e9,  stages: ['Tribulation','Half-Immortal','True Immortal','Golden Immortal'] },
     ];
   })(),
 
@@ -237,12 +237,12 @@ const GameData = {
    */
   stageMilestones: [
     { at:  3,  icon:'🏛', name:'Three Pillars',      bonus:0.03, dao:0,  desc:'The trinity complete — stability of Heaven, Earth and Man manifests in your Dao.' },
-    { at:  7,  icon:'🍀', name:'Seven Celestials',   bonus:0.07, dao:1,  desc:'Seven is the number of celestial harmony. The Heavens acknowledge your path.' },
-    { at:  9,  icon:'☯',  name:'Nine Turns',         bonus:0.09, dao:2,  desc:'The nine-turn golden elixir — your cultivation cycle approaches perfection.' },
-    { at: 13,  icon:'🌟', name:"Heaven's Chosen",    bonus:0.13, dao:3,  desc:'Thirteen — the number the superstitious avoid. You did not. The Heavens take notice.' },
-    { at: 18,  icon:'🥋', name:'Eighteen Arhats',    bonus:0.06, dao:2,  desc:'The eighteen guardian Arhats recognise your perseverance and lend their strength.' },
-    { at: 27,  icon:'💎', name:'Three Perfections',  bonus:0.08, dao:3,  desc:'Three times nine: mind, body, and spirit all reach a point of rare equilibrium.' },
-    { at: 36,  icon:'📜', name:'Thirty-Six Stratagems', bonus:0.10, dao:4, desc:'The thirty-six stratagems of heaven are now inscribed in your Dao heart.' },
+    { at:  7,  icon:'🍀', name:'Seven Celestials',   bonus:0.06, dao:1,  desc:'Seven is the number of celestial harmony. The Heavens acknowledge your path.' },
+    { at:  9,  icon:'☯',  name:'Nine Turns',         bonus:0.07, dao:2,  desc:'The nine-turn golden elixir — your cultivation cycle approaches perfection.' },
+    { at: 13,  icon:'🌟', name:"Heaven's Chosen",    bonus:0.08, dao:2,  desc:'Thirteen — the number the superstitious avoid. You did not. The Heavens take notice.' },
+    { at: 18,  icon:'🥋', name:'Eighteen Arhats',    bonus:0.09, dao:3,  desc:'The eighteen guardian Arhats recognise your perseverance and lend their strength.' },
+    { at: 27,  icon:'💎', name:'Three Perfections',  bonus:0.10, dao:3,  desc:'Three times nine: mind, body, and spirit all reach a point of rare equilibrium.' },
+    { at: 36,  icon:'📜', name:'Thirty-Six Stratagems', bonus:0.13, dao:4, desc:'The thirty-six stratagems of heaven are now inscribed in your Dao heart.' },
     { at: 49,  icon:'⭐', name:'Great Divination',   bonus:0.14, dao:5,  desc:'Forty-nine: the supreme divination number. Your fate is writ in the stars.' },
     { at: 72,  icon:'🐒', name:'Seventy-Two Arts',   bonus:0.18, dao:7,  desc:'The Great Sage mastered 72 transformations. You have forged 72 paths of your own.' },
     { at: 81,  icon:'🔥', name:'Nine-Nine Return',   bonus:0.20, dao:9,  desc:'Eighty-one tribulations — the complete journey. You have walked every trial.' },

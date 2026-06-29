@@ -968,7 +968,7 @@ const UI = {
            Dao Comprehension and your family legacy pass on to the next generation${legacyWithHeir !== null ? ` (<b>+${legacyWithHeir}%</b> permanent legacy)` : ''}.</p>
         ${children.length ? '<p class="hint">Choose your heir:</p>' : ''}
         <div class="heir-list">${heirCards}</div>
-        ${children.length ? '' : '<button class="modal-close" id="descendant-btn">Continue the Bloodline</button>'}
+        <button class="modal-close" id="descendant-btn">${children.length ? 'Skip — Continue as a Distant Descendant' : 'Continue the Bloodline'}</button>
       </div>`;
 
     const finish = (heir) => {
@@ -1258,18 +1258,19 @@ const UI = {
       const lvl = Pets.levelOf(p.id);
       const rar = Pets.rarity[p.rarity];
       const isActive = Pets.isActive(p.id);
-      const cost = owned ? Pets.levelUpCost(p.id) : 0;
-      const canLvl = owned && Game.state.spiritStones >= cost;
+      const maxed = lvl >= Pets.MAX_LEVEL;
+      const cost = owned && !maxed ? Pets.levelUpCost(p.id) : 0;
+      const canLvl = owned && !maxed && Game.state.spiritStones >= cost;
       html += `
         <div class="beast-card ${owned?'owned':'locked'} ${isActive?'active':''}" style="border-color:${owned?rar.color:'var(--line)'}">
           <div class="beast-rarity" style="color:${rar.color}">${rar.name}</div>
           <div class="beast-ico" style="${owned?'':'filter:grayscale(1);opacity:.4'}">${this._beastEmoji(p.id)}</div>
           <div class="beast-name">${owned ? p.name : '???'}</div>
           ${owned ? `
-            <div class="beast-lvl">Lv ${lvl} · +${(Pets.qiBonusOf(p.id)*100).toFixed(1)}% Qi</div>
+            <div class="beast-lvl">Lv ${lvl}/${Pets.MAX_LEVEL} · +${(Pets.qiBonusOf(p.id)*100).toFixed(1)}% Qi</div>
             <div class="beast-actions">
               <button class="btn-mini" data-act="toggle" data-id="${p.id}" ${(!isActive&&active.length>=Pets.MAX_ACTIVE)?'disabled':''}>${isActive?'★ Active':'Deploy'}</button>
-              <button class="btn-mini" data-act="lvl" data-id="${p.id}" ${canLvl?'':'disabled'}>💠 ${GameNumbers.formatNumber(cost)}</button>
+              <button class="btn-mini" data-act="lvl" data-id="${p.id}" ${canLvl?'':'disabled'}>${maxed?'✓ Max':'💠 '+GameNumbers.formatNumber(cost)}</button>
             </div>` : `<div class="beast-lvl muted">Undiscovered</div>`}
         </div>`;
     });
@@ -1336,7 +1337,9 @@ const UI = {
         <div id="sect-roster" class="hint">Loading roster…</div>
         <button class="btn-ghost" id="leave-sect">Leave Sect (forfeit contribution)</button>`;
 
+      const rosterReq = (this._sectRosterSeq = (this._sectRosterSeq || 0) + 1);
       Sect.backend.members(current.id).then(members => {
+        if (this._sectRosterSeq !== rosterReq) return; // a newer render superseded this fetch
         const roster = el.querySelector('#sect-roster');
         if (roster) roster.innerHTML = members.map(m =>
           `<div class="roster-row"><span>${m.name}</span><span class="muted">${m.rank.name} · ${m.realm.name}</span></div>`).join('');
@@ -1751,7 +1754,6 @@ const UI = {
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
-    let claimAllUsed = false; // once tapped, keep the Claim-All button hidden for this view
 
     const renderContent = () => {
       const unclaimedList = Quests.defs.filter(q => s.completed[q.id] && !s.claimed[q.id]);
@@ -1768,8 +1770,8 @@ const UI = {
           </div>
         </div>`;
 
-      // Prominent Claim All when there are rewards waiting (hidden once used this view).
-      if (unclaimedList.length >= 1 && !claimAllUsed) {
+      // Prominent Claim All when there are rewards waiting.
+      if (unclaimedList.length >= 1) {
         html += `<button class="quest-claim-all" id="quest-claim-all">
           🎁 Claim All Rewards <span class="claim-all-count">${unclaimedList.length}</span>
         </button>`;
@@ -1834,7 +1836,6 @@ const UI = {
       if (claimAll) claimAll.addEventListener('click', () => {
         let n = 0;
         unclaimedList.forEach(q => { if (Quests.claim(q.id)) n++; });
-        claimAllUsed = true; // hide the button after use, even if new quests complete
         if (n) {
           UI.renderAll(); UI.updateQuestBadge();
           UI.toast(`🎁 Claimed ${n} quest reward${n>1?'s':''}!`);
