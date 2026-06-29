@@ -40,7 +40,10 @@ const Combat = {
     const gear = (window.Game && Game.gearAtk) ? Game.gearAtk() : 0;
     return (this.baseAtk() + (window.Pets ? Pets.combatAtk() : 0) + gear) * Sect.combatMult() * meridian * perk * pill * path;
   },
-  playerHpMax() { return this.baseHp() + (window.Pets ? Pets.combatHp() : 0) + (window.Game && Game.gearHp ? Game.gearHp() : 0); },
+  playerHpMax() {
+    const hpMult = (window.Game && Game.hpExternalMult) ? Game.hpExternalMult() : 1;
+    return (this.baseHp() + (window.Pets ? Pets.combatHp() : 0) + (window.Game && Game.gearHp ? Game.gearHp() : 0)) * hpMult;
+  },
 
   // -- Mob scaling ----------------------------------------------------------
   isBossWave(wave) { return wave % 10 === 0; },
@@ -118,11 +121,16 @@ const Combat = {
     this.ensurePlayerHp();
     const c = Game.state.combat;
     const mob = this.mob();
-    const pAtk = this.playerAtk();
+    let pAtk = this.playerAtk();
+    if (mob.boss && window.Techniques) pAtk *= Techniques.bossDmgMult();
 
     // Exchange damage over dt (1 "round" ≈ 1 second).
-    mob.hp -= pAtk * dt;
-    c.playerHp -= mob.atk * dt;
+    const dmgDealt = pAtk * dt;
+    mob.hp -= dmgDealt;
+    if (window.Techniques) c.playerHp = Math.min(this.playerHpMax(), c.playerHp + dmgDealt * Techniques.lifestealFrac());
+    let dmgTaken = mob.atk * dt;
+    if (window.Techniques) dmgTaken *= (1 - Techniques.mitigationFrac());
+    c.playerHp -= dmgTaken;
 
     if (mob.hp <= 0) {
       this._loot(mob);

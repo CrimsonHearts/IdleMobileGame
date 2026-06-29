@@ -831,6 +831,18 @@ small { font-weight:400; }
 .beast-actions { display:flex; gap:6px; margin-top:8px; }
 .beast-actions .btn-mini { flex:1; padding:6px 4px; font-size:11px; }
 
+/* -- Techniques -- */
+.tech-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:10px; }
+.tech-card { border:1.5px solid var(--line); border-radius:16px; padding:12px; text-align:center;
+  background:var(--surface); box-shadow:var(--shadow-sm); position:relative; }
+.tech-card.active { box-shadow:0 0 0 2px var(--jade), var(--shadow-sm); }
+.tech-card.locked { opacity:.7; }
+.tech-ico { font-size:36px; line-height:1; margin:4px 0; }
+.tech-name { font-size:13.5px; font-weight:700; }
+.tech-rank { font-size:11px; color:var(--jade-d); font-weight:600; margin-top:3px; }
+.tech-actions { display:flex; gap:6px; margin-top:8px; }
+.tech-actions .btn-mini { flex:1; padding:6px 4px; font-size:11px; }
+
 /* -- Sect -- */
 .sect-seal { width:46px; height:46px; flex-shrink:0; border-radius:12px; color:#fff;
   display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; }

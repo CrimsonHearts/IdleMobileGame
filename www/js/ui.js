@@ -1021,6 +1021,7 @@ const UI = {
   renderWorld() {
     if (this.worldSub === 'trials')      this.renderTrials();
     else if (this.worldSub === 'beasts') this.renderBeasts();
+    else if (this.worldSub === 'skills') this.renderTechniques();
     else if (this.worldSub === 'sect')   this.renderSect();
     else if (this.worldSub === 'gear')   this.renderArtifacts();
     else if (this.worldSub === 'market') this.renderMarket();
@@ -1303,6 +1304,60 @@ const UI = {
         this.toast(`💠 +${GameNumbers.formatNumber(stones)} Spirit Stones`);
         this.renderBeasts(); this.renderResources();
       }
+    }));
+    if (scroller) scroller.scrollTop = scrollTop;
+  },
+
+  // -- TECHNIQUES (combat skill tree) ---------------------------------------
+  renderTechniques() {
+    const el = document.getElementById('sub-skills');
+    if (!el) return;
+    const scroller = document.getElementById('content');
+    const scrollTop = scroller ? scroller.scrollTop : 0;
+    if (!Game.combatUnlocked()) {
+      el.innerHTML = `<div class="section-title">📜 Combat Techniques</div>
+        <div class="locked-panel">
+          <div class="locked-ico">🔒</div>
+          <div class="locked-title">Techniques Locked</div>
+          <div class="hint">Reach <b>Qi Condensation</b> to unlock Trials, then learn techniques to power up your cultivator in battle.</div>
+        </div>`;
+      if (scroller) scroller.scrollTop = scrollTop;
+      return;
+    }
+    const stones = Game.state.spiritStones;
+    const activeCount = Techniques.active().length;
+    let html = `
+      <div class="section-title">📜 Combat Techniques <small>${activeCount}/${Techniques.MAX_ACTIVE} equipped</small></div>
+      <div class="hint">Learn techniques with 💠 Spirit Stones, then equip up to ${Techniques.MAX_ACTIVE} at once — only equipped techniques affect Trials combat. Choose a build.</div>
+      <div class="tech-grid">`;
+
+    Techniques.data.forEach(t => {
+      const rank = Techniques.rankOf(t.id);
+      const learned = rank > 0;
+      const maxed = rank >= Techniques.MAX_RANK;
+      const isActive = Techniques.isActive(t.id);
+      const cost = maxed ? 0 : Techniques.learnCost(t.id);
+      const canLearn = !maxed && stones >= cost;
+      const canEquip = learned && (isActive || activeCount < Techniques.MAX_ACTIVE);
+      html += `
+        <div class="tech-card ${learned ? 'owned' : 'locked'} ${isActive ? 'active' : ''}">
+          <div class="tech-ico">${t.icon}</div>
+          <div class="tech-name">${t.name}</div>
+          <div class="tech-rank">${learned ? `Rank ${rank}/${Techniques.MAX_RANK} · ${Techniques.effectText(t.id, rank)}` : Techniques.effectText(t.id, 1) + ' (at Rank 1)'}</div>
+          <div class="tech-actions">
+            <button class="btn-mini" data-act="learn" data-id="${t.id}" ${canLearn ? '' : 'disabled'}>${maxed ? '✓ Max' : 'Learn 💠' + GameNumbers.formatNumber(cost)}</button>
+            <button class="btn-mini" data-act="toggle" data-id="${t.id}" ${canEquip ? '' : 'disabled'}>${isActive ? '★ Equipped' : 'Equip'}</button>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+    el.innerHTML = html;
+
+    el.querySelectorAll('button[data-act]').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.id;
+      if (b.dataset.act === 'learn') Techniques.learn(id);
+      else if (b.dataset.act === 'toggle') Techniques.toggleActive(id);
+      this.renderTechniques(); this.renderResources();
     }));
     if (scroller) scroller.scrollTop = scrollTop;
   },

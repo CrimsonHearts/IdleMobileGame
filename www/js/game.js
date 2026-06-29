@@ -37,6 +37,7 @@ const Game = {
       beastEggs: 0,         // tame spirit beasts
       sect: null,           // { id, contribution, joinedAt } or null
       pets: { owned: {}, active: [] },           // owned: {id:{level}}, active:[ids]
+      techniques: { owned: {}, active: [] },     // owned: {id:rank}, active:[ids] (max 3 equipped)
       combat: { zone: 1, wave: 1, highestZone: 1, playerHp: null, paused: false },
       lastSaved: TimeService.now(),
       createdAt: TimeService.now(),
@@ -121,6 +122,7 @@ const Game = {
     if (this.state.beastEggs === undefined) this.state.beastEggs = 0;
     if (this.state.sect === undefined) this.state.sect = null;
     if (!this.state.pets) this.state.pets = { owned: {}, active: [] };
+    if (!this.state.techniques) this.state.techniques = { owned: {}, active: [] };
     if (!this.state.combat) this.state.combat = { zone: 1, wave: 1, highestZone: 1, playerHp: null, paused: false };
     if (this.state.permanentDouble === undefined) this.state.permanentDouble = false;
     if (this.state.qiBoostEndsAt === undefined) this.state.qiBoostEndsAt = 0;
@@ -223,11 +225,14 @@ const Game = {
   combatExternalMult() {
     const buff = (this.state.combatBuffEndsAt && TimeService.now() < this.state.combatBuffEndsAt) ? 1.5 : 1;
     const gear = window.Artifacts ? Artifacts.combatMult() : 1; // artifact set bonuses
-    return this.modVal('combat') * buff * gear * (this.karmaMods().combat || 1);
+    const tech = window.Techniques ? Techniques.atkMult() : 1; // equipped technique bonuses
+    return this.modVal('combat') * buff * gear * tech * (this.karmaMods().combat || 1);
   },
   /** Flat combat stats from equipped artifacts (read by Combat). */
   gearAtk() { return window.Artifacts ? Artifacts.atk() : 0; },
   gearHp()  { return window.Artifacts ? Artifacts.hp() : 0; },
+  /** HP multiplier from equipped techniques (read by Combat). */
+  hpExternalMult() { return window.Techniques ? Techniques.hpMult() : 1; },
   moneyMult() { return this.modVal('money'); },
 
   // -- Karma & life events --------------------------------------------------
