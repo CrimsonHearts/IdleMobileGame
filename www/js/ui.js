@@ -220,11 +220,11 @@ const UI = {
   },
 
   doBreakthrough() {
-    if (!Game.canBreakThrough() || this._modalOpen()) return;
+    if (!Game.canBreakThrough()) return;
+    const overlay = this._openModal();
+    if (!overlay) return;
     const next = Game.nextRealm();
     const gain = Game.pendingDaoGain();
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
     // Preview foundation quality so the player can make an informed choice.
     const realm = Game.currentRealm();
     const fqRatio = realm.reqQi > 0 ? Game.state.runQi / realm.reqQi : 0;
@@ -539,10 +539,9 @@ const UI = {
   },
 
   confirmReincarnate() {
-    if (this._modalOpen()) return;
+    const overlay = this._openModal();
+    if (!overlay) return;
     const pending = Game.pendingMerit();
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
     overlay.innerHTML = `
       <div class="modal" style="text-align:center">
         <div style="font-size:48px;margin:6px 0">🌀</div>
@@ -576,9 +575,8 @@ const UI = {
   },
 
   showDaily() {
-    if (this._modalOpen()) return;
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
+    const overlay = this._openModal();
+    if (!overlay) return;
     const render = () => {
       const avail = Game.dailyAvailable();
       const streak = Game.state.dailyStreak;
@@ -723,9 +721,8 @@ const UI = {
   },
 
   showRealmResult(res) {
-    if (this._modalOpen()) return;
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
+    const overlay = this._openModal();
+    if (!overlay) return;
     overlay.innerHTML = `
       <div class="modal" style="text-align:center">
         <div style="font-size:46px;margin:4px 0">🌀</div>
@@ -879,9 +876,8 @@ const UI = {
   },
 
   showPathChooser() {
-    if (this._modalOpen()) return;
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
+    const overlay = this._openModal();
+    if (!overlay) return;
     overlay.innerHTML = `
       <div class="modal">
         <h2>Choose Your Dao Path</h2>
@@ -944,11 +940,10 @@ const UI = {
   /** Lifespan reached: choose an heir and continue the bloodline. */
   showDeathModal() {
     if (this._deathShown) return;
-    if (this._modalOpen()) return; // retry next tick once the other modal closes
+    const overlay = this._openModal(); // null retries next tick once the other modal closes
+    if (!overlay) return;
     this._deathShown = true;
     const children = (Game.state.family && Game.state.family.children) || [];
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
 
     const heirCards = children.length
       ? children.map((c, i) => `
@@ -1163,6 +1158,8 @@ const UI = {
   renderTrials() {
     const el = document.getElementById('sub-trials');
     if (!el) return;
+    const scroller = document.getElementById('content');
+    const scrollTop = scroller ? scroller.scrollTop : 0;
     if (!Game.combatUnlocked()) {
       el.innerHTML = `<div class="section-title">⚔️ Trials</div>
         <div class="locked-panel">
@@ -1170,6 +1167,7 @@ const UI = {
           <div class="locked-title">Trials Locked</div>
           <div class="hint">Reach <b>Qi Condensation</b> (your first major breakthrough) to send your cultivator into the demon-infested wilds.</div>
         </div>`;
+      if (scroller) scroller.scrollTop = scrollTop;
       return;
     }
     const c = Game.state.combat;
@@ -1193,6 +1191,7 @@ const UI = {
     bind('#cb-retreat', () => { Combat.retreatZone(); this.renderTrials(); });
     bind('#cb-push',    () => { Combat.pushZone();    this.renderTrials(); });
     bind('#cb-pause',   () => { Game.state.combat.paused = !Game.state.combat.paused; this.renderTrials(); });
+    if (scroller) scroller.scrollTop = scrollTop;
   },
 
   /** Lightweight per-frame update of the combat stage (HP bars, log). */
@@ -1231,6 +1230,8 @@ const UI = {
   renderBeasts() {
     const el = document.getElementById('sub-beasts');
     if (!el) return;
+    const scroller = document.getElementById('content');
+    const scrollTop = scroller ? scroller.scrollTop : 0;
     const active = Pets.active();
     const money = (Game.state.life && Game.state.life.money) || 0;
     let html = `
@@ -1303,12 +1304,15 @@ const UI = {
         this.renderBeasts(); this.renderResources();
       }
     }));
+    if (scroller) scroller.scrollTop = scrollTop;
   },
 
   // -- SECT -----------------------------------------------------------------
   renderSect() {
     const el = document.getElementById('sub-sect');
     if (!el) return;
+    const scroller = document.getElementById('content');
+    const scrollTop = scroller ? scroller.scrollTop : 0;
     const current = Sect.current();
     if (current) {
       const rank = Sect.rank(), next = Sect.nextRank();
@@ -1354,6 +1358,7 @@ const UI = {
         if (kind === 'stones' && Sect.contribution() >= 200) { Game.state.sect.contribution -= 200; Game.state.spiritStones += 1000; this.toast('💠 +1,000 Spirit Stones'); }
         Game.persist(); this.renderSect(); this.renderResources();
       }));
+      if (scroller) scroller.scrollTop = scrollTop;
       return;
     }
 
@@ -1386,11 +1391,14 @@ const UI = {
         if (r && r.ok) { this.toast(`🏯 You joined the ${Sect.current().name}!`); this.renderSect(); this.renderResources(); }
       });
     }));
+    if (scroller) scroller.scrollTop = scrollTop;
   },
 
   // -- Character creation (Gacha system) -----------------------------------
   showCharacterCreation() {
-    if (this._modalOpen()) return;
+    const overlay = this._openModal();
+    if (!overlay) return;
+    overlay.id = 'creation-overlay';
     let gender = 'male';
     let currentRoot = GameData.rollSpiritualRoot('free');
     let rollsUsed = 1;
@@ -1398,10 +1406,6 @@ const UI = {
     let bestRoot = currentRoot;
     let isRolling = false;
     let packsShown = false; // auto-show the packs popup once, when free rolls run out
-
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.id = 'creation-overlay';
 
     const rootRarityOrder = ['mortal', 'true', 'heaven', 'saint', 'chaos'];
     const rootRank = r => rootRarityOrder.indexOf(r.key);
@@ -1665,9 +1669,8 @@ const UI = {
 
   // -- Shop -----------------------------------------------------------------
   showShop() {
-    if (this._modalOpen()) return;
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
+    const overlay = this._openModal();
+    if (!overlay) return;
     const adsOwned  = Monetization.adsRemoved;
     const dblOwned  = Game.state.permanentDouble;
 
@@ -1744,16 +1747,15 @@ const UI = {
 
   // -- Quests ---------------------------------------------------------------
   showQuests() {
-    if (!window.Quests || this._modalOpen()) return;
+    if (!window.Quests) return;
+    const overlay = this._openModal();
+    if (!overlay) return;
     const s = Quests.state;
     const cats = [
       { key: 'story',       label: '📖 Cultivator\'s Path', hint: 'Follow the story — each step unlocks the next.' },
       { key: 'achievement', label: '🏆 Achievements',       hint: 'One-time milestones you can complete in any order.' },
       { key: 'hidden',      label: '🔮 Hidden',             hint: 'Some quests are not what they seem…' },
     ];
-
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
 
     const renderContent = () => {
       const unclaimedList = Quests.defs.filter(q => s.completed[q.id] && !s.claimed[q.id]);
@@ -1961,9 +1963,8 @@ const UI = {
 
   /** Show result after a spirit pack is purchased and granted. */
   showPackGrantResult(pack, root) {
-    if (this._modalOpen()) return;
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
+    const overlay = this._openModal();
+    if (!overlay) return;
     overlay.innerHTML = `
       <div class="modal pack-result-modal">
         <h2>🔮 Root Awakened!</h2>
@@ -1992,12 +1993,12 @@ const UI = {
 
   /** Show hidden breakthrough conditions that were triggered. */
   showBreakthroughConditions(conditionsHit) {
-    if (!conditionsHit || !conditionsHit.length || this._modalOpen()) return;
+    if (!conditionsHit || !conditionsHit.length) return;
+    const overlay = this._openModal();
+    if (!overlay) return;
     const lines = conditionsHit.map(c =>
       `<div class="condition-hit"><span class="cond-icon">${c.icon||'✦'}</span><b>${c.name}</b> — ${c.desc}${c.bonus ? ` <span class="cond-bonus">+${(c.bonus*100).toFixed(0)}% Prod</span>` : ''}</div>`
     ).join('');
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
     overlay.innerHTML = `
       <div class="modal conditions-modal">
         <h2>🌟 Hidden Dao Revealed!</h2>
@@ -2067,6 +2068,16 @@ const UI = {
   /** True if a `.modal-overlay` is already attached — used to avoid stacking. */
   _modalOpen() { return !!document.querySelector('.modal-overlay'); },
 
+  /** Create and return a fresh `.modal-overlay` div, or null if one is already
+   *  open (callers should `if (!overlay) return;`). Does not attach it — the
+   *  caller fills in innerHTML/listeners, then appends it to the body. */
+  _openModal(extraClass) {
+    if (this._modalOpen()) return null;
+    const overlay = document.createElement('div');
+    overlay.className = extraClass ? `modal-overlay ${extraClass}` : 'modal-overlay';
+    return overlay;
+  },
+
   toast(msg) {
     this._toastQueue = (this._toastQueue || []).concat(msg);
     if (!this._toastShowing) this._advanceToast();
@@ -2121,9 +2132,8 @@ const UI = {
   },
 
   modal(title, html, reward) {
-    if (this._modalOpen()) return;
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
+    const overlay = this._openModal();
+    if (!overlay) return;
     const rewardBtn = reward
       ? `<button class="modal-reward">${reward.rewardLabel}</button>` : '';
     overlay.innerHTML = `
@@ -2145,7 +2155,8 @@ const UI = {
 
   // -- Cultivation speed breakdown ------------------------------------------
   showCultivationBreakdown() {
-    if (this._modalOpen()) return;
+    const overlay = this._openModal();
+    if (!overlay) return;
     const m = Game.multipliers();
     const pct = v => (v >= 1 ? '+' : '') + ((v - 1) * 100).toFixed(0) + '%';
     const x = v => v.toFixed(2) + '×';
@@ -2161,8 +2172,6 @@ const UI = {
       ['All-Mult (buffs/perks/pills)', x(m.allMult)],
     ].filter(([, v]) => v !== '1.00×');
     const total = Game.qiPerSecond();
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
     overlay.innerHTML = `
       <div class="modal" style="text-align:left">
         <h2 style="text-align:center">⚡ Cultivation Speed</h2>
@@ -2186,7 +2195,8 @@ const UI = {
 
   // -- Cultivation Record (stats) -------------------------------------------
   showStats() {
-    if (this._modalOpen()) return;
+    const overlay = this._openModal();
+    if (!overlay) return;
     const s = Game.state;
     const totalOwned = GameData.generators.reduce((n, g) => n + (s.owned[g.id] || 0), 0);
     const techs = Object.keys(s.upgrades || {}).length;
@@ -2196,8 +2206,6 @@ const UI = {
     const children = (fam.children || []).length;
     const highestRealm = (s.foundationBonuses || []).reduce((m, b) => Math.max(m, b.realm || 0), s.realm);
 
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
     overlay.innerHTML = `
       <div class="modal" style="text-align:left">
         <h2 style="text-align:center">📜 Cultivation Record</h2>
@@ -2230,9 +2238,8 @@ const UI = {
 
   // -- Rate-my-app prompt ----------------------------------------------------
   askRating() {
-    if (this._modalOpen()) return;
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
+    const overlay = this._openModal();
+    if (!overlay) return;
     overlay.innerHTML = `
       <div class="modal" style="text-align:center">
         <div style="font-size:40px;margin:4px 0">⭐</div>
