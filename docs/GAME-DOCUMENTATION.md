@@ -356,11 +356,20 @@ hidden bonuses (e.g., Prodigy breakthrough at age ≤ 25).
 ## 12. Quests & Hidden Mechanics
 
 ### Quests — `quests.js`
-19 quests in 3 categories: **Story** (10, ordered), **Achievement** (5),
+21 quests in 3 categories: **Story** (12, ordered), **Achievement** (5),
 **Hidden** (4). Completion is checked every tick; rewards (Qi/Dao/¥/Charm/
 permanent %) are **claimed manually**. The Quest Log (📜) shows a progress bar,
 per-category counts, **Claim All**, and **hides claimed quests** so only active
 ones remain.
+
+Some story-chain quests carry a `dialogue` field — a mentor (Granny Su) and a
+recurring antagonist (Lu Heng of Jiutian Holdings) commenting on the milestone.
+When such a quest completes, `UI.onQuestCompleted` shows the lines as a
+lightweight, auto-dismissing banner (`UI.showDialogue`, `.story-toast` in
+styles.css) instead of a blocking modal — narrative rides the same
+trigger/reward path as the quest itself, so there's only one system to track
+milestones, and no separate flood of dialogue for returning players (only
+newly-completed quests fire it).
 
 ### Other hidden mechanics
 - **Cultivation Insight** — 0.5% chance per meditate tap → 60s of 2× production.

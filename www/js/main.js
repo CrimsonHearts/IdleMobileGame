@@ -18,7 +18,6 @@
   if (window.Life) Life.init();
   if (window.Family) Family.init();
   if (window.Quests) Quests.init();
-  if (window.Story) Story.init();
   if (window.Market) Market.init();
 
   // 3. Apply offline progress with anti-cheat checks.
@@ -39,15 +38,11 @@
       UI.tickRender();
       // Onboarding: feature unlocks, tutorial spotlight, contextual hints.
       if (window.Onboarding) Onboarding.tick();
-      // Check quests and notify on any newly completed ones.
+      // Check quests and notify on any newly completed ones (story dialogue rides along — see onQuestCompleted).
       if (window.Quests) {
         const newlyDone = Quests.checkAll();
         newlyDone.forEach(q => UI.onQuestCompleted(q));
         if (newlyDone.length) UI.updateQuestBadge();
-      }
-      if (window.Story) {
-        const newBeats = Story.checkAll();
-        if (newBeats.length) UI.showStoryBeats(newBeats);
       }
     }
     requestAnimationFrame(frame);

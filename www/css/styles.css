@@ -702,18 +702,18 @@ small { font-weight:400; }
 }
 
 /* =========================================================================
-   STORY DIALOGUE
+   STORY DIALOGUE — lightweight, non-blocking banner (rides quest completion)
    ========================================================================= */
-.story-overlay { z-index:260; }
-.story-modal { text-align:left; border:2px solid var(--jade-soft); }
-.story-modal.story-antagonist { border-color:#e7c9c9; }
-.story-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-.story-avatar { font-size:1.6rem; width:42px; height:42px; flex:none; display:flex; align-items:center; justify-content:center;
-  border-radius:50%; background:var(--jade-soft); }
-.story-antagonist .story-avatar { background:var(--gold-soft); }
-.story-name { font-weight:800; font-size:15px; color:var(--jade-d); }
-.story-antagonist .story-name { color:var(--gold-d); }
-.story-line { color:var(--text); font-size:15px; line-height:1.7; margin-bottom:18px; }
+.story-toast { position:fixed; left:50%; bottom:150px; transform:translateX(-50%) translateY(20px);
+  background:var(--surface); color:var(--text); padding:14px 18px; border-radius:16px; font-size:14px;
+  width:320px; max-width:88%; text-align:left; z-index:150; opacity:0; transition:all .35s;
+  box-shadow:var(--shadow); border:2px solid var(--jade-soft); }
+.story-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.story-toast.story-antagonist { border-color:#e7c9c9; }
+.story-toast-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; font-weight:800; font-size:13px; color:var(--jade-d); }
+.story-toast.story-antagonist .story-toast-head { color:var(--gold-d); }
+.story-toast-icon { font-size:1.2rem; }
+.story-toast-body { line-height:1.55; }
 
 /* =========================================================================
    STAGE MILESTONE POPUP

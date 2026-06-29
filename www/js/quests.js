@@ -7,6 +7,11 @@
  *   'hidden'      — description is '???' until the condition is first triggered
  *
  * Rewards: qi · dao · money · charm · permanentBonus (fraction added to allMult)
+ *
+ * Some story-chain quests carry an optional `dialogue` — mentor/antagonist
+ * flavor lines shown as a lightweight banner (UI.showDialogue) right when
+ * the quest completes, so the narrative rides the same trigger/reward path
+ * instead of a parallel tracking system.
  * =========================================================================*/
 
 const QUEST_DEFS = [
@@ -20,6 +25,13 @@ const QUEST_DEFS = [
     check: () => Game.state.lifetimeQi > 0,
     reward: { qi: 100 },
     rewardText: '+100 Qi',
+    dialogue: [
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "So. The Qi answers your call already. Not everyone's does — most modern folk forgot how to listen.",
+        'Su Wan. Three centuries old, if you must know, and too stubborn to either ascend or die. Granny Su will do.',
+        "I'll be watching your progress, Cultivator. The world up there isn't as quiet as your meditation app makes it feel.",
+      ] },
+    ],
   },
   {
     id: 'qi_seeker', category: 'story', order: 2, icon: '☯',
@@ -56,6 +68,12 @@ const QUEST_DEFS = [
     check: () => Game.state.realm >= 1,
     reward: { dao: 3, qi: 2000 },
     rewardText: '+3 Dao & +2,000 Qi',
+    dialogue: [
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "You felt that, didn't you — the sky itself testing your resolve. That was no metaphor. The Heavens really do judge.",
+        "Be proud, but don't get comfortable. Tribulations only get crueler from here, and someone out there is watching who clears them, and how fast.",
+      ] },
+    ],
   },
   {
     id: 'scholar', category: 'story', order: 6, icon: '📚',
@@ -74,6 +92,12 @@ const QUEST_DEFS = [
     check: () => Game.state.life && Game.state.life.jobId !== null,
     reward: { money: 1000 },
     rewardText: '+¥1,000',
+    dialogue: [
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        'A paycheck and a purpose — good. Half the cultivators I knew burned out chasing power with empty pockets.',
+        'Careful who you work for, though. Nearly every good job in this city traces back to one conglomerate sooner or later.',
+      ] },
+    ],
   },
   {
     id: 'kindred_spirit', category: 'story', order: 8, icon: '💕',
@@ -88,6 +112,11 @@ const QUEST_DEFS = [
     },
     reward: { charm: 5 },
     rewardText: '+5 Charm',
+    dialogue: [
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "Someone's caught your eye. Good. Jiutian likes its cultivators alone and hungry — a bond like that is the one asset they can't buy.",
+      ] },
+    ],
   },
   {
     id: 'married', category: 'story', order: 9, icon: '💍',
@@ -97,6 +126,11 @@ const QUEST_DEFS = [
     check: () => Game.state.family && !!Game.state.family.spouse,
     reward: { dao: 2, qi: 5000 },
     rewardText: '+2 Dao & +5,000 Qi',
+    dialogue: [
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "A household, built on your own terms. I never got the chance, fighting people like Lu Heng. Don't make my mistake — let this one keep you human.",
+      ] },
+    ],
   },
   {
     id: 'core_formation', category: 'story', order: 10, icon: '💎',
@@ -106,6 +140,49 @@ const QUEST_DEFS = [
     check: () => Game.state.realm >= 3,
     reward: { dao: 5, permanentBonus: 0.05 },
     rewardText: '+5 Dao & permanent +5% production',
+    dialogue: [
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "A Golden Core, condensed by your own hand. I haven't seen one forged this clean in years.",
+        'It won’t go unnoticed, child. Jiutian Holdings tracks every Core that forms outside their own academies — they call it "market research." I call it a leash.',
+      ] },
+      { speaker: 'antagonist', name: 'Lu Heng · Jiutian Holdings', icon: '🏢', lines: [
+        'Another independent Core. How quaint.',
+        '— relayed through channels you didn’t know existed —',
+        '"Growth like yours tends to attract offers. Or corrections. I’d hope you’re sensible enough to wait for the first."',
+      ] },
+    ],
+  },
+  {
+    id: 'nascent_soul', category: 'story', order: 11, icon: '🌌',
+    title: 'Soul Take Form',
+    desc:  'Condense your Nascent Soul — reach the Nascent Soul realm.',
+    hint:  'Keep breaking through realms: Core Formation → Nascent Soul.',
+    check: () => Game.state.realm >= 4,
+    reward: { dao: 7, permanentBonus: 0.07 },
+    rewardText: '+7 Dao & permanent +7% production',
+    dialogue: [
+      { speaker: 'antagonist', name: 'Lu Heng · Jiutian Holdings', icon: '🏢', lines: [
+        "Nascent Soul. You're climbing faster than the actuaries predicted.",
+        'Understand me: Jiutian didn’t corner the spirit-stone market for profit alone. Immortality unrationed is immortality unmanaged — and unmanaged things get out of hand.',
+        "I'm not your enemy. I'm just the one who decided someone should hold the gate. Better me than chaos.",
+      ] },
+    ],
+  },
+  {
+    id: 'ascension', category: 'story', order: 12, icon: '🌟',
+    title: 'Immortal Ascension',
+    desc:  'Transcend the mortal coil — reach the Immortal Ascension realm.',
+    hint:  'The final climb. Keep breaking through every realm above you.',
+    check: () => Game.state.realm >= 9,
+    reward: { dao: 20, permanentBonus: 0.15 },
+    rewardText: '+20 Dao & permanent +15% production',
+    dialogue: [
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "Immortal Ascension. I watched a hundred prodigies reach for this and stop short — and not always by choice.",
+        "You didn’t buy your way past a single gate Lu Heng built. That’s the part he can’t stand: the proof that the path was never his to own.",
+        'Go on. Climb past Heaven itself if you can. I’ll be here, kettle on, when you decide to come back down and start the next life.',
+      ] },
+    ],
   },
 
   // ── ACHIEVEMENTS ──────────────────────────────────────────────────────────
