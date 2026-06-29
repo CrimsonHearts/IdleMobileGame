@@ -1842,6 +1842,40 @@ const UI = {
     document.body.appendChild(overlay);
   },
 
+  /** Queue and show one or more story dialogue beats, one line at a time. */
+  showStoryBeats(beats) {
+    this._storyQueue = (this._storyQueue || []).concat(beats);
+    if (!this._storyShowing) this._advanceStory();
+  },
+
+  _advanceStory() {
+    const queue = this._storyQueue;
+    if (!queue || !queue.length) { this._storyShowing = false; return; }
+    this._storyShowing = true;
+    this._renderStoryLine(queue.shift(), 0);
+  },
+
+  _renderStoryLine(beat, i) {
+    const old = document.getElementById('story-overlay');
+    if (old) old.remove();
+    const isLast = i >= beat.lines.length - 1;
+    const tagClass = beat.speaker === 'antagonist' ? 'story-antagonist' : 'story-mentor';
+    const overlay = document.createElement('div');
+    overlay.id = 'story-overlay';
+    overlay.className = 'modal-overlay story-overlay';
+    overlay.innerHTML = `
+      <div class="modal story-modal ${tagClass}">
+        <div class="story-head"><span class="story-avatar">${beat.icon}</span><span class="story-name">${beat.name}</span></div>
+        <p class="story-line">${beat.lines[i]}</p>
+        <button class="modal-close story-next">${isLast ? 'Continue Cultivating' : 'Continue →'}</button>
+      </div>`;
+    overlay.querySelector('.story-next').addEventListener('click', () => {
+      overlay.remove();
+      if (isLast) this._advanceStory(); else this._renderStoryLine(beat, i + 1);
+    });
+    document.body.appendChild(overlay);
+  },
+
   /** Called from main loop when a quest is newly completed. */
   onQuestCompleted(q) {
     const isSecret = q.secret;

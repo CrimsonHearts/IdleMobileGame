@@ -18,6 +18,7 @@
   if (window.Life) Life.init();
   if (window.Family) Family.init();
   if (window.Quests) Quests.init();
+  if (window.Story) Story.init();
   if (window.Market) Market.init();
 
   // 3. Apply offline progress with anti-cheat checks.
@@ -43,6 +44,10 @@
         const newlyDone = Quests.checkAll();
         newlyDone.forEach(q => UI.onQuestCompleted(q));
         if (newlyDone.length) UI.updateQuestBadge();
+      }
+      if (window.Story) {
+        const newBeats = Story.checkAll();
+        if (newBeats.length) UI.showStoryBeats(newBeats);
       }
     }
     requestAnimationFrame(frame);

@@ -702,6 +702,20 @@ small { font-weight:400; }
 }
 
 /* =========================================================================
+   STORY DIALOGUE
+   ========================================================================= */
+.story-overlay { z-index:260; }
+.story-modal { text-align:left; border:2px solid var(--jade-soft); }
+.story-modal.story-antagonist { border-color:#e7c9c9; }
+.story-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.story-avatar { font-size:1.6rem; width:42px; height:42px; flex:none; display:flex; align-items:center; justify-content:center;
+  border-radius:50%; background:var(--jade-soft); }
+.story-antagonist .story-avatar { background:var(--gold-soft); }
+.story-name { font-weight:800; font-size:15px; color:var(--jade-d); }
+.story-antagonist .story-name { color:var(--gold-d); }
+.story-line { color:var(--text); font-size:15px; line-height:1.7; margin-bottom:18px; }
+
+/* =========================================================================
    STAGE MILESTONE POPUP
    ========================================================================= */
 .milestone-overlay { z-index:600; }
