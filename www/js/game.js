@@ -91,6 +91,12 @@ const Game = {
       // Artifacts / equipment (Round 6)
       artifacts: { inventory: [], equipped: { weapon: null, robe: null, talisman: null, ring: null } },
 
+      // Ancestral Heirloom (Round 7)
+      heirloom: { id: null, stacks: 0 },
+
+      // Weekly Cultivation Challenge (Round 7)
+      weeklyChallenge: { weekId: 0, claimed: false },
+
       // Market (Round 8): drifting prices
       market: null,
 
@@ -156,6 +162,8 @@ const Game = {
     if (!this.state.buffs) this.state.buffs = [];
     if (!this.state.secretRealm) this.state.secretRealm = { lastRunDay: null, highestFloor: 0 };
     if (!this.state.artifacts) this.state.artifacts = { inventory: [], equipped: { weapon: null, robe: null, talisman: null, ring: null } };
+    if (!this.state.heirloom) this.state.heirloom = { id: null, stacks: 0 };
+    if (!this.state.weeklyChallenge) this.state.weeklyChallenge = { weekId: 0, claimed: false };
     if (window.Market) Market.init();
     if (!this.state.onboarding) this.state.onboarding = { ready: false, unlocked: {}, seen: {}, steps: {}, hints: {}, skipped: false };
     if (this.state.totalTaps === undefined) this.state.totalTaps = 0;
@@ -231,14 +239,15 @@ const Game = {
     const gear = window.Artifacts ? Artifacts.combatMult() : 1; // artifact set bonuses
     const tech = window.Techniques ? Techniques.atkMult() : 1; // equipped technique bonuses
     const blood = window.Blood ? Blood.atkMult() : 1; // Blood Essence body refinement
-    return this.modVal('combat') * buff * gear * tech * blood * (this.karmaMods().combat || 1);
+    const rune = window.Enchanting ? Enchanting.atkMult() : 1; // rune enchanting bonuses
+    return this.modVal('combat') * buff * gear * tech * blood * rune * (this.karmaMods().combat || 1);
   },
   /** Flat combat stats from equipped artifacts (read by Combat). */
   gearAtk() { return window.Artifacts ? Artifacts.atk() : 0; },
   gearHp()  { return window.Artifacts ? Artifacts.hp() : 0; },
   /** HP multiplier from equipped techniques (read by Combat). */
   hpExternalMult() {
-    return (window.Techniques ? Techniques.hpMult() : 1) * (window.Blood ? Blood.hpMult() : 1);
+    return (window.Techniques ? Techniques.hpMult() : 1) * (window.Blood ? Blood.hpMult() : 1) * (window.Enchanting ? Enchanting.hpMult() : 1);
   },
   moneyMult() { return this.modVal('money'); },
 
@@ -391,6 +400,7 @@ const Game = {
     const startStones = this.perkBonus('startStones');
     if (startStones) this.state.spiritStones = (this.state.spiritStones || 0) + startStones;
 
+    if (window.Enchanting) Enchanting.onReincarnate();
     this.persist();
     return { merit, reincarnations: this.state.reincarnations };
   },
@@ -563,6 +573,9 @@ const Game = {
     // Blood Essence (Jing) + Spirit (Shen): the qi/offline layers beneath/above Qi.
     if (window.Blood) m.allMult *= Blood.qiMult();
     if (window.Spirit) { m.allMult *= Spirit.qiMult(); m.offlineBonus += Spirit.offlineBonus(); }
+    // Rune enchanting + Weekly challenge Qi bonuses (Round 7)
+    if (window.Enchanting) m.allMult *= (1 + Enchanting.qiPct());
+    if (window.Challenges) m.allMult *= Challenges.qiMult();
     // Meridian tree (Round 2): Qi, tap, offline, beast bonuses.
     m.allMult    *= (1 + this.meridianMult('qi'));
     m.tapMult    *= (1 + this.meridianMult('tap'));
@@ -818,7 +831,8 @@ const Game = {
   pendingDaoGain() {
     const base = GameData.daoGainFor(this.state.runQi);
     // Meridian (Dao Resonance) + Heavenly perk (Heaven's Insight) boost rewards.
-    return Math.floor(base * (1 + this.meridianMult('daoGain') + this.perkBonus('daoGain')));
+    const dao = Math.floor(base * (1 + this.meridianMult('daoGain') + this.perkBonus('daoGain')));
+    return Math.floor(dao * (window.Challenges ? Challenges.daoMult() : 1));
   },
 
   breakThrough() {

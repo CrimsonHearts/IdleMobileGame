@@ -56,6 +56,7 @@ const Combat = {
     let hp  = 40 * z * Math.pow(1.22, w);
     let atk = 6  * z * (1 + 0.12 * w);
     if (boss) { hp *= 6; atk *= 2.2; }
+    if (window.Challenges && Challenges.trialHard()) hp *= 3;
     this._mob = { name: pick.name, icon: pick.icon, maxHp: hp, hp, atk, boss };
     return this._mob;
   },
@@ -72,18 +73,21 @@ const Combat = {
   // -- Loot -----------------------------------------------------------------
   _loot(mob) {
     const c = Game.state.combat;
-    const lootMult = Sect.lootMult() * ((window.Game && Game.karmaLootMult) ? Game.karmaLootMult() : 1);
-    const stones = Math.max(1, Math.round(mob.maxHp * 0.04 * lootMult));
+    const trialMult = (window.Challenges && Challenges.trialHard()) ? 4 : 1;
+    const lootMult = Sect.lootMult() * ((window.Game && Game.karmaLootMult) ? Game.karmaLootMult() : 1)
+                   * (window.Enchanting ? (1 + Enchanting.lootMult()) : 1);
+    const stones = Math.max(1, Math.round(mob.maxHp * 0.04 * lootMult
+                   * (window.Challenges ? Challenges.stoneMult() : 1) * trialMult));
     Game.state.spiritStones += stones;
     // A little Qi too.
     Game._addQi(mob.maxHp * 2);
     // Blood Essence: tempering currency drawn from battle itself.
-    const blood = Math.max(1, Math.round(mob.maxHp * 0.01));
+    const blood = Math.max(1, Math.round(mob.maxHp * 0.01 * (window.Challenges ? Challenges.bloodMult() : 1) * trialMult));
     if (window.Blood) Blood.gain(blood);
     // Sect contribution from battle.
     Sect.addContribution(Math.round(mob.maxHp * 0.02));
     let egg = false;
-    const luck = window.Spirit ? Spirit.luckMult() : 1;
+    const luck = (window.Spirit ? Spirit.luckMult() : 1) * (window.Challenges ? Challenges.eggMult() : 1);
     const eggChance = (mob.boss ? 1 : 0.04) * luck;
     if (Math.random() < eggChance) { Game.state.beastEggs += 1; egg = true; }
     // Artifact drop (zone-scaled). Suppressed log during offline batch sim.
@@ -127,6 +131,7 @@ const Combat = {
     const mob = this.mob();
     let pAtk = this.playerAtk();
     if (mob.boss && window.Techniques) pAtk *= Techniques.bossDmgMult();
+    if (mob.boss && window.Enchanting) pAtk *= Enchanting.bossDmgMult();
 
     // Exchange damage over dt (1 "round" ≈ 1 second).
     const dmgDealt = pAtk * dt;

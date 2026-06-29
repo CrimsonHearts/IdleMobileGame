@@ -55,7 +55,8 @@ const Spirit = {
   /** Called from Game._addQi: a sliver of every Qi gain condenses into Spirit. */
   onQiGain(amount) {
     if (!this.unlocked() || amount <= 0) return;
-    Game.state.spirit.essence += amount * SPIRIT_QI_FRACTION;
+    const mult = window.Challenges ? Challenges.spiritMult() : 1;
+    Game.state.spirit.essence += amount * SPIRIT_QI_FRACTION * mult;
   },
 };
 

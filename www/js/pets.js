@@ -26,6 +26,7 @@ const PETS_DATA = [
 
 const MAX_ACTIVE_PETS = 3;
 const MAX_PET_LEVEL = 30;
+const MAX_PET_STAR = 5;
 
 const Pets = {
   data: PETS_DATA,
@@ -41,9 +42,9 @@ const Pets = {
   isActive(id) { return this.active().includes(id); },
 
   // -- Stat scaling ---------------------------------------------------------
-  qiBonusOf(id) { const p = this.get(id), l = this.levelOf(id); return l ? p.qiBonus * (1 + 0.08 * (l - 1)) : 0; },
-  atkOf(id)     { const p = this.get(id), l = this.levelOf(id); return l ? p.atk    * (1 + 0.15 * (l - 1)) : 0; },
-  hpOf(id)      { const p = this.get(id), l = this.levelOf(id); return l ? p.hp     * (1 + 0.15 * (l - 1)) : 0; },
+  qiBonusOf(id) { const p = this.get(id), l = this.levelOf(id); return l ? p.qiBonus * (1 + 0.08 * (l - 1)) * this.starMult(id) : 0; },
+  atkOf(id)     { const p = this.get(id), l = this.levelOf(id); return l ? p.atk    * (1 + 0.15 * (l - 1)) * this.starMult(id) : 0; },
+  hpOf(id)      { const p = this.get(id), l = this.levelOf(id); return l ? p.hp     * (1 + 0.15 * (l - 1)) * this.starMult(id) : 0; },
 
   /** Global Qi multiplier from ALL owned beasts (the "spirit beast bond"). */
   qiMult() {
@@ -111,6 +112,35 @@ const Pets = {
     if (i >= 0) a.splice(i, 1);
     else if (a.length < MAX_ACTIVE_PETS) a.push(id);
     Game.persist();
+  },
+
+  // -- Star Evolution -------------------------------------------------------
+  MAX_STAR: MAX_PET_STAR,
+  starOf(id)   { const o = this._owned()[id]; return (o && o.star) || 1; },
+  starMult(id) { return 1 + (this.starOf(id) - 1) * 0.5; },
+
+  evolveCost(id) {
+    const p = this.get(id);
+    if (!p) return Infinity;
+    const rf = { common: 1, rare: 2, epic: 4, legend: 8, mythic: 16 }[p.rarity] || 1;
+    return Math.floor(200 * rf * Math.pow(2, this.starOf(id) - 1));
+  },
+
+  canEvolve(id) {
+    if (!this.isOwned(id)) return false;
+    if (this.levelOf(id) < MAX_PET_LEVEL) return false;
+    if (this.starOf(id) >= MAX_PET_STAR) return false;
+    return Game.state.beastEggs >= 1 && Game.state.spiritStones >= this.evolveCost(id);
+  },
+
+  evolve(id) {
+    if (!this.canEvolve(id)) return false;
+    Game.state.beastEggs -= 1;
+    Game.state.spiritStones -= this.evolveCost(id);
+    this._owned()[id].star = this.starOf(id) + 1;
+    this._owned()[id].level = 1;
+    Game.persist();
+    return true;
   },
 };
 

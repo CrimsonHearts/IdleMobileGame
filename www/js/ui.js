@@ -647,7 +647,7 @@ const UI = {
       <div class="modal" style="text-align:center">
         <div style="font-size:48px;margin:6px 0">🌀</div>
         <h2>Reincarnate?</h2>
-        <p>You will be reborn anew. Your realm, Dao Comprehension, generators and meridians reset — but you gain <b>🌟 ${GameNumbers.formatNumber(pending)} Heavenly Merit</b> and a permanent <b>+${(GameData.reincarnationBonusPer*100).toFixed(0)}% production</b>.<br><br>Beasts, sect, family and Heavenly Perks are kept.</p>
+        <p>You will be reborn anew. Your realm, Dao Comprehension, generators and meridians reset — but you gain <b>🌟 ${GameNumbers.formatNumber(pending)} Heavenly Merit</b> and a permanent <b>+${(GameData.reincarnationBonusPer*100).toFixed(0)}% production</b>.<br><br>Beasts, sect, family and Heavenly Perks are kept.${window.Enchanting && Enchanting.heirloomId() ? `<br><br>⚜ <b>Heirloom</b> gains +1 Inheritance Stack (${Enchanting.heirloomStacks()} → ${Math.min(Enchanting.MAX_STACKS, Enchanting.heirloomStacks()+1)} / ${Enchanting.MAX_STACKS}, +${((Math.min(Enchanting.MAX_STACKS, Enchanting.heirloomStacks()+1)) * 6).toFixed(0)}% rune power).` : ''}</p>
         <button class="modal-close" id="confirm-re">🌀 Begin a New Life</button>
         <button class="btn-ghost" id="cancel-re" style="margin-top:8px">Not yet</button>
       </div>`;
@@ -1206,6 +1206,29 @@ const UI = {
 
     // Equipped loadout (4 slots) + active set bonuses.
     const eq = Artifacts.equipped();
+    const runeHtml = (a) => {
+      if (!window.Enchanting || !a.runes || !a.runes.length) return '';
+      const chips = a.runes.map(r => {
+        const rt = Enchanting.types.find(t => t.id === r.id);
+        return rt ? `<span class="rune-chip">${rt.icon} ${rt.name} +${(r.value*100).toFixed(1)}%</span>` : '';
+      }).join('');
+      const isHL = Enchanting.isHeirloom(a.id);
+      const badge = isHL ? `<span class="heirloom-badge">⚜ Heirloom ×${Enchanting.heirloomStacks()}</span>` : '';
+      return `<div class="rune-chips">${chips}${badge}</div>`;
+    };
+    const enchantBtn = (a) => {
+      if (!window.Enchanting) return '';
+      const cost = Enchanting.enchantCost(a);
+      const canEnchant = Game.state.blood && Game.state.blood.essence >= cost;
+      return `<button class="btn-mini" data-enchant="${a.id}" ${canEnchant?'':'disabled'}>✨ Enchant 🩸${GameNumbers.formatNumber(cost)}</button>`;
+    };
+    const heirloomBtn = (a) => {
+      if (!window.Enchanting) return '';
+      const isHL = Enchanting.isHeirloom(a.id);
+      return isHL
+        ? `<button class="btn-mini ghost" data-clear-heirloom>⚜ Clear</button>`
+        : `<button class="btn-mini ghost" data-set-heirloom="${a.id}">⚜ Set Heirloom</button>`;
+    };
     const slotsHtml = A.slots.map(s => {
       const a = eq[s.id];
       if (!a) return `<div class="gear-slot empty"><span class="gear-slot-ico">${s.icon}</span>
@@ -1214,8 +1237,9 @@ const UI = {
       return `<div class="gear-slot" style="border-color:${r.color}">
         <span class="gear-slot-ico">${s.icon}</span>
         <span class="gear-slot-main"><b style="color:${r.color}">${r.name} ${s.name}</b>
-          <span class="muted">${statLine(a)} · ${setName(a.set)} set</span></span>
-        <button class="btn-mini" data-unequip="${s.id}">Remove</button></div>`;
+          <span class="muted">${statLine(a)} · ${setName(a.set)} set</span>
+          ${runeHtml(a)}</span>
+        <span class="gear-item-btns">${enchantBtn(a)} ${heirloomBtn(a)} <button class="btn-mini" data-unequip="${s.id}">Remove</button></span></div>`;
     }).join('');
 
     const counts = Artifacts.setCounts();
@@ -1244,6 +1268,24 @@ const UI = {
     el.querySelectorAll('[data-equip]').forEach(b => b.addEventListener('click', () => { Artifacts.equip(b.dataset.equip); this.renderArtifacts(); this.renderResources(); }));
     el.querySelectorAll('[data-unequip]').forEach(b => b.addEventListener('click', () => { Artifacts.unequip(b.dataset.unequip); this.renderArtifacts(); this.renderResources(); }));
     el.querySelectorAll('[data-salvage]').forEach(b => b.addEventListener('click', () => { Artifacts.salvage(b.dataset.salvage); this.renderArtifacts(); this.renderResources(); }));
+    if (window.Enchanting) {
+      el.querySelectorAll('[data-enchant]').forEach(b => b.addEventListener('click', () => {
+        const res = Enchanting.enchant(b.dataset.enchant);
+        if (res) {
+          const desc = res.rune.desc.replace('{v}', (res.value * 100).toFixed(1));
+          this.toast(`✨ Rune: ${res.rune.name} — ${desc}`);
+        }
+        this.renderArtifacts(); this.renderResources();
+      }));
+      el.querySelectorAll('[data-set-heirloom]').forEach(b => b.addEventListener('click', () => {
+        Enchanting.setHeirloom(b.dataset.setHeirloom);
+        this.renderArtifacts();
+      }));
+      el.querySelectorAll('[data-clear-heirloom]').forEach(b => b.addEventListener('click', () => {
+        Enchanting.clearHeirloom();
+        this.renderArtifacts();
+      }));
+    }
   },
 
   /** Emoji fallback for beast/mob sprite ids. */
@@ -1273,8 +1315,19 @@ const UI = {
       return;
     }
     const c = Game.state.combat;
+    const challenge = window.Challenges ? Challenges.active() : null;
+    const challengeClaimed = window.Challenges ? Challenges.hasClaimed() : true;
+    const challengeBanner = challenge ? `
+      <div class="challenge-banner">
+        <span class="challenge-icon">${challenge.icon}</span>
+        <strong class="challenge-title">${challenge.name}</strong> — ${challenge.desc}
+        <button class="btn-mini challenge-claim-btn" id="challenge-claim-btn" ${challengeClaimed ? 'disabled' : ''}>
+          ${challengeClaimed ? '✓ Claimed' : 'Claim 🎁'}
+        </button>
+      </div>` : '';
     el.innerHTML = `
       <div class="section-title">⚔️ Trials <small>Zone ${c.zone} · Wave ${c.wave}${Combat.isBossWave(c.wave)?' · BOSS':''}</small></div>
+      ${challengeBanner}
       <div class="combat-stage" id="combat-stage"></div>
       <div class="combat-controls">
         <button class="btn-mini" id="cb-retreat">◀ Retreat</button>
@@ -1293,6 +1346,7 @@ const UI = {
     bind('#cb-retreat', () => { Combat.retreatZone(); this.renderTrials(); });
     bind('#cb-push',    () => { Combat.pushZone();    this.renderTrials(); });
     bind('#cb-pause',   () => { Game.state.combat.paused = !Game.state.combat.paused; this.renderTrials(); });
+    bind('#challenge-claim-btn', () => { if (window.Challenges) { Challenges.claim(); this.renderTrials(); this.renderResources(); } });
     if (scroller) scroller.scrollTop = scrollTop;
   },
 
@@ -1362,19 +1416,27 @@ const UI = {
       const rar = Pets.rarity[p.rarity];
       const isActive = Pets.isActive(p.id);
       const maxed = lvl >= Pets.MAX_LEVEL;
+      const star = owned ? Pets.starOf(p.id) : 1;
+      const maxStar = star >= Pets.MAX_STAR;
       const cost = owned && !maxed ? Pets.levelUpCost(p.id) : 0;
       const canLvl = owned && !maxed && Game.state.spiritStones >= cost;
+      const canEvo = owned && Pets.canEvolve(p.id);
+      const evoCost = owned && maxed && !maxStar ? Pets.evolveCost(p.id) : 0;
+      const starDisplay = owned ? `<div class="beast-stars">${'★'.repeat(star)}${'☆'.repeat(Pets.MAX_STAR - star)}</div>` : '';
       html += `
         <div class="beast-card ${owned?'owned':'locked'} ${isActive?'active':''}" style="border-color:${owned?rar.color:'var(--line)'}">
           <div class="beast-rarity" style="color:${rar.color}">${rar.name}</div>
           <div class="beast-ico" style="${owned?'':'filter:grayscale(1);opacity:.4'}">${this._beastEmoji(p.id)}</div>
           <div class="beast-name">${owned ? p.name : '???'}</div>
           ${owned ? `
+            ${starDisplay}
             <div class="beast-lvl">Lv ${lvl}/${Pets.MAX_LEVEL} · +${(Pets.qiBonusOf(p.id)*100).toFixed(1)}% Qi</div>
             <div class="beast-actions">
               <button class="btn-mini" data-act="toggle" data-id="${p.id}" ${(!isActive&&active.length>=Pets.MAX_ACTIVE)?'disabled':''}>${isActive?'★ Active':'Deploy'}</button>
               <button class="btn-mini" data-act="lvl" data-id="${p.id}" ${canLvl?'':'disabled'}>${maxed?'✓ Max':'💠 '+GameNumbers.formatNumber(cost)}</button>
-            </div>` : `<div class="beast-lvl muted">Undiscovered</div>`}
+            </div>
+            ${maxed && !maxStar ? `<div class="beast-actions"><button class="btn-mini evolve-btn" data-act="evolve" data-id="${p.id}" ${canEvo?'':'disabled'}>🌟 Evolve — 🥚1 + 💠${GameNumbers.formatNumber(evoCost)}</button></div>` : ''}
+            ${maxStar ? `<div class="hint" style="color:#e7c878">⭐ Max Star</div>` : ''}` : `<div class="beast-lvl muted">Undiscovered</div>`}
         </div>`;
     });
     html += `</div>`;
@@ -1393,6 +1455,12 @@ const UI = {
       const id = b.dataset.id;
       if (b.dataset.act === 'toggle') Pets.toggleActive(id);
       else if (b.dataset.act === 'lvl') Pets.levelUp(id);
+      else if (b.dataset.act === 'evolve') {
+        if (Pets.evolve(id)) {
+          const p = Pets.get(id);
+          this.toast(`🌟 ${p.name} evolved to ★${Pets.starOf(id)}!`);
+        }
+      }
       this.renderBeasts(); this.renderResources();
     }));
     el.querySelectorAll('button[data-market]').forEach(b => b.addEventListener('click', () => {
