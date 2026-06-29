@@ -220,7 +220,7 @@ const UI = {
   },
 
   doBreakthrough() {
-    if (!Game.canBreakThrough()) return;
+    if (!Game.canBreakThrough() || this._modalOpen()) return;
     const next = Game.nextRealm();
     const gain = Game.pendingDaoGain();
     const overlay = document.createElement('div');
@@ -539,6 +539,7 @@ const UI = {
   },
 
   confirmReincarnate() {
+    if (this._modalOpen()) return;
     const pending = Game.pendingMerit();
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -575,6 +576,7 @@ const UI = {
   },
 
   showDaily() {
+    if (this._modalOpen()) return;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     const render = () => {
@@ -721,6 +723,7 @@ const UI = {
   },
 
   showRealmResult(res) {
+    if (this._modalOpen()) return;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
@@ -876,6 +879,7 @@ const UI = {
   },
 
   showPathChooser() {
+    if (this._modalOpen()) return;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
@@ -940,6 +944,7 @@ const UI = {
   /** Lifespan reached: choose an heir and continue the bloodline. */
   showDeathModal() {
     if (this._deathShown) return;
+    if (this._modalOpen()) return; // retry next tick once the other modal closes
     this._deathShown = true;
     const children = (Game.state.family && Game.state.family.children) || [];
     const overlay = document.createElement('div');
@@ -1382,6 +1387,7 @@ const UI = {
 
   // -- Character creation (Gacha system) -----------------------------------
   showCharacterCreation() {
+    if (this._modalOpen()) return;
     let gender = 'male';
     let currentRoot = GameData.rollSpiritualRoot('free');
     let rollsUsed = 1;
@@ -1656,6 +1662,7 @@ const UI = {
 
   // -- Shop -----------------------------------------------------------------
   showShop() {
+    if (this._modalOpen()) return;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     const adsOwned  = Monetization.adsRemoved;
@@ -1734,7 +1741,7 @@ const UI = {
 
   // -- Quests ---------------------------------------------------------------
   showQuests() {
-    if (!window.Quests) return;
+    if (!window.Quests || this._modalOpen()) return;
     const s = Quests.state;
     const cats = [
       { key: 'story',       label: '📖 Cultivator\'s Path', hint: 'Follow the story — each step unlocks the next.' },
@@ -1953,6 +1960,7 @@ const UI = {
 
   /** Show result after a spirit pack is purchased and granted. */
   showPackGrantResult(pack, root) {
+    if (this._modalOpen()) return;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
@@ -1983,7 +1991,7 @@ const UI = {
 
   /** Show hidden breakthrough conditions that were triggered. */
   showBreakthroughConditions(conditionsHit) {
-    if (!conditionsHit || !conditionsHit.length) return;
+    if (!conditionsHit || !conditionsHit.length || this._modalOpen()) return;
     const lines = conditionsHit.map(c =>
       `<div class="condition-hit"><span class="cond-icon">${c.icon||'✦'}</span><b>${c.name}</b> — ${c.desc}${c.bonus ? ` <span class="cond-bonus">+${(c.bonus*100).toFixed(0)}% Prod</span>` : ''}</div>`
     ).join('');
@@ -2055,13 +2063,28 @@ const UI = {
     setTimeout(() => el.remove(), 750);
   },
 
+  /** True if a `.modal-overlay` is already attached — used to avoid stacking. */
+  _modalOpen() { return !!document.querySelector('.modal-overlay'); },
+
   toast(msg) {
+    this._toastQueue = (this._toastQueue || []).concat(msg);
+    if (!this._toastShowing) this._advanceToast();
+  },
+
+  _advanceToast() {
+    const queue = this._toastQueue;
+    if (!queue || !queue.length) { this._toastShowing = false; return; }
+    this._toastShowing = true;
+    const msg = queue.shift();
     const t = document.createElement('div');
     t.className = 'toast';
     t.textContent = msg;
     document.body.appendChild(t);
     setTimeout(() => t.classList.add('show'), 10);
-    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3200);
+    setTimeout(() => {
+      t.classList.remove('show');
+      setTimeout(() => { t.remove(); this._advanceToast(); }, 400);
+    }, 3200);
   },
 
   showWelcomeBack(result) {
@@ -2097,6 +2120,7 @@ const UI = {
   },
 
   modal(title, html, reward) {
+    if (this._modalOpen()) return;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     const rewardBtn = reward
@@ -2120,6 +2144,7 @@ const UI = {
 
   // -- Cultivation speed breakdown ------------------------------------------
   showCultivationBreakdown() {
+    if (this._modalOpen()) return;
     const m = Game.multipliers();
     const pct = v => (v >= 1 ? '+' : '') + ((v - 1) * 100).toFixed(0) + '%';
     const x = v => v.toFixed(2) + '×';
@@ -2160,6 +2185,7 @@ const UI = {
 
   // -- Cultivation Record (stats) -------------------------------------------
   showStats() {
+    if (this._modalOpen()) return;
     const s = Game.state;
     const totalOwned = GameData.generators.reduce((n, g) => n + (s.owned[g.id] || 0), 0);
     const techs = Object.keys(s.upgrades || {}).length;
@@ -2203,6 +2229,7 @@ const UI = {
 
   // -- Rate-my-app prompt ----------------------------------------------------
   askRating() {
+    if (this._modalOpen()) return;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `

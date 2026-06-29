@@ -339,8 +339,9 @@ const Quests = {
   /** Called from Game.breakThrough() — evaluate foundation quality. */
   onBreakthrough(runQiAtBreak, realmIndex) {
     const realm = GameData.realms[realmIndex];
-    if (!realm || !realm.reqQi) return null;
-    const ratio = runQiAtBreak / realm.reqQi;
+    if (!realm) return null;
+    // Tutorial realm has no Qi requirement (reqQi:0) — any runQi clears it cleanly.
+    const ratio = realm.reqQi > 0 ? runQiAtBreak / realm.reqQi : Infinity;
     const quality = GameData.foundationQualities.find(q => ratio >= q.minRatio);
     if (quality && quality.key === 'perfect') {
       this.state.perfectFoundationAchieved = true;

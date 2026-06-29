@@ -157,8 +157,15 @@ const Monetization = {
       // const success = !!result;
       // if (success) this._grant(productId);
       // return success;
+
+      // No real IAP plugin is wired in yet — fail closed instead of falling
+      // through to the simulated confirm()-grants-it-free path below, which
+      // would let every "purchase" succeed for free on a shipped native build.
+      console.error(`Monetization.purchase("${productId}"): native platform detected but no IAP plugin is wired in. Refusing to grant for free — see monetization.js comments.`);
+      if (window.UI) UI.toast('🛠 Purchases aren\'t available in this build yet.');
+      return false;
     }
-    // --- SIMULATED -------------------------------------------------------
+    // --- SIMULATED (browser/dev only) -------------------------------------
     const ok = confirm(`💳 [Test Purchase]\n\nBuy "${productId}"?\n\n(In the real app this opens the Play/App Store payment sheet.)`);
     if (ok) this._grant(productId);
     return ok;
@@ -229,7 +236,10 @@ const Monetization = {
     const watched = await this.showRewardedAd('qi_boost');
     if (!watched) return false;
     if (window.Game) {
-      Game.state.qiBoostEndsAt = TimeService.now() + 5 * 60 * 1000; // 5 min
+      // Extend from whichever is later (now or an existing boost still running)
+      // instead of overwriting — back-to-back ad-watches should stack, not reset.
+      const base = Math.max(Game.state.qiBoostEndsAt || 0, TimeService.now());
+      Game.state.qiBoostEndsAt = base + 5 * 60 * 1000; // 5 min
       Game.persist();
       if (window.UI) {
         UI.renderAll();

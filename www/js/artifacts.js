@@ -37,13 +37,17 @@ const Artifacts = {
   add(artifact) {
     const s = this.s();
     s.inventory.push(artifact);
-    // Auto-salvage the weakest if over the cap.
+    this._trimToCap();
+    return artifact;
+  },
+  /** Auto-salvage the weakest pieces if the bag is over the cap. */
+  _trimToCap() {
+    const s = this.s();
     if (s.inventory.length > GameData.artifacts.invCap) {
       s.inventory.sort((a, b) => this.score(b) - this.score(a));
       const dumped = s.inventory.splice(GameData.artifacts.invCap);
       dumped.forEach(a => { Game.state.spiritStones += this.salvageValue(a); });
     }
-    return artifact;
   },
   score(a) { return a.atk + a.hp * 0.5 + a.qi * 5000; },
   salvageValue(a) { return Math.max(1, Math.round(this.score(a) * 0.2)); },
@@ -68,6 +72,7 @@ const Artifacts = {
     s.equipped[art.slot] = art;
     s.inventory.splice(i, 1);
     if (prev) s.inventory.push(prev); // swap the old piece back to the bag
+    this._trimToCap();
     Game.persist();
     return true;
   },
@@ -76,6 +81,7 @@ const Artifacts = {
     if (!s.equipped[slot]) return false;
     s.inventory.push(s.equipped[slot]);
     s.equipped[slot] = null;
+    this._trimToCap();
     Game.persist();
     return true;
   },

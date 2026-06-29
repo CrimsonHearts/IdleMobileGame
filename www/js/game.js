@@ -658,6 +658,7 @@ const Game = {
     if (this.state.qi < cost) return false;
     this.state.qi -= cost;
     this.state.owned[id] += count;
+    this.persist();
     return true;
   },
 
@@ -686,6 +687,7 @@ const Game = {
       this.state.qi -= u.cost;
     }
     this.state.upgrades[id] = true;
+    this.persist();
     return true;
   },
 
@@ -850,6 +852,7 @@ const Game = {
     this.state.qi = 0;
     this.state.runQi = 0;
     GameData.generators.forEach(g => { this.state.owned[g.id] = 0; });
+    this.persist();
     return { gain, realm: GameData.realms[this.state.realm], quality, conditionsHit };
   },
 
@@ -862,7 +865,7 @@ const Game = {
 
   isDying() {
     const life = this.state.life;
-    return !!life && life.age >= this.lifespan() && !!this.nextRealm();
+    return !!life && life.age >= this.lifespan();
   },
 
   /** Legacy bonus the CURRENT character would leave behind on death. */
@@ -1060,7 +1063,15 @@ const Game = {
     if (this.state.lastSaved > this.state.maxSeenTime) {
       this.state.maxSeenTime = this.state.lastSaved;
     }
-    Storage.save(this.state);
+    const ok = Storage.save(this.state);
+    // Surface (once, not on every failed autosave) so a full-storage/private-mode
+    // player knows progress isn't reaching disk instead of silently losing it.
+    if (!ok && !this._saveFailureWarned && window.UI) {
+      this._saveFailureWarned = true;
+      UI.toast('⚠ Could not save your progress — your device storage may be full.');
+    } else if (ok) {
+      this._saveFailureWarned = false;
+    }
   },
 
   hardReset() {

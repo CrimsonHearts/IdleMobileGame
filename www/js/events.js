@@ -25,6 +25,8 @@ const Events = {
   /** Force a random event (used by the timer; also handy for testing). */
   trigger() {
     if (!window.UI || !UI.showLifeEvent) return null;
+    // Don't interrupt a modal the player has open — try again on the next timer tick.
+    if (window.UI._modalOpen && UI._modalOpen()) return null;
     const pool = this.pool();
     const ev = pool[Math.floor(Math.random() * pool.length)];
     if (!ev) return null;
