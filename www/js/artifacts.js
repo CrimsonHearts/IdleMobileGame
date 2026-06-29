@@ -111,7 +111,8 @@ const Artifacts = {
 
   // -- Loot drop hook (called by Combat) -----------------------------------
   rollDrop(tier, boss) {
-    const chance = boss ? GameData.artifacts.bossDropChance : GameData.artifacts.dropChance;
+    const base = boss ? GameData.artifacts.bossDropChance : GameData.artifacts.dropChance;
+    const chance = base * (window.Spirit ? Spirit.luckMult() : 1);
     if (Math.random() < chance) return this.add(this.roll(tier));
     return null;
   },

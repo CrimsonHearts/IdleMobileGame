@@ -38,6 +38,8 @@ const Game = {
       sect: null,           // { id, contribution, joinedAt } or null
       pets: { owned: {}, active: [] },           // owned: {id:{level}}, active:[ids]
       techniques: { owned: {}, active: [] },     // owned: {id:rank}, active:[ids] (max 3 equipped)
+      blood: { essence: 0, refine: {} },         // Blood Essence (Jing): refine:{id:rank}
+      spirit: { essence: 0, insight: {} },       // Spirit (Shen): insight:{id:rank}, realm-gated
       combat: { zone: 1, wave: 1, highestZone: 1, playerHp: null, paused: false },
       lastSaved: TimeService.now(),
       createdAt: TimeService.now(),
@@ -123,6 +125,8 @@ const Game = {
     if (this.state.sect === undefined) this.state.sect = null;
     if (!this.state.pets) this.state.pets = { owned: {}, active: [] };
     if (!this.state.techniques) this.state.techniques = { owned: {}, active: [] };
+    if (!this.state.blood) this.state.blood = { essence: 0, refine: {} };
+    if (!this.state.spirit) this.state.spirit = { essence: 0, insight: {} };
     if (!this.state.combat) this.state.combat = { zone: 1, wave: 1, highestZone: 1, playerHp: null, paused: false };
     if (this.state.permanentDouble === undefined) this.state.permanentDouble = false;
     if (this.state.qiBoostEndsAt === undefined) this.state.qiBoostEndsAt = 0;
@@ -226,13 +230,16 @@ const Game = {
     const buff = (this.state.combatBuffEndsAt && TimeService.now() < this.state.combatBuffEndsAt) ? 1.5 : 1;
     const gear = window.Artifacts ? Artifacts.combatMult() : 1; // artifact set bonuses
     const tech = window.Techniques ? Techniques.atkMult() : 1; // equipped technique bonuses
-    return this.modVal('combat') * buff * gear * tech * (this.karmaMods().combat || 1);
+    const blood = window.Blood ? Blood.atkMult() : 1; // Blood Essence body refinement
+    return this.modVal('combat') * buff * gear * tech * blood * (this.karmaMods().combat || 1);
   },
   /** Flat combat stats from equipped artifacts (read by Combat). */
   gearAtk() { return window.Artifacts ? Artifacts.atk() : 0; },
   gearHp()  { return window.Artifacts ? Artifacts.hp() : 0; },
   /** HP multiplier from equipped techniques (read by Combat). */
-  hpExternalMult() { return window.Techniques ? Techniques.hpMult() : 1; },
+  hpExternalMult() {
+    return (window.Techniques ? Techniques.hpMult() : 1) * (window.Blood ? Blood.hpMult() : 1);
+  },
   moneyMult() { return this.modVal('money'); },
 
   // -- Karma & life events --------------------------------------------------
@@ -553,6 +560,9 @@ const Game = {
     const km = this.karmaMods();
     m.allMult *= km.qi;
     m.offlineBonus += km.offline;
+    // Blood Essence (Jing) + Spirit (Shen): the qi/offline layers beneath/above Qi.
+    if (window.Blood) m.allMult *= Blood.qiMult();
+    if (window.Spirit) { m.allMult *= Spirit.qiMult(); m.offlineBonus += Spirit.offlineBonus(); }
     // Meridian tree (Round 2): Qi, tap, offline, beast bonuses.
     m.allMult    *= (1 + this.meridianMult('qi'));
     m.tapMult    *= (1 + this.meridianMult('tap'));
@@ -794,7 +804,8 @@ const Game = {
     if (!this.pillRequired()) return 1; // tutorial realms are guaranteed
     const life = this.state.life || {};
     const c = t.baseChance + (life.talent || 0) * t.talentBonus + (life.intellect || 0) * t.intellectBonus
-            + this.modVal('tribChance') + (this.karmaMods().tribChance || 0);
+            + this.modVal('tribChance') + (this.karmaMods().tribChance || 0)
+            + (window.Spirit ? Spirit.tribBonus() : 0);
     return Math.min(t.maxChance, c);
   },
 
@@ -942,6 +953,7 @@ const Game = {
     this.state.qi += amount;
     this.state.runQi += amount;
     this.state.lifetimeQi += amount;
+    if (window.Spirit) Spirit.onQiGain(amount); // Jing → Qi → Shen: Spirit condenses from Qi gained
   },
 
   // -------------------------------------------------------------------------

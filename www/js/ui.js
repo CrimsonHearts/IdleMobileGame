@@ -97,6 +97,8 @@ const UI = {
         document.querySelectorAll('#tab-techniques .subpanel').forEach(p =>
           p.classList.toggle('active', p.id === 'asub-' + this.artsSub));
         if (this.artsSub === 'meridians') this.renderMeridians();
+        else if (this.artsSub === 'blood') this.renderBlood();
+        else if (this.artsSub === 'spirit') this.renderSpirit();
         else if (this.artsSub === 'heaven') this.renderHeaven();
         else if (this.artsSub === 'alchemy') this.renderAlchemy();
         else this.renderUpgrades();
@@ -323,6 +325,8 @@ const UI = {
       case 'study':      if (Life.isStudying()) Life.renderStudy(this.el.studyPanel); break;
       case 'techniques':
         if (this.artsSub === 'alchemy') this.renderAlchemyBuffs();
+        else if (this.artsSub === 'blood') this.renderBloodLive();
+        else if (this.artsSub === 'spirit') this.renderSpiritLive();
         else this.renderUpgrades();
         break;
       case 'world':      if (this.worldSub === 'trials') this.renderTrialsLive(); break;
@@ -339,6 +343,8 @@ const UI = {
       case 'life':       Family.render(this.el.lifePanel); break;
       case 'techniques':
         if (this.artsSub === 'meridians') this.renderMeridians();
+        else if (this.artsSub === 'blood') this.renderBlood();
+        else if (this.artsSub === 'spirit') this.renderSpirit();
         else if (this.artsSub === 'heaven') this.renderHeaven();
         else if (this.artsSub === 'alchemy') this.renderAlchemy();
         else this.renderUpgrades();
@@ -477,6 +483,101 @@ const UI = {
       this.toast(`↺ Meridians reset · ${GameNumbers.formatNumber(refund)} Dao refunded`);
       this.renderMeridians(); this.renderResources(); this.renderRealm();
     });
+  },
+
+  // -- Blood Essence (Jing): body refinement earned from Trials -----------
+  renderBlood() {
+    const el = document.getElementById('asub-blood');
+    if (!el) return;
+    if (!Game.combatUnlocked()) {
+      el.innerHTML = `<div class="section-title">🩸 Blood Essence</div>
+        <div class="locked-inline">Reach Qi Condensation to enter Trials — Blood Essence is earned from every kill.</div>`;
+      return;
+    }
+    const essence = Game.state.blood.essence;
+    let html = `
+      <div class="section-title">🩸 Blood Essence <small id="blood-essence-num">🩸 ${GameNumbers.formatNumber(essence)}</small></div>
+      <div class="hint">Refine your body with Blood Essence earned from Trials kills. Every rank is permanent — no equip cap.</div>
+      <div class="perk-list">`;
+    BLOOD_DATA.forEach(b => {
+      const rank = Blood.rankOf(b.id);
+      const maxed = rank >= Blood.MAX_RANK;
+      const cost = Blood.refineCost(b.id);
+      const affordable = essence >= cost;
+      html += `
+        <div class="perk-row ${maxed ? 'maxed' : ''}">
+          <span class="perk-ico">${b.icon}</span>
+          <span class="perk-info">
+            <span class="perk-name">${b.name} <span class="perk-lvl">Lv ${rank}/${Blood.MAX_RANK}</span></span>
+            <span class="perk-desc">${Blood.effectText(b.id)}</span>
+          </span>
+          <button class="btn-mini perk-buy" data-blood="${b.id}" ${(maxed || !affordable) ? 'disabled' : ''}>
+            ${maxed ? 'MAX' : `🩸 ${GameNumbers.formatNumber(cost)}`}
+          </button>
+        </div>`;
+    });
+    html += `</div>`;
+    el.innerHTML = html;
+
+    el.querySelectorAll('.perk-buy[data-blood]').forEach(btn => btn.addEventListener('click', () => {
+      if (Blood.refine(btn.dataset.blood)) {
+        const b = Blood.get(btn.dataset.blood);
+        this.toast(`🩸 ${b.name} → Lv ${Blood.rankOf(b.id)}`);
+        this.renderBlood();
+      }
+    }));
+  },
+  renderBloodLive() {
+    const num = document.getElementById('blood-essence-num');
+    if (num) num.textContent = `🩸 ${GameNumbers.formatNumber(Game.state.blood.essence)}`;
+  },
+
+  // -- Spirit (Shen): soul cultivation unlocked at Nascent Soul ------------
+  renderSpirit() {
+    const el = document.getElementById('asub-spirit');
+    if (!el) return;
+    if (!Spirit.unlocked()) {
+      const req = GameData.realms[Spirit.REALM_REQ];
+      el.innerHTML = `<div class="section-title">🌌 Spirit</div>
+        <div class="locked-inline">Reach <b>${req.name}</b> to awaken your Spirit — a sliver of every Qi gained will condense into it.</div>`;
+      return;
+    }
+    const essence = Game.state.spirit.essence;
+    let html = `
+      <div class="section-title">🌌 Spirit <small id="spirit-essence-num">🌌 ${GameNumbers.formatNumber(essence)}</small></div>
+      <div class="hint">Spirit condenses from a sliver of every Qi you gain. Spend it on Spirit Insight — permanent soul-cultivation bonuses.</div>
+      <div class="perk-list">`;
+    SPIRIT_DATA.forEach(s => {
+      const rank = Spirit.rankOf(s.id);
+      const maxed = rank >= Spirit.MAX_RANK;
+      const cost = Spirit.insightCost(s.id);
+      const affordable = essence >= cost;
+      html += `
+        <div class="perk-row ${maxed ? 'maxed' : ''}">
+          <span class="perk-ico">${s.icon}</span>
+          <span class="perk-info">
+            <span class="perk-name">${s.name} <span class="perk-lvl">Lv ${rank}/${Spirit.MAX_RANK}</span></span>
+            <span class="perk-desc">${Spirit.effectText(s.id)}</span>
+          </span>
+          <button class="btn-mini perk-buy" data-spirit="${s.id}" ${(maxed || !affordable) ? 'disabled' : ''}>
+            ${maxed ? 'MAX' : `🌌 ${GameNumbers.formatNumber(cost)}`}
+          </button>
+        </div>`;
+    });
+    html += `</div>`;
+    el.innerHTML = html;
+
+    el.querySelectorAll('.perk-buy[data-spirit]').forEach(btn => btn.addEventListener('click', () => {
+      if (Spirit.refine(btn.dataset.spirit)) {
+        const s = Spirit.get(btn.dataset.spirit);
+        this.toast(`🌌 ${s.name} → Lv ${Spirit.rankOf(s.id)}`);
+        this.renderSpirit();
+      }
+    }));
+  },
+  renderSpiritLive() {
+    const num = document.getElementById('spirit-essence-num');
+    if (num) num.textContent = `🌌 ${GameNumbers.formatNumber(Game.state.spirit.essence)}`;
   },
 
   // -- Heaven (Reincarnation + Heavenly Perks, Round 3) --------------------

@@ -77,10 +77,14 @@ const Combat = {
     Game.state.spiritStones += stones;
     // A little Qi too.
     Game._addQi(mob.maxHp * 2);
+    // Blood Essence: tempering currency drawn from battle itself.
+    const blood = Math.max(1, Math.round(mob.maxHp * 0.01));
+    if (window.Blood) Blood.gain(blood);
     // Sect contribution from battle.
     Sect.addContribution(Math.round(mob.maxHp * 0.02));
     let egg = false;
-    const eggChance = mob.boss ? 1 : 0.04;
+    const luck = window.Spirit ? Spirit.luckMult() : 1;
+    const eggChance = (mob.boss ? 1 : 0.04) * luck;
     if (Math.random() < eggChance) { Game.state.beastEggs += 1; egg = true; }
     // Artifact drop (zone-scaled). Suppressed log during offline batch sim.
     let art = null;
@@ -136,7 +140,8 @@ const Combat = {
       this._loot(mob);
       this.advanceWaveOrZone(mob.boss);
       // Heal a little on victory.
-      c.playerHp = Math.min(this.playerHpMax(), c.playerHp + this.playerHpMax() * 0.25);
+      const healBonus = window.Blood ? Blood.healBonus() : 0;
+      c.playerHp = Math.min(this.playerHpMax(), c.playerHp + this.playerHpMax() * 0.25 * (1 + healBonus));
     } else if (c.playerHp <= 0) {
       // Defeat: fall back to wave 1 of the current zone, fully heal.
       this._pushLog(`✖ Defeated by ${mob.name}. Retreating to Zone ${c.zone} Wave 1.`);
