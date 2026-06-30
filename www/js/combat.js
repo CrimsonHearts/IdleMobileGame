@@ -38,7 +38,8 @@ const Combat = {
     const pill = (window.Game && Game.buffMult) ? Game.buffMult('combat') : 1;
     const path = (window.Game && Game.combatExternalMult) ? Game.combatExternalMult() : 1; // Dao Path + traits + duel buff + artifact sets
     const gear = (window.Game && Game.gearAtk) ? Game.gearAtk() : 0;
-    return (this.baseAtk() + (window.Pets ? Pets.combatAtk() : 0) + gear) * Sect.combatMult() * meridian * perk * pill * path;
+    const boost = window.Boosters ? Boosters.combatMult() : 1; // Cultivation Boosters: Battle Fury (Round 9)
+    return (this.baseAtk() + (window.Pets ? Pets.combatAtk() : 0) + gear) * Sect.combatMult() * meridian * perk * pill * path * boost;
   },
   playerHpMax() {
     const hpMult = (window.Game && Game.hpExternalMult) ? Game.hpExternalMult() : 1;
@@ -75,19 +76,22 @@ const Combat = {
     const c = Game.state.combat;
     const trialMult = (window.Challenges && Challenges.trialHard()) ? 4 : 1;
     const lootMult = Sect.lootMult() * ((window.Game && Game.karmaLootMult) ? Game.karmaLootMult() : 1)
-                   * (window.Enchanting ? (1 + Enchanting.lootMult()) : 1);
+                   * (window.Enchanting ? (1 + Enchanting.lootMult()) : 1)
+                   * (window.Boosters ? Boosters.lootMult() : 1); // Cultivation Boosters: Loot Rush (Round 9)
     const stones = Math.max(1, Math.round(mob.maxHp * 0.04 * lootMult
                    * (window.Challenges ? Challenges.stoneMult() : 1) * trialMult));
     Game.state.spiritStones += stones;
     // A little Qi too.
     Game._addQi(mob.maxHp * 2);
     // Blood Essence: tempering currency drawn from battle itself.
-    const blood = Math.max(1, Math.round(mob.maxHp * 0.01 * (window.Challenges ? Challenges.bloodMult() : 1) * trialMult));
+    const blood = Math.max(1, Math.round(mob.maxHp * 0.01 * (window.Challenges ? Challenges.bloodMult() : 1) * trialMult
+                   * (window.Boosters ? Boosters.lootMult() : 1)));
     if (window.Blood) Blood.gain(blood);
     // Sect contribution from battle.
     Sect.addContribution(Math.round(mob.maxHp * 0.02));
     let egg = false;
-    const luck = (window.Spirit ? Spirit.luckMult() : 1) * (window.Challenges ? Challenges.eggMult() : 1);
+    const luck = (window.Spirit ? Spirit.luckMult() : 1) * (window.Challenges ? Challenges.eggMult() : 1)
+               * (window.Boosters ? Boosters.luckMult() : 1); // Cultivation Boosters: Lucky Star (Round 9)
     const eggChance = (mob.boss ? 1 : 0.04) * luck;
     if (Math.random() < eggChance) { Game.state.beastEggs += 1; egg = true; }
     // Artifact drop (zone-scaled). Suppressed log during offline batch sim.

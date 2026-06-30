@@ -1281,3 +1281,15 @@ small { font-weight:400; }
 .challenge-icon { font-size:22px; }
 .challenge-title { font-weight:800; color:var(--gold-d); }
 .challenge-claim-btn { margin-left:auto; }
+
+/* -- Round 9: Cultivation Boosters ------------------------------------------ */
+.booster-list { display:flex; flex-direction:column; gap:10px; }
+.booster-card { display:flex; align-items:center; gap:12px;
+  background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:12px 14px; }
+.booster-card.active { border-color:#e7c878; box-shadow:0 0 0 1px rgba(231,200,120,.35) inset; }
+.booster-ico { font-size:26px; flex:none; }
+.booster-info { flex:1; min-width:0; }
+.booster-name { font-weight:800; color:var(--gold-d); }
+.booster-timer { font-size:11.5px; color:#e7c878; font-weight:700; min-height:14px; }
+.booster-actions { display:flex; flex-direction:column; gap:6px; flex:none; }
+.booster-actions .btn-mini { white-space:nowrap; }

@@ -329,7 +329,10 @@ const UI = {
         else if (this.artsSub === 'spirit') this.renderSpiritLive();
         else this.renderUpgrades();
         break;
-      case 'world':      if (this.worldSub === 'trials') this.renderTrialsLive(); break;
+      case 'world':
+        if (this.worldSub === 'trials') this.renderTrialsLive();
+        else if (this.worldSub === 'boosters') this.renderBoostersLive();
+        break;
     }
   },
 
@@ -1127,6 +1130,7 @@ const UI = {
     else if (this.worldSub === 'gear')   this.renderArtifacts();
     else if (this.worldSub === 'market') this.renderMarket();
     else if (this.worldSub === 'realm')  this.renderSecretRealm();
+    else if (this.worldSub === 'boosters') this.renderBoosters();
   },
 
   // ======================================================================
@@ -1380,6 +1384,71 @@ const UI = {
     if (eggs) eggs.textContent = Game.state.beastEggs;
     const log = document.getElementById('combat-log');
     if (log) log.innerHTML = Combat.log.map(l => `<div class="log-line">${l}</div>`).join('') || '<div class="hint">The battle begins…</div>';
+  },
+
+  // -- BOOSTERS (Round 9: stacking timed buffs) ------------------------------
+  renderBoosters() {
+    const el = document.getElementById('sub-boosters');
+    if (!el || !window.Boosters) return;
+    const scroller = document.getElementById('content');
+    const scrollTop = scroller ? scroller.scrollTop : 0;
+    const cards = Boosters.data.map(b => {
+      const active = Boosters.isActive(b.id);
+      const adsLeft = Boosters.adsLeftToday(b.id);
+      const cost = Boosters.stoneCost(b.id);
+      const canAfford = Game.state.spiritStones >= cost;
+      return `
+        <div class="booster-card ${active ? 'active' : ''}">
+          <div class="booster-ico">${b.icon}</div>
+          <div class="booster-info">
+            <div class="booster-name">${b.name}</div>
+            <div class="hint">${b.desc}</div>
+            <div class="booster-timer" id="booster-timer-${b.id}">${active ? `⏳ ${GameNumbers.formatDuration(Boosters.timeLeft(b.id))} left` : ''}</div>
+          </div>
+          <div class="booster-actions">
+            <button class="btn-mini" data-boost-ad="${b.id}" ${adsLeft <= 0 ? 'disabled' : ''}>📺 Ad (${adsLeft}/${Boosters.ADS_PER_DAY})</button>
+            <button class="btn-mini" data-boost-stone="${b.id}" ${canAfford ? '' : 'disabled'}>💠 ${GameNumbers.formatNumber(cost)}</button>
+          </div>
+        </div>`;
+    }).join('');
+    el.innerHTML = `
+      <div class="section-title">⚡ Boosters <small>Stack timed buffs from ads or Spirit Stones</small></div>
+      <div class="booster-list">${cards}</div>`;
+    const bind = (sel, fn) => el.querySelectorAll(sel).forEach(b => b.addEventListener('click', fn));
+    bind('[data-boost-ad]', async e => {
+      const id = e.currentTarget.dataset.boostAd;
+      e.currentTarget.disabled = true;
+      const watched = await Monetization.showRewardedAd('booster_' + id);
+      if (watched && Boosters.activateViaAd(id)) {
+        this.toast(`${Boosters.get(id).icon} ${Boosters.get(id).name} active!`);
+      }
+      this.renderBoosters();
+      this.renderResources();
+    });
+    bind('[data-boost-stone]', e => {
+      const id = e.currentTarget.dataset.boostStone;
+      if (Boosters.activateWithStones(id)) {
+        this.toast(`${Boosters.get(id).icon} ${Boosters.get(id).name} active!`);
+        this.renderBoosters();
+        this.renderResources();
+      }
+    });
+    if (scroller) scroller.scrollTop = scrollTop;
+  },
+
+  /** Lightweight per-frame update of active booster countdowns. */
+  renderBoostersLive() {
+    if (!window.Boosters) return;
+    let needsFullRender = false;
+    Boosters.data.forEach(b => {
+      const timerEl = document.getElementById('booster-timer-' + b.id);
+      if (!timerEl) return;
+      const active = Boosters.isActive(b.id);
+      const wasActive = timerEl.textContent.length > 0;
+      if (active) timerEl.textContent = `⏳ ${GameNumbers.formatDuration(Boosters.timeLeft(b.id))} left`;
+      else if (wasActive) needsFullRender = true; // just expired — refresh buttons/card state
+    });
+    if (needsFullRender) this.renderBoosters();
   },
 
   // -- BEASTS (pets) --------------------------------------------------------

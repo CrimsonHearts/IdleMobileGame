@@ -97,6 +97,9 @@ const Game = {
       // Weekly Cultivation Challenge (Round 7)
       weeklyChallenge: { weekId: 0, claimed: false },
 
+      // Cultivation Boosters (Round 9): id -> { endsAt, adsToday, stonesToday, day }
+      boosters: {},
+
       // Market (Round 8): drifting prices
       market: null,
 
@@ -164,6 +167,7 @@ const Game = {
     if (!this.state.artifacts) this.state.artifacts = { inventory: [], equipped: { weapon: null, robe: null, talisman: null, ring: null } };
     if (!this.state.heirloom) this.state.heirloom = { id: null, stacks: 0 };
     if (!this.state.weeklyChallenge) this.state.weeklyChallenge = { weekId: 0, claimed: false };
+    if (!this.state.boosters) this.state.boosters = {};
     if (window.Market) Market.init();
     if (!this.state.onboarding) this.state.onboarding = { ready: false, unlocked: {}, seen: {}, steps: {}, hints: {}, skipped: false };
     if (this.state.totalTaps === undefined) this.state.totalTaps = 0;
@@ -576,6 +580,8 @@ const Game = {
     // Rune enchanting + Weekly challenge Qi bonuses (Round 7)
     if (window.Enchanting) m.allMult *= (1 + Enchanting.qiPct());
     if (window.Challenges) m.allMult *= Challenges.qiMult();
+    // Cultivation Boosters: stacking timed Qi buff (Round 9)
+    if (window.Boosters) m.allMult *= Boosters.qiMult();
     // Meridian tree (Round 2): Qi, tap, offline, beast bonuses.
     m.allMult    *= (1 + this.meridianMult('qi'));
     m.tapMult    *= (1 + this.meridianMult('tap'));
