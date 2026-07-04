@@ -203,7 +203,9 @@ assert(!Fracture.canResearch('fc_b3'), 'tier 3 still locked after tier 1 only');
 Fracture.research('fc_b2');
 assert(Fracture.canResearch('fc_b3'), 'tier 3 available after tier 1 + 2');
 Fracture.research('fc_b3');
-const expected = 1 + 0.15 + 0.25 + 0.40;
+// Completing path B activates Stellar Torrent mastery (+20% qi from R14).
+// Nodes: 1 + 0.15 + 0.25 + 0.40 = 1.80. Mastery: +0.20 → total 2.00.
+const expected = 1 + 0.15 + 0.25 + 0.40 + 0.20;
 assert(Math.abs(Fracture.qiMult() - expected) < 0.001, `qiMult full path: ${Fracture.qiMult().toFixed(3)} === ${expected}`);
 console.log(`    Full path unlock: qiMult = ${Fracture.qiMult().toFixed(2)} ✓`);
 

@@ -191,6 +191,10 @@ const Game = {
     if (!this.state.fracture) this.state.fracture = { resonance: {}, riftsSealed: 0 };
     if (!this.state.fracture.resonance) this.state.fracture.resonance = {};
     if (this.state.fracture.riftsSealed === undefined) this.state.fracture.riftsSealed = 0;
+    // R14 migration: tiered rift counters + investments
+    if (this.state.fracture.majorRiftsSealed === undefined) this.state.fracture.majorRiftsSealed = 0;
+    if (this.state.fracture.grandRiftsSealed === undefined) this.state.fracture.grandRiftsSealed = 0;
+    if (!this.state.fracture.investments) this.state.fracture.investments = {};
     // R11 migrations: achievements + daily missions + lifetime counters
     if (!this.state.achievements) this.state.achievements = {};
     if (this.state.lifetimeKills              === undefined) this.state.lifetimeKills              = 0;

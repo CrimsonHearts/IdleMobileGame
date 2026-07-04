@@ -2837,7 +2837,7 @@ const UI = {
     }
   },
   // ======================================================================
-  // CELESTIAL FRACTURE — Resonance Tree (Round 13)
+  // CELESTIAL FRACTURE — Resonance Tree + Mastery + Investments (R13/14)
   // ======================================================================
   renderFracture() {
     const el = document.getElementById('sub-fracture');
@@ -2845,7 +2845,10 @@ const UI = {
 
     const shards = Game.state.stellarShards || 0;
     const rifts  = Fracture.riftsSealed();
+    const major  = Fracture.majorRiftsSealed();
+    const grand  = Fracture.grandRiftsSealed();
 
+    // -- Header: shards + rift breakdown ------------------------------------
     let html = `<div class="section-title">🌌 Celestial Fracture</div>
 <div class="fracture-header">
   <div class="fracture-shards-display">
@@ -2853,26 +2856,30 @@ const UI = {
     <span class="shard-amount">${GameNumbers.formatNumber(shards)}</span>
     <span class="shard-label">Stellar Shards</span>
   </div>
-  <div class="fracture-rifts-display">
-    <span class="rift-count">${rifts}</span>
-    <span class="rift-label">Rifts Sealed</span>
+  <div class="fracture-rift-stats">
+    <div class="frs-row"><span class="frs-icon">🌌</span><span class="frs-val">${rifts - major - grand}</span><span class="frs-lbl">Minor</span></div>
+    <div class="frs-row"><span class="frs-icon">💫</span><span class="frs-val">${major}</span><span class="frs-lbl">Major</span></div>
+    <div class="frs-row"><span class="frs-icon">🌠</span><span class="frs-val">${grand}</span><span class="frs-lbl">Grand</span></div>
   </div>
 </div>
-<p class="fracture-lore">The heavens have cracked. Void energy bleeds through Celestial Rifts that tear open mid-battle. Cultivators who endure absorb Stellar Shards and channel them into Fracture Resonance — four permanent paths forged from the wreckage of Heaven itself.</p>
-<div class="fracture-paths">`;
+<p class="fracture-lore">The heavens have cracked. Stellar Shards fall from zone 3+ combat. Rifts tear open after boss clears — deeper zones spawn Major and Grand Rifts with greater yields. Channel Shards into Resonance paths; master a full path to unlock Mastery bonuses, or Invest large caches for permanent global boosts.</p>`;
 
+    // -- Resonance paths ----------------------------------------------------
+    html += `<div class="fracture-section-label">Resonance Tree</div>
+<div class="fracture-paths">`;
     const pathOrder = ['a','b','c','d'];
     for (const path of pathOrder) {
-      const label = Fracture.pathLabels[path];
-      const nodes = Fracture.nodes.filter(n => n.path === path).sort((a,b) => a.tier - b.tier);
-      html += `<div class="fracture-path">
-  <div class="fracture-path-label">${label}</div>
+      const label    = Fracture.pathLabels[path];
+      const nodes    = Fracture.nodes.filter(n => n.path === path).sort((a,b) => a.tier - b.tier);
+      const mastered = Fracture.pathMastered(path);
+      const mastery  = Fracture.mastery[path];
+      html += `<div class="fracture-path${mastered ? ' mastered' : ''}">
+  <div class="fracture-path-label">${label}${mastered ? `<span class="mastery-badge">✦ MASTERED</span>` : ''}</div>
   <div class="fracture-node-chain">`;
       nodes.forEach((node, i) => {
-        const done    = Fracture.researched(node.id);
-        const canDo   = Fracture.canResearch(node.id);
-        const locked  = !done && !canDo && !Fracture._prereqMet(node);
-        const cls     = done ? 'fracture-node done' : canDo ? 'fracture-node available' : 'fracture-node locked';
+        const done  = Fracture.researched(node.id);
+        const canDo = Fracture.canResearch(node.id);
+        const cls   = done ? 'fracture-node done' : canDo ? 'fracture-node available' : 'fracture-node locked';
         html += `<div class="${cls}" data-node="${node.id}">
     <div class="fn-tier">Tier ${node.tier}</div>
     <div class="fn-name">${node.name}</div>
@@ -2883,20 +2890,56 @@ const UI = {
   </div>`;
         if (i < nodes.length - 1) html += `<div class="fn-arrow">→</div>`;
       });
-      html += `</div></div>`;
+      html += `</div>`;
+      if (mastered) {
+        html += `<div class="mastery-bonus-row">✦ ${mastery.name} — ${mastery.desc}</div>`;
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+
+    // -- Shard Investments --------------------------------------------------
+    html += `<div class="fracture-section-label">Shard Investments</div>
+<div class="shard-invest-list">`;
+    for (const inv of Fracture.investments) {
+      const done  = Fracture.invested(inv.id);
+      const canDo = Fracture.canInvest(inv.id);
+      const cls   = done ? 'si-card done' : canDo ? 'si-card available' : 'si-card locked';
+      html += `<div class="${cls}" data-inv="${inv.id}">
+  <span class="si-icon">${inv.icon}</span>
+  <div class="si-main">
+    <div class="si-name">${inv.name}</div>
+    <div class="si-desc">${inv.desc}</div>
+  </div>
+  ${done
+    ? `<div class="si-done">✓</div>`
+    : `<div class="si-cost ${canDo ? '' : 'si-locked'}">💎 ${GameNumbers.formatNumber(inv.cost)}</div>`}
+</div>`;
     }
     html += `</div>`;
 
     el.innerHTML = html;
 
+    // Research clicks
     el.querySelectorAll('.fracture-node.available[data-node]').forEach(card => {
       card.addEventListener('click', () => {
         const id = card.dataset.node;
         if (Fracture.research(id)) {
           const node = Fracture.nodes.find(n => n.id === id);
           this.toast(`✦ ${node.name} resonated!`);
-          this.renderFracture();
-          this.renderResources();
+          this.renderFracture(); this.renderResources();
+        }
+      });
+    });
+
+    // Investment clicks
+    el.querySelectorAll('.si-card.available[data-inv]').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = card.dataset.inv;
+        if (Fracture.invest(id)) {
+          const inv = Fracture.investments.find(i => i.id === id);
+          this.toast(`${inv.icon} ${inv.name} invested!`);
+          this.renderFracture(); this.renderResources();
         }
       });
     });

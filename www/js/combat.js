@@ -134,10 +134,10 @@ const Combat = {
       c.highestZone = Math.max(c.highestZone || 1, c.zone + 1);
       c.zone += 1; c.wave = 1;
       this._pushLog(`⛰ Entered Zone ${c.zone}!`);
-      // Celestial Rift event: 15% chance on boss clear in zone 5+ (Round 13).
+      // Celestial Rift event (Round 13/14): tiered on zone depth.
       if (window.Fracture) {
         const riftShards = Fracture.tryRiftEvent(c.zone - 1); // zone before advance
-        if (riftShards > 0) this._pushLog(`🌌 Celestial Rift sealed! +${riftShards} Stellar Shards`);
+        if (riftShards > 0) this._pushLog(`${Fracture.lastRiftIcon()} ${Fracture.lastRiftName()} sealed! +${riftShards} Stellar Shards`);
       }
     } else {
       c.wave += 1;

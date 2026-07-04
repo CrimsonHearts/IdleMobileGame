@@ -291,6 +291,115 @@ const QUEST_DEFS = [
     ],
   },
 
+  // ── ACT II: VOID SURGE ───────────────────────────────────────────────────
+  {
+    id: 'fracture_deepening', category: 'story', order: 19, icon: '🌀',
+    title: 'The Deepening',
+    desc:  'Seal 10 Celestial Rifts — the fractures are growing faster than they close.',
+    hint:  'Keep pushing into high Zones to trigger Rift events.',
+    check: () => Game.state.fracture && Game.state.fracture.riftsSealed >= 10,
+    reward: { dao: 5, shards: 150 },
+    rewardText: '+5 Dao & 150 Stellar Shards',
+    dialogue: [
+      { speaker: 'void', name: 'Voice from the Fracture', icon: '🔮', lines: [
+        "Ten rifts. I told you I would be patient, but I didn't say the fracture would.",
+        "It's learning your rhythm. The sealing — you're making it faster, but you're also making it more comfortable. It notices that.",
+        "Act II, as I think of it, begins when the rifts stop waiting for convenient moments. That started about three rifts ago.",
+      ] },
+    ],
+  },
+  {
+    id: 'fracture_ancient_memory', category: 'story', order: 20, icon: '🍵',
+    title: 'Ancient Memory',
+    desc:  'Reach the Divine Transformation realm — Granny Su shares what she has kept hidden.',
+    hint:  'Break through to the Divine Transformation realm (realm 6).',
+    check: () => Game.state.realm >= 6,
+    reward: { dao: 6, shards: 200 },
+    rewardText: '+6 Dao & 200 Stellar Shards',
+    dialogue: [
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "Divine Transformation. I suppose now you've earned the rest of the story.",
+        "I heard that Voice once before. Three hundred years ago, when the last Fracture opened. I was younger and considerably less careful.",
+        "I sealed nineteen rifts before I understood what it was actually teaching me. I thought I was closing wounds. I was being shown how to open them.",
+        "Don't ask me how that story ended. Ask me how you want yours to.",
+      ] },
+    ],
+  },
+  {
+    id: 'fracture_major_rift', category: 'story', order: 21, icon: '💫',
+    title: 'Escalation',
+    desc:  'Survive a Major Rift — the fractures are deepening in quality, not just quantity.',
+    hint:  'Push to Zone 10 in the Trials where Major Rifts can form.',
+    check: () => (Game.state.fracture && Game.state.fracture.majorRiftsSealed >= 1) ||
+                 (Game.state.combat && Game.state.combat.highestZone >= 10),
+    reward: { dao: 7, shards: 350 },
+    rewardText: '+7 Dao & 350 Stellar Shards',
+    dialogue: [
+      { speaker: 'void', name: 'Voice from the Fracture', icon: '🔮', lines: [
+        "Major Rift. You felt the difference — more light, more pressure, more of what leaks through.",
+        "The Heavenly Framework has load-bearing cracks now. The minor rifts were symptoms. The major rifts are the disease expressing itself honestly.",
+        "I find honesty refreshing. The Heaven that built this place was not, architecturally speaking, very honest about its limitations.",
+      ] },
+    ],
+  },
+  {
+    id: 'fracture_lu_heng_gambit', category: 'story', order: 22, icon: '🏢',
+    title: "Lu Heng's Gambit",
+    desc:  'Seal 20 Rifts total — Lu Heng makes his move.',
+    hint:  'Keep sealing Rifts across all zones.',
+    check: () => Game.state.fracture && Game.state.fracture.riftsSealed >= 20,
+    reward: { dao: 7, shards: 400 },
+    rewardText: '+7 Dao & 400 Stellar Shards',
+    dialogue: [
+      { speaker: 'antagonist', name: 'Lu Heng · Jiutian Holdings', icon: '🏢', lines: [
+        "Twenty rifts sealed. My actuaries did not model a single independent cultivator contributing this much to structural stabilisation.",
+        "I am prepared to make an offer. Jiutian's rift-mapping data — seventy years of surveying — in exchange for your cooperation on three targeted Grand Rifts we cannot seal from the outside.",
+        "I understand if the principle offends you. Consider that Jiutian's data is the only reason you know how many rifts there are.",
+        "The number, if you're wondering, is considerably larger than twenty.",
+      ] },
+    ],
+  },
+  {
+    id: 'fracture_grand_rift', category: 'story', order: 23, icon: '🌠',
+    title: 'Grand Collapse',
+    desc:  'Witness a Grand Rift — Heaven itself is unravelling at the seams.',
+    hint:  'Push to Zone 15 in the Trials where Grand Rifts can tear open.',
+    check: () => (Game.state.fracture && Game.state.fracture.grandRiftsSealed >= 1) ||
+                 (Game.state.combat && Game.state.combat.highestZone >= 15),
+    reward: { dao: 9, shards: 600 },
+    rewardText: '+9 Dao & 600 Stellar Shards',
+    dialogue: [
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "Grand Rift. That's not a metaphor anymore — that is a wound that could swallow a city.",
+        "The last time one opened, it took eleven peak Nascent Soul cultivators working in concert to close it. It took six years and two of them didn't come back.",
+        "You sealed it. Alone. In the middle of a fight.",
+        "I've been many things in three centuries. Right now I'm just profoundly grateful I never bet against you.",
+      ] },
+    ],
+  },
+  {
+    id: 'fracture_act2_end', category: 'story', order: 24, icon: '⚡',
+    title: 'Act II: Threshold',
+    desc:  'Reach the Mahayana realm and seal 30 Rifts — you stand at the edge of the Void.',
+    hint:  'Reach the Mahayana realm (realm 8) and seal enough Rifts.',
+    check: () => Game.state.realm >= 8 && Game.state.fracture && Game.state.fracture.riftsSealed >= 30,
+    reward: { dao: 12, shards: 800, permanentBonus: 0.10 },
+    rewardText: '+12 Dao, 800 Stellar Shards & permanent +10% production',
+    dialogue: [
+      { speaker: 'void', name: 'Voice from the Fracture', icon: '🔮', lines: [
+        "Mahayana realm. Thirty rifts. You've crossed the threshold I was built to guard.",
+        "I say 'built' loosely — I was more of an oversight. A design decision that the Heaven-architects called a feature. I would use a different word.",
+        "Act III — your word, but I'll use it — begins when you understand that the rifts aren't the problem. The rifts are the door.",
+        "What's on the other side is why I exist. I'll show you when you're ready. You're almost ready.",
+      ] },
+      { speaker: 'antagonist', name: 'Lu Heng · Jiutian Holdings', icon: '🏢', lines: [
+        "Mahayana. Thirty rifts sealed.",
+        "I sent you the data, as agreed. You'll find the coordinates for the three Grand Rifts I mentioned. I'd suggest not going alone.",
+        "I am not your ally. But for what it's worth — I am rooting for the door to stay shut.",
+      ] },
+    ],
+  },
+
   // ── ACHIEVEMENTS ──────────────────────────────────────────────────────────
   {
     id: 'ten_stages', category: 'achievement', icon: '🏆',
