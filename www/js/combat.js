@@ -57,8 +57,9 @@ const Combat = {
     let hp  = 40 * z * Math.pow(1.22, w);
     let atk = 6  * z * (1 + 0.12 * w);
     if (boss) { hp *= 6; atk *= 2.2; }
+    const baseHp = hp; // capture before Trial of Steel inflation so loot is based on base power
     if (window.Challenges && Challenges.trialHard()) hp *= 3;
-    this._mob = { name: pick.name, icon: pick.icon, maxHp: hp, hp, atk, boss };
+    this._mob = { name: pick.name, icon: pick.icon, baseHp, maxHp: hp, hp, atk, boss };
     return this._mob;
   },
 
@@ -78,13 +79,15 @@ const Combat = {
     const lootMult = Sect.lootMult() * ((window.Game && Game.karmaLootMult) ? Game.karmaLootMult() : 1)
                    * (window.Enchanting ? (1 + Enchanting.lootMult()) : 1)
                    * (window.Boosters ? Boosters.lootMult() : 1); // Cultivation Boosters: Loot Rush (Round 9)
-    const stones = Math.max(1, Math.round(mob.maxHp * 0.04 * lootMult
+    // Use baseHp (pre-trialHard) so trialMult is a clean 4× on base loot, not 12× (3×hp × 4).
+    const baseHp = mob.baseHp !== undefined ? mob.baseHp : mob.maxHp;
+    const stones = Math.max(1, Math.round(baseHp * 0.04 * lootMult
                    * (window.Challenges ? Challenges.stoneMult() : 1) * trialMult));
     Game.state.spiritStones += stones;
     // A little Qi too.
     Game._addQi(mob.maxHp * 2);
     // Blood Essence: tempering currency drawn from battle itself.
-    const blood = Math.max(1, Math.round(mob.maxHp * 0.01 * (window.Challenges ? Challenges.bloodMult() : 1) * trialMult
+    const blood = Math.max(1, Math.round(baseHp * 0.01 * (window.Challenges ? Challenges.bloodMult() : 1) * trialMult
                    * (window.Boosters ? Boosters.lootMult() : 1)));
     if (window.Blood) Blood.gain(blood);
     // Sect contribution from battle.

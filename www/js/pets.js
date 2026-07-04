@@ -138,7 +138,7 @@ const Pets = {
     Game.state.beastEggs -= 1;
     Game.state.spiritStones -= this.evolveCost(id);
     this._owned()[id].star = this.starOf(id) + 1;
-    this._owned()[id].level = 1;
+    // level intentionally kept — resetting to 1 would make the evolved pet weaker than pre-evolution
     Game.persist();
     return true;
   },

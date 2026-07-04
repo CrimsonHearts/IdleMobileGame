@@ -44,6 +44,14 @@ const Enchanting = {
     Game.persist();
   },
 
+  /** Called when the heirloom artifact is salvaged. Clears only the id — Inheritance Stacks
+   *  are lifetime progress and survive losing the physical artifact. */
+  clearHeirloomArtifact(id) {
+    if (!this.isHeirloom(id)) return;
+    if (Game.state.heirloom) Game.state.heirloom.id = null;
+    Game.persist();
+  },
+
   /** Called from Game.reincarnate() — the heirloom grows stronger each life. */
   onReincarnate() {
     if (!this.heirloomId()) return;

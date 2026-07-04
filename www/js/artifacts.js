@@ -46,7 +46,10 @@ const Artifacts = {
     if (s.inventory.length > GameData.artifacts.invCap) {
       s.inventory.sort((a, b) => this.score(b) - this.score(a));
       const dumped = s.inventory.splice(GameData.artifacts.invCap);
-      dumped.forEach(a => { Game.state.spiritStones += this.salvageValue(a); });
+      dumped.forEach(a => {
+        Game.state.spiritStones += this.salvageValue(a);
+        if (window.Enchanting) Enchanting.clearHeirloomArtifact(a.id);
+      });
     }
   },
   score(a) { return a.atk + a.hp * 0.5 + a.qi * 5000; },
@@ -57,6 +60,7 @@ const Artifacts = {
     if (i < 0) return false;
     Game.state.spiritStones += this.salvageValue(s.inventory[i]);
     s.inventory.splice(i, 1);
+    if (window.Enchanting) Enchanting.clearHeirloomArtifact(id);
     Game.persist();
     return true;
   },

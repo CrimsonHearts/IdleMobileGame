@@ -168,6 +168,13 @@ const Game = {
     if (!this.state.heirloom) this.state.heirloom = { id: null, stacks: 0 };
     if (!this.state.weeklyChallenge) this.state.weeklyChallenge = { weekId: 0, claimed: false };
     if (!this.state.boosters) this.state.boosters = {};
+    // R10 migration: clear orphaned heirloom id from saves where the artifact was salvaged
+    if (this.state.heirloom && this.state.heirloom.id) {
+      const s = this.state.artifacts;
+      const hlId = this.state.heirloom.id;
+      const exists = s && (Object.values(s.equipped).some(a => a && a.id === hlId) || s.inventory.some(a => a.id === hlId));
+      if (!exists) this.state.heirloom.id = null;
+    }
     if (window.Market) Market.init();
     if (!this.state.onboarding) this.state.onboarding = { ready: false, unlocked: {}, seen: {}, steps: {}, hints: {}, skipped: false };
     if (this.state.totalTaps === undefined) this.state.totalTaps = 0;
