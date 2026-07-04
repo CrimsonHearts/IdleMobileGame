@@ -1405,3 +1405,76 @@ small { font-weight:400; }
 .daily-seal-title { font-weight:800; color:var(--gold-d); margin-bottom:4px; }
 .daily-seal-timer { font-size:12.5px; font-weight:700; color:var(--jade);
   padding:6px 0; text-align:center; }
+
+/* -- Round 13: Celestial Fracture ------------------------------------------ */
+.fracture-header {
+  display: flex; align-items: center; gap: 16px;
+  background: linear-gradient(135deg, #0e0820, #1a0e36);
+  border: 1px solid #6236b0; border-radius: 16px;
+  padding: 14px 16px; margin-bottom: 12px;
+}
+.fracture-shards-display {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  flex: 1;
+}
+.shard-icon { font-size: 22px; }
+.shard-amount { font-size: 20px; font-weight: 900; color: #c4a0ff; }
+.shard-label { font-size: 11px; color: #9270d4; text-transform: uppercase; letter-spacing: .05em; }
+.fracture-rifts-display {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  flex: 1;
+}
+.rift-count { font-size: 20px; font-weight: 900; color: #80c8ff; }
+.rift-label { font-size: 11px; color: #5b90c8; text-transform: uppercase; letter-spacing: .05em; }
+.fracture-lore {
+  font-size: 12.5px; color: var(--muted); line-height: 1.6;
+  margin: 0 0 14px; padding: 0 4px;
+}
+.fracture-paths { display: flex; flex-direction: column; gap: 14px; }
+.fracture-path {
+  background: linear-gradient(160deg, #0c0820 0%, #14102c 100%);
+  border: 1px solid #3d2873; border-radius: 14px; padding: 12px 14px;
+}
+.fracture-path-label {
+  font-size: 13px; font-weight: 800; color: #b890ff;
+  text-transform: uppercase; letter-spacing: .08em;
+  margin-bottom: 10px;
+}
+.fracture-node-chain {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.fracture-node {
+  flex: 1; min-width: 0;
+  background: #1a1030; border: 1px solid #3d2873; border-radius: 10px;
+  padding: 10px; cursor: pointer; transition: border-color .2s, transform .12s;
+}
+.fracture-node.available {
+  border-color: #8c5cf0; box-shadow: 0 0 10px rgba(140,92,240,.25);
+}
+.fracture-node.available:active { transform: scale(0.97); }
+.fracture-node.done {
+  background: #180e32; border-color: #6236b0; opacity: .85;
+}
+.fracture-node.locked { opacity: .45; cursor: not-allowed; }
+.fn-tier { font-size: 10px; color: #6236b0; text-transform: uppercase; letter-spacing: .06em; }
+.fn-name { font-size: 13px; font-weight: 700; color: #c4a0ff; margin: 2px 0 3px; }
+.fn-desc { font-size: 11px; color: #9270d4; line-height: 1.4; }
+.fn-cost {
+  display: inline-block; margin-top: 6px;
+  font-size: 12px; font-weight: 700; color: #e0c8ff;
+  background: rgba(140,92,240,.18); border-radius: 999px;
+  padding: 2px 10px;
+}
+.fn-cost.locked-cost { color: #5b406a; background: rgba(93,66,112,.18); }
+.fn-status.done-badge {
+  display: inline-block; margin-top: 6px;
+  font-size: 12px; font-weight: 700; color: #80e0c8;
+  background: rgba(22,182,122,.14); border-radius: 999px;
+  padding: 2px 10px;
+}
+.fn-arrow { font-size: 18px; color: #4a2e7a; flex-shrink: 0; }
+
+@media (prefers-color-scheme: dark) {
+  .fracture-path { background: linear-gradient(160deg, #080614 0%, #100c20 100%); }
+  .fracture-header { background: linear-gradient(135deg, #080614, #130a28); }
+}

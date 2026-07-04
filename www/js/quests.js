@@ -169,18 +169,124 @@ const QUEST_DEFS = [
     ],
   },
   {
-    id: 'ascension', category: 'story', order: 12, icon: '🌟',
-    title: 'Immortal Ascension',
-    desc:  'Transcend the mortal coil — reach the Immortal Ascension realm.',
-    hint:  'The final climb. Keep breaking through every realm above you.',
+    id: ‘ascension’, category: ‘story’, order: 12, icon: ‘🌟’,
+    title: ‘Immortal Ascension’,
+    desc:  ‘Transcend the mortal coil — reach the Immortal Ascension realm.’,
+    hint:  ‘The final climb. Keep breaking through every realm above you.’,
     check: () => Game.state.realm >= 9,
     reward: { dao: 20, permanentBonus: 0.15 },
-    rewardText: '+20 Dao & permanent +15% production',
+    rewardText: ‘+20 Dao & permanent +15% production’,
     dialogue: [
-      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+      { speaker: ‘mentor’, name: ‘Granny Su’, icon: ‘🍵’, lines: [
         "Immortal Ascension. I watched a hundred prodigies reach for this and stop short — and not always by choice.",
         "You didn’t buy your way past a single gate Lu Heng built. That’s the part he can’t stand: the proof that the path was never his to own.",
-        'Go on. Climb past Heaven itself if you can. I’ll be here, kettle on, when you decide to come back down and start the next life.',
+        ‘Go on. Climb past Heaven itself if you can. I’ll be here, kettle on, when you decide to come back down and start the next life.’,
+      ] },
+    ],
+  },
+
+  // ── ACT I: CELESTIAL FRACTURE ────────────────────────────────────────────
+  {
+    id: ‘fracture_premonition’, category: ‘story’, order: 13, icon: ‘🌌’,
+    title: ‘Premonition’,
+    desc:  ‘Reach Core Formation — something stirs in the upper heavens.’,
+    hint:  ‘Break through to the Core Formation realm (realm 3).’,
+    check: () => Game.state.realm >= 3,
+    reward: { dao: 3, shards: 20 },
+    rewardText: ‘+3 Dao & 20 Stellar Shards’,
+    dialogue: [
+      { speaker: ‘mentor’, name: ‘Granny Su’, icon: ‘🍵’, lines: [
+        ‘Did you feel that? A tremor. Not in the earth — in the Heavenly Law itself.’,
+        ‘Three times in three centuries I have felt something like it, and each time it meant the framework above us cracked a little further.’,
+        "The Dao doesn’t tremble for small reasons. Watch the sky, child — and whatever falls out of it, don’t touch it bare-handed.",
+      ] },
+    ],
+  },
+  {
+    id: ‘fracture_first_rift’, category: ‘story’, order: 14, icon: ‘💫’,
+    title: ‘First Rift’,
+    desc:  ‘Push deep enough into the Trials to witness a Celestial Rift.’,
+    hint:  ‘Reach Zone 5 in the Trials — rifts open at zone 5 and beyond.’,
+    check: () => (Game.state.combat && Game.state.combat.highestZone >= 5) ||
+                 (Game.state.fracture && Game.state.fracture.riftsSealed >= 1),
+    reward: { dao: 4, shards: 50 },
+    rewardText: ‘+4 Dao & 50 Stellar Shards’,
+    dialogue: [
+      { speaker: ‘mentor’, name: ‘Granny Su’, icon: ‘🍵’, lines: [
+        "A Celestial Rift. I haven’t seen one in eighty years — and the last one swallowed a whole mountain range before it closed.",
+        ‘The fragments it leaves behind — Stellar Shards — they carry the memory of whatever the heavens were made of before they cracked.’,
+        "Collect them. Study them. They are not safe to ignore, but they are also not safe to waste.",
+      ] },
+    ],
+  },
+  {
+    id: ‘fracture_cold_calculations’, category: ‘story’, order: 15, icon: ‘🏢’,
+    title: ‘Cold Calculations’,
+    desc:  ‘Reach the Spirit Severing realm — Lu Heng reveals what he already knew.’,
+    hint:  ‘Break through to the Spirit Severing realm (realm 5).’,
+    check: () => Game.state.realm >= 5,
+    reward: { dao: 5, shards: 100 },
+    rewardText: ‘+5 Dao & 100 Stellar Shards’,
+    dialogue: [
+      { speaker: ‘antagonist’, name: ‘Lu Heng · Jiutian Holdings’, icon: ‘🏢’, lines: [
+        "Spirit Severing. You’re past the horizon I had budgeted for you.",
+        "The Celestial Fracture wasn’t a surprise to us. Jiutian has been monitoring stress lines in the Heavenly Framework for forty years. We simply chose not to publish the findings.",
+        "Someone had to corner the Stellar Shard market before the panic set in. I trust you understand the economics. I hope you understand the alternative was worse.",
+      ] },
+    ],
+  },
+  {
+    id: ‘fracture_the_voice’, category: ‘story’, order: 16, icon: ‘🔮’,
+    title: ‘The Voice Speaks’,
+    desc:  ‘Seal 5 Celestial Rifts — something beyond the cracks takes notice.’,
+    hint:  ‘Keep advancing in high Zones to trigger Rift events.’,
+    check: () => Game.state.fracture && Game.state.fracture.riftsSealed >= 5,
+    reward: { dao: 6, shards: 200 },
+    rewardText: ‘+6 Dao & 200 Stellar Shards’,
+    dialogue: [
+      { speaker: ‘void’, name: ‘Voice from the Fracture’, icon: ‘🔮’, lines: [
+        ‘…you hear me.’,
+        ‘Not many do. Most minds close when they brush the edge of what Heaven forgot to account for.’,
+        ‘I am not your enemy. I am what leaks through when the ceiling of your world develops holes. You could call me a draft, if it helps.’,
+        ‘The shards you carry — I put them there. Consider them a business card.’,
+      ] },
+    ],
+  },
+  {
+    id: ‘fracture_spreads’, category: ‘story’, order: 17, icon: ‘⚡’,
+    title: ‘Fracture Spreads’,
+    desc:  ‘Reach Zone 10 in the Trials — the Rift network is growing.’,
+    hint:  ‘Push your highest Zone in the Trials to 10.’,
+    check: () => Game.state.combat && Game.state.combat.highestZone >= 10,
+    reward: { dao: 7, shards: 300 },
+    rewardText: ‘+7 Dao & 300 Stellar Shards’,
+    dialogue: [
+      { speaker: ‘mentor’, name: ‘Granny Su’, icon: ‘🍵’, lines: [
+        "Zone 10. I’ve seen the maps — that deep, the Rift density doubles every three zones.",
+        ‘And you spoke to it. The Voice. I could tell from your breathing when you came back.’,
+        "I won’t tell you to stop listening. But I will tell you: every cultivator I knew who followed that voice past a certain point stopped being entirely themselves.",
+        "You’re still you. Check that fact often.",
+      ] },
+    ],
+  },
+  {
+    id: ‘fracture_act1_end’, category: ‘story’, order: 18, icon: ‘🌠’,
+    title: ‘Act I Ends Here’,
+    desc:  ‘Reach the Void Traversal realm — you have survived the First Fracture.’,
+    hint:  ‘Break through to the Void Traversal realm (realm 7).’,
+    check: () => Game.state.realm >= 7,
+    reward: { dao: 10, shards: 500, permanentBonus: 0.08 },
+    rewardText: ‘+10 Dao, 500 Stellar Shards & permanent +8% production’,
+    dialogue: [
+      { speaker: ‘void’, name: ‘Voice from the Fracture’, icon: ‘🔮’, lines: [
+        "Void Traversal. You’ve learned to move through the spaces between spaces.",
+        "That’s exactly what I needed. Act I, as your mentor would call it, is concluded.",
+        "The cracks you sealed were the easy ones. What comes through the deep rifts next — that required you to be ready first.",
+        "Rest, if you like. The Fracture does not sleep, but it can wait. It has been waiting since before your Heaven was assembled.",
+      ] },
+      { speaker: ‘mentor’, name: ‘Granny Su’, icon: ‘🍵’, lines: [
+        "So the Voice told you it was done. Don’t believe things just because they claim to have a plan.",
+        "But for now — yes. You’ve earned a quiet moment. Kettle’s on.",
       ] },
     ],
   },
@@ -322,6 +428,7 @@ const Quests = {
     if (q.reward.dao)            Game.state.daoComprehension += q.reward.dao;
     if (q.reward.money  && Game.state.life) Game.state.life.money  += q.reward.money;
     if (q.reward.charm  && Game.state.life) Game.state.life.charm  += q.reward.charm;
+    if (q.reward.shards)         Game.state.stellarShards = (Game.state.stellarShards || 0) + q.reward.shards;
     if (q.reward.permanentBonus) {
       Game.state.questPermanentBonus = (Game.state.questPermanentBonus || 0) + q.reward.permanentBonus;
     }

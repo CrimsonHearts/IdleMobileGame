@@ -315,6 +315,13 @@ const UI = {
     if (this.el.gen) this.el.gen.textContent = Game.state.generation || 1;
     this.el.dao.textContent = GameNumbers.formatNumber(Game.state.daoComprehension);
     this.el.tapGain.textContent = '+' + GameNumbers.formatNumber(Game.qiPerTap());
+    const shardsEl = document.getElementById('res-shards');
+    if (shardsEl) {
+      const shards = Game.state.stellarShards || 0;
+      shardsEl.textContent = GameNumbers.formatNumber(shards);
+      const chip = document.getElementById('shards-chip');
+      if (chip) chip.style.display = shards > 0 || (Game.state.combat && Game.state.combat.highestZone >= 3) ? '' : 'none';
+    }
   },
 
   /** Called each frame by main loop: always refresh the strip + the live tab. */
@@ -1134,6 +1141,7 @@ const UI = {
     else if (this.worldSub === 'boosters') this.renderBoosters();
     else if (this.worldSub === 'feats')    this.renderAchievements();
     else if (this.worldSub === 'dailies')  this.renderDailies();
+    else if (this.worldSub === 'fracture') this.renderFracture();
   },
 
   // ======================================================================
@@ -2827,6 +2835,71 @@ const UI = {
       el.textContent = '';
       el.style.display = 'none';
     }
+  },
+  // ======================================================================
+  // CELESTIAL FRACTURE — Resonance Tree (Round 13)
+  // ======================================================================
+  renderFracture() {
+    const el = document.getElementById('sub-fracture');
+    if (!el || !window.Fracture) return;
+
+    const shards = Game.state.stellarShards || 0;
+    const rifts  = Fracture.riftsSealed();
+
+    let html = `<div class="section-title">🌌 Celestial Fracture</div>
+<div class="fracture-header">
+  <div class="fracture-shards-display">
+    <span class="shard-icon">💎</span>
+    <span class="shard-amount">${GameNumbers.formatNumber(shards)}</span>
+    <span class="shard-label">Stellar Shards</span>
+  </div>
+  <div class="fracture-rifts-display">
+    <span class="rift-count">${rifts}</span>
+    <span class="rift-label">Rifts Sealed</span>
+  </div>
+</div>
+<p class="fracture-lore">The heavens have cracked. Void energy bleeds through Celestial Rifts that tear open mid-battle. Cultivators who endure absorb Stellar Shards and channel them into Fracture Resonance — four permanent paths forged from the wreckage of Heaven itself.</p>
+<div class="fracture-paths">`;
+
+    const pathOrder = ['a','b','c','d'];
+    for (const path of pathOrder) {
+      const label = Fracture.pathLabels[path];
+      const nodes = Fracture.nodes.filter(n => n.path === path).sort((a,b) => a.tier - b.tier);
+      html += `<div class="fracture-path">
+  <div class="fracture-path-label">${label}</div>
+  <div class="fracture-node-chain">`;
+      nodes.forEach((node, i) => {
+        const done    = Fracture.researched(node.id);
+        const canDo   = Fracture.canResearch(node.id);
+        const locked  = !done && !canDo && !Fracture._prereqMet(node);
+        const cls     = done ? 'fracture-node done' : canDo ? 'fracture-node available' : 'fracture-node locked';
+        html += `<div class="${cls}" data-node="${node.id}">
+    <div class="fn-tier">Tier ${node.tier}</div>
+    <div class="fn-name">${node.name}</div>
+    <div class="fn-desc">${node.desc}</div>
+    ${done
+      ? `<div class="fn-status done-badge">✓ Resonated</div>`
+      : `<div class="fn-cost ${canDo ? '' : 'locked-cost'}">💎 ${node.cost}</div>`}
+  </div>`;
+        if (i < nodes.length - 1) html += `<div class="fn-arrow">→</div>`;
+      });
+      html += `</div></div>`;
+    }
+    html += `</div>`;
+
+    el.innerHTML = html;
+
+    el.querySelectorAll('.fracture-node.available[data-node]').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = card.dataset.node;
+        if (Fracture.research(id)) {
+          const node = Fracture.nodes.find(n => n.id === id);
+          this.toast(`✦ ${node.name} resonated!`);
+          this.renderFracture();
+          this.renderResources();
+        }
+      });
+    });
   },
 };
 

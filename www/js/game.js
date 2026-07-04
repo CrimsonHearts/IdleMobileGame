@@ -103,6 +103,10 @@ const Game = {
       // Sect Guild: research tree (Round 12)
       sectGuild: { research: {} },
 
+      // Celestial Fracture (Round 13)
+      stellarShards: 0,
+      fracture: { resonance: {}, riftsSealed: 0 },
+
       // Achievements + Daily Missions (Round 11)
       achievements: {},
       lifetimeKills: 0,
@@ -182,6 +186,11 @@ const Game = {
     // R12 migration: sect guild research state
     if (!this.state.sectGuild) this.state.sectGuild = { research: {} };
     if (!this.state.sectGuild.research) this.state.sectGuild.research = {};
+    // R13 migration: Celestial Fracture state
+    if (this.state.stellarShards === undefined) this.state.stellarShards = 0;
+    if (!this.state.fracture) this.state.fracture = { resonance: {}, riftsSealed: 0 };
+    if (!this.state.fracture.resonance) this.state.fracture.resonance = {};
+    if (this.state.fracture.riftsSealed === undefined) this.state.fracture.riftsSealed = 0;
     // R11 migrations: achievements + daily missions + lifetime counters
     if (!this.state.achievements) this.state.achievements = {};
     if (this.state.lifetimeKills              === undefined) this.state.lifetimeKills              = 0;
@@ -614,6 +623,8 @@ const Game = {
     if (window.Boosters) m.allMult *= Boosters.qiMult();
     // Daily Cultivation Seal: timed 2× Qi buff (Round 11)
     if (window.Dailies) m.allMult *= Dailies.qiMult();
+    // Fracture Resonance: Stellar Qi path (Round 13)
+    if (window.Fracture) m.allMult *= Fracture.qiMult();
     // Meridian tree (Round 2): Qi, tap, offline, beast bonuses.
     m.allMult    *= (1 + this.meridianMult('qi'));
     m.tapMult    *= (1 + this.meridianMult('tap'));

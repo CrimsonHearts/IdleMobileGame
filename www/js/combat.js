@@ -39,7 +39,8 @@ const Combat = {
     const path = (window.Game && Game.combatExternalMult) ? Game.combatExternalMult() : 1; // Dao Path + traits + duel buff + artifact sets
     const gear = (window.Game && Game.gearAtk) ? Game.gearAtk() : 0;
     const boost = window.Boosters ? Boosters.combatMult() : 1; // Cultivation Boosters: Battle Fury (Round 9)
-    return (this.baseAtk() + (window.Pets ? Pets.combatAtk() : 0) + gear) * Sect.combatMult() * meridian * perk * pill * path * boost;
+    const fracture = window.Fracture ? Fracture.combatMult() : 1;
+    return (this.baseAtk() + (window.Pets ? Pets.combatAtk() : 0) + gear) * Sect.combatMult() * meridian * perk * pill * path * boost * fracture;
   },
   playerHpMax() {
     const hpMult = (window.Game && Game.hpExternalMult) ? Game.hpExternalMult() : 1;
@@ -78,7 +79,8 @@ const Combat = {
     const trialMult = (window.Challenges && Challenges.trialHard()) ? 4 : 1;
     const lootMult = Sect.lootMult() * ((window.Game && Game.karmaLootMult) ? Game.karmaLootMult() : 1)
                    * (window.Enchanting ? (1 + Enchanting.lootMult()) : 1)
-                   * (window.Boosters ? Boosters.lootMult() : 1); // Cultivation Boosters: Loot Rush (Round 9)
+                   * (window.Boosters ? Boosters.lootMult() : 1) // Cultivation Boosters: Loot Rush (Round 9)
+                   * (window.Fracture ? Fracture.lootMult() : 1); // Fracture Harvest path (Round 13)
     // Use baseHp (pre-trialHard) so trialMult is a clean 4× on base loot, not 12× (3×hp × 4).
     const baseHp = mob.baseHp !== undefined ? mob.baseHp : mob.maxHp;
     // SectGuild research: Demon sect stone-drop bonus (Round 12).
@@ -96,6 +98,11 @@ const Combat = {
       if (window.Dailies) Dailies.onKill();
     }
     if (window.Dailies) Dailies.onStonesGained(stones);
+    // Stellar Shards drop (zone 3+): Fracture Harvest (Round 13).
+    if (window.Fracture) {
+      const shards = Fracture.onMobKill(c.zone, mob.boss);
+      if (shards > 0) this._pushLog(`✦ +${shards} Stellar Shards`);
+    }
     // A little Qi too.
     Game._addQi(mob.maxHp * 2);
     // Blood Essence: tempering currency drawn from battle itself.
@@ -127,6 +134,11 @@ const Combat = {
       c.highestZone = Math.max(c.highestZone || 1, c.zone + 1);
       c.zone += 1; c.wave = 1;
       this._pushLog(`⛰ Entered Zone ${c.zone}!`);
+      // Celestial Rift event: 15% chance on boss clear in zone 5+ (Round 13).
+      if (window.Fracture) {
+        const riftShards = Fracture.tryRiftEvent(c.zone - 1); // zone before advance
+        if (riftShards > 0) this._pushLog(`🌌 Celestial Rift sealed! +${riftShards} Stellar Shards`);
+      }
     } else {
       c.wave += 1;
     }
