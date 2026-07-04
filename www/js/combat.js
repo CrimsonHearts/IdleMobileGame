@@ -81,8 +81,10 @@ const Combat = {
                    * (window.Boosters ? Boosters.lootMult() : 1); // Cultivation Boosters: Loot Rush (Round 9)
     // Use baseHp (pre-trialHard) so trialMult is a clean 4× on base loot, not 12× (3×hp × 4).
     const baseHp = mob.baseHp !== undefined ? mob.baseHp : mob.maxHp;
+    // SectGuild research: Demon sect stone-drop bonus (Round 12).
+    const sectStonesMult = window.SectGuild ? SectGuild.stonesMult() : 1;
     const stones = Math.max(1, Math.round(baseHp * 0.04 * lootMult
-                   * (window.Challenges ? Challenges.stoneMult() : 1) * trialMult));
+                   * (window.Challenges ? Challenges.stoneMult() : 1) * trialMult * sectStonesMult));
     Game.state.spiritStones += stones;
     // Lifetime + daily tracking (Round 11).
     Game.state.lifetimeStones = (Game.state.lifetimeStones || 0) + stones;
@@ -147,8 +149,9 @@ const Combat = {
     const c = Game.state.combat;
     const mob = this.mob();
     let pAtk = this.playerAtk();
-    if (mob.boss && window.Techniques) pAtk *= Techniques.bossDmgMult();
-    if (mob.boss && window.Enchanting) pAtk *= Enchanting.bossDmgMult();
+    if (mob.boss && window.Techniques)  pAtk *= Techniques.bossDmgMult();
+    if (mob.boss && window.Enchanting)  pAtk *= Enchanting.bossDmgMult();
+    if (mob.boss && window.SectGuild)   pAtk *= SectGuild.bossDmgMult();
 
     // Exchange damage over dt (1 "round" ≈ 1 second).
     const dmgDealt = pAtk * dt;

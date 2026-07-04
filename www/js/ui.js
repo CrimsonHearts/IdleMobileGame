@@ -1610,83 +1610,209 @@ const UI = {
     const scroller = document.getElementById('content');
     const scrollTop = scroller ? scroller.scrollTop : 0;
     const current = Sect.current();
-    if (current) {
-      const rank = Sect.rank(), next = Sect.nextRank();
-      const contrib = Sect.contribution();
-      const pct = next ? Math.min(100, ((contrib - rank.req) / (next.req - rank.req)) * 100) : 100;
-      el.innerHTML = `
-        <div class="section-title">🏯 ${current.name}</div>
-        <div class="card sect-current" style="border-color:${current.color}">
-          <div class="sect-seal" style="background:${current.color}">${current.seal}</div>
-          <div class="sect-info">
-            <div class="card-title">${rank.name}</div>
-            <div class="hint">${current.bonusDesc}</div>
-          </div>
-        </div>
-        <div class="section-title small">Rank Progress</div>
-        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-        <div class="hint">${GameNumbers.formatNumber(contrib)} contribution${next?` · Next: ${next.name} at ${GameNumbers.formatNumber(next.req)}`:' · Max rank reached'}</div>
 
-        <div class="section-title small">🛒 Contribution Exchange</div>
-        <div class="exchange-row">
-          <button class="btn-mini" data-buy="egg"   ${contrib>=500?'':'disabled'}>🥚 Beast Egg — 500</button>
-          <button class="btn-mini" data-buy="stones" ${contrib>=200?'':'disabled'}>💠 1K Stones — 200</button>
-        </div>
-
-        <div class="section-title small">Fellow Disciples</div>
-        <div id="sect-roster" class="hint">Loading roster…</div>
-        <button class="btn-ghost" id="leave-sect">Leave Sect (forfeit contribution)</button>`;
-
-      const rosterReq = (this._sectRosterSeq = (this._sectRosterSeq || 0) + 1);
-      Sect.backend.members(current.id).then(members => {
-        if (this._sectRosterSeq !== rosterReq) return; // a newer render superseded this fetch
-        const roster = el.querySelector('#sect-roster');
-        if (roster) roster.innerHTML = members.map(m =>
-          `<div class="roster-row"><span>${m.name}</span><span class="muted">${m.rank.name} · ${m.realm.name}</span></div>`).join('');
-      });
-
-      el.querySelector('#leave-sect').addEventListener('click', () => {
-        Sect.leave().then(() => { this.toast('You have left your sect.'); this.renderSect(); this.renderResources(); });
-      });
-      el.querySelectorAll('button[data-buy]').forEach(b => b.addEventListener('click', () => {
-        const kind = b.dataset.buy;
-        if (kind === 'egg' && Sect.contribution() >= 500)   { Game.state.sect.contribution -= 500; Game.state.beastEggs += 1; this.toast('🥚 +1 Beast Egg'); }
-        if (kind === 'stones' && Sect.contribution() >= 200) { Game.state.sect.contribution -= 200; Game.state.spiritStones += 1000; this.toast('💠 +1,000 Spirit Stones'); }
-        Game.persist(); this.renderSect(); this.renderResources();
-      }));
-      if (scroller) scroller.scrollTop = scrollTop;
-      return;
-    }
-
-    // Not in a sect — show join list.
-    let html = `<div class="section-title">🏯 Join a Sect</div>
-      <div class="hint">Pledge to one of the great cultivation orders for a permanent bonus. Earn Contribution over time and through Trials to rise in rank.</div>
-      <div class="sect-list">`;
-    const alignTag = a => a === 'orthodox' ? '<span class="align-chip good">Orthodox</span>'
-                        : a === 'demonic'  ? '<span class="align-chip bad">Demonic</span>'
-                        : '<span class="align-chip">Neutral</span>';
-    Sect.data.forEach(s => {
-      const req = Sect.joinRequirement(s.id);
-      html += `
-        <div class="card sect-option${req.ok ? '' : ' locked'}" style="border-color:${s.color}">
+    if (!current) {
+      // Not in a sect — show join list.
+      const alignTag = a => a === 'orthodox' ? '<span class="align-chip good">Orthodox</span>'
+                          : a === 'demonic'  ? '<span class="align-chip bad">Demonic</span>'
+                          : '<span class="align-chip">Neutral</span>';
+      let html = `<div class="section-title">🏯 Join a Sect</div>
+        <div class="hint">Pledge to one of the great cultivation orders for a permanent bonus. Earn Contribution through Trials, Offerings, and Ranks. Research sect-exclusive upgrades to deepen your path.</div>
+        <div class="sect-list">`;
+      Sect.data.forEach(s => {
+        const req = Sect.joinRequirement(s.id);
+        html += `<div class="card sect-option${req.ok ? '' : ' locked'}" style="border-color:${s.color}">
           <div class="sect-head">
             <div class="sect-seal" style="background:${s.color}">${s.seal}</div>
             <div class="sect-info"><div class="card-title">${s.name} ${alignTag(s.align)}</div>
               <div class="hint">${s.desc}</div></div>
           </div>
           <div class="sect-bonus" style="color:${s.color}">✦ ${s.bonusDesc}</div>
-          ${req.ok
-            ? `<button class="btn-primary sm" data-join="${s.id}">Pledge</button>`
-            : `<div class="sect-locked">🔒 ${req.reason}</div>`}
+          ${req.ok ? `<button class="btn-primary sm" data-join="${s.id}">Pledge</button>`
+                   : `<div class="sect-locked">🔒 ${req.reason}</div>`}
         </div>`;
-    });
-    html += `</div>`;
-    el.innerHTML = html;
-    el.querySelectorAll('button[data-join]').forEach(b => b.addEventListener('click', () => {
-      Sect.join(b.dataset.join).then(r => {
-        if (r && r.ok) { this.toast(`🏯 You joined the ${Sect.current().name}!`); this.renderSect(); this.renderResources(); }
       });
-    }));
+      html += `</div>`;
+      el.innerHTML = html;
+      el.querySelectorAll('button[data-join]').forEach(b => b.addEventListener('click', () => {
+        Sect.join(b.dataset.join).then(r => {
+          if (r && r.ok) { this.toast(`🏯 You joined the ${Sect.current().name}!`); this.renderSect(); this.renderResources(); }
+        });
+      }));
+      if (scroller) scroller.scrollTop = scrollTop;
+      return;
+    }
+
+    // In a sect — render the full guild panel.
+    const rank   = Sect.rank(), next = Sect.nextRank();
+    const contrib = Sect.contribution();
+    const pct    = next ? Math.min(100, ((contrib - rank.req) / (next.req - rank.req)) * 100) : 100;
+    const tab    = this.sectTab || 'overview';
+
+    // --- Header (always visible) ---
+    let html = `
+      <div class="sect-header" style="border-color:${current.color}">
+        <div class="sect-seal lg" style="background:${current.color}">${current.seal}</div>
+        <div class="sect-header-info">
+          <div class="sect-header-name" style="color:${current.color}">${current.name}</div>
+          <div class="sect-header-rank">${rank.name}</div>
+          <div class="sect-rank-bar-wrap"><div class="sect-rank-bar" style="width:${pct}%;background:${current.color}"></div></div>
+          <div class="sect-contrib-line muted">${GameNumbers.formatNumber(contrib)} Contribution${next ? ` · ${next.name} at ${GameNumbers.formatNumber(next.req)}` : ' · Max rank'}</div>
+        </div>
+      </div>
+      <div class="sect-tabs">
+        <button class="sect-tab${tab==='overview' ?' active':''}" data-stab="overview">Overview</button>
+        <button class="sect-tab${tab==='research'?' active':''}" data-stab="research">Research</button>
+        <button class="sect-tab${tab==='store'   ?' active':''}" data-stab="store">Store</button>
+        <button class="sect-tab${tab==='members' ?' active':''}" data-stab="members">Members</button>
+      </div>`;
+
+    // --- Tab content ---
+    if (tab === 'overview') {
+      // Active bonuses
+      const bonusRows = [
+        { label: 'Qi production',     value: (Sect.qiMult() * 100 - 100).toFixed(0) + '%' },
+        { label: 'Combat ATK',        value: (Sect.combatMult() * 100 - 100).toFixed(0) + '%' },
+        { label: 'Pet bonuses',       value: (Sect.petBonusMult() * 100 - 100).toFixed(0) + '%' },
+        { label: 'Loot',              value: (Sect.lootMult() * 100 - 100).toFixed(0) + '%' },
+        { label: 'Offline efficiency',value: '+' + (Sect.offlineBonus() * 100).toFixed(0) + '%' },
+      ].filter(r => parseFloat(r.value) !== 0);
+
+      html += `<div class="section-title small">✦ Active Bonuses</div>
+        <div class="sect-bonus-list">
+          ${bonusRows.map(r => `<div class="sect-bonus-row"><span>${r.label}</span><span class="sect-bonus-val" style="color:${current.color}">${r.value}</span></div>`).join('')}
+          <div class="sect-bonus-row muted"><span>${current.bonusDesc}</span></div>
+        </div>`;
+
+      // Offerings
+      html += `<div class="section-title small">🏵 Offerings</div>
+        <div class="hint" style="margin-bottom:8px">Donate resources to earn Contribution. Contribution never resets — spend it on Research and the Store.</div>
+        <div class="sect-offering-list">`;
+      SectGuild.offerings.forEach(t => {
+        const can = SectGuild.canOffer(t.id);
+        html += `<div class="sect-offering-row">
+          <span class="sect-offer-icon">${t.icon}</span>
+          <div class="sect-offer-info">
+            <span class="sect-offer-name">${t.name}</span>
+            <span class="muted">−${GameNumbers.formatNumber(t.cost)} → +${t.gain} Contribution</span>
+          </div>
+          <button class="btn-mini${can ? '' : ''}" data-offer="${t.id}" ${can ? '' : 'disabled'}>Donate</button>
+        </div>`;
+      });
+      html += `</div>`;
+
+    } else if (tab === 'research') {
+      const nodes = window.SectGuild ? SectGuild.nodesFor(current.id) : [];
+      const branches = ['a', 'b'];
+      const branchLabels = { a: 'Path I', b: 'Path II' };
+      html += `<div class="section-title small">🔬 Sect Research</div>
+        <div class="hint" style="margin-bottom:10px">Unlock permanent bonuses by spending Contribution. Tiers must be unlocked in order.</div>`;
+      branches.forEach(branch => {
+        const bNodes = nodes.filter(n => n.branch === branch);
+        html += `<div class="sect-branch-label">${branchLabels[branch]}</div>
+          <div class="sect-research-chain">`;
+        bNodes.forEach((node, idx) => {
+          const done = SectGuild.researched(node.id);
+          const prereq = done ? true : SectGuild._prereqMet(current.id, node);
+          const afford = prereq && !done && Sect.contribution() >= node.cost;
+          const state = done ? 'done' : (afford ? 'available' : (prereq ? 'need-funds' : 'locked'));
+          html += `<div class="sect-node ${state}">
+            <div class="sect-node-tier">Tier ${node.tier}</div>
+            <div class="sect-node-name">${node.name}</div>
+            <div class="sect-node-desc muted">${node.desc}</div>
+            <div class="sect-node-cost">${done ? '✓ Researched' : GameNumbers.formatNumber(node.cost) + ' Contrib'}</div>
+            ${!done ? `<button class="btn-mini sect-research-btn" data-research="${node.id}" ${afford ? '' : 'disabled'}>Research</button>` : ''}
+          </div>`;
+          if (idx < bNodes.length - 1) html += `<div class="sect-chain-arrow">→</div>`;
+        });
+        html += `</div>`;
+      });
+
+    } else if (tab === 'store') {
+      html += `<div class="section-title small">🛒 Contribution Store</div>
+        <div class="hint" style="margin-bottom:10px">Exchange Contribution for resources and consumables.</div>
+        <div class="sect-store-grid">`;
+      SectGuild.store.forEach(item => {
+        const can = SectGuild.canBuy(item.id);
+        html += `<div class="sect-store-item${can ? '' : ' cant-afford'}">
+          <div class="sect-store-ico">${item.icon}</div>
+          <div class="sect-store-name">${item.name}</div>
+          <div class="sect-store-desc muted">${item.desc}</div>
+          <div class="sect-store-cost">${GameNumbers.formatNumber(item.cost)} Contrib</div>
+          <button class="btn-mini" data-buy="${item.id}" ${can ? '' : 'disabled'}>Buy</button>
+        </div>`;
+      });
+      html += `</div>`;
+
+    } else if (tab === 'members') {
+      html += `<div class="section-title small">Fellow Disciples</div>
+        <div id="sect-roster" class="hint">Loading roster…</div>`;
+    }
+
+    html += `<button class="btn-ghost" id="leave-sect" style="margin-top:18px">Leave Sect (forfeit contribution)</button>`;
+
+    el.innerHTML = html;
+
+    // Wire tab buttons
+    el.querySelectorAll('.sect-tab').forEach(btn => {
+      btn.addEventListener('click', () => { this.sectTab = btn.dataset.stab; this.renderSect(); });
+    });
+
+    // Wire research buttons
+    el.querySelectorAll('.sect-research-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (window.SectGuild && SectGuild.research(btn.dataset.research)) {
+          this.toast('🔬 Research complete!');
+          this.renderSect();
+          this.renderResources();
+        }
+      });
+    });
+
+    // Wire store buy buttons
+    el.querySelectorAll('[data-buy]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (window.SectGuild && SectGuild.buy(btn.dataset.buy)) {
+          this.toast(`🛒 ${SectGuild.store.find(i=>i.id===btn.dataset.buy)?.name || 'Item'} purchased.`);
+          this.renderSect();
+          this.renderResources();
+        }
+      });
+    });
+
+    // Wire offering buttons
+    el.querySelectorAll('[data-offer]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const gain = window.SectGuild && SectGuild.offer(btn.dataset.offer);
+        if (gain) {
+          this.toast(`🏵 +${gain} Contribution donated.`);
+          this.renderSect();
+          this.renderResources();
+        }
+      });
+    });
+
+    // Leave sect
+    el.querySelector('#leave-sect')?.addEventListener('click', () => {
+      Sect.leave().then(() => {
+        this.sectTab = 'overview';
+        this.toast('You have left your sect.');
+        this.renderSect();
+        this.renderResources();
+      });
+    });
+
+    // Load member roster async
+    if (tab === 'members') {
+      const rosterReq = (this._sectRosterSeq = (this._sectRosterSeq || 0) + 1);
+      Sect.backend.members(current.id).then(members => {
+        if (this._sectRosterSeq !== rosterReq) return;
+        const roster = el.querySelector('#sect-roster');
+        if (roster) roster.innerHTML = members.map(m =>
+          `<div class="roster-row"><span>${m.name}</span><span class="muted">${m.rank.name} · ${m.realm.name}</span></div>`).join('');
+      });
+    }
+
     if (scroller) scroller.scrollTop = scrollTop;
   },
 

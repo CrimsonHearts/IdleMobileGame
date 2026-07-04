@@ -100,6 +100,9 @@ const Game = {
       // Cultivation Boosters (Round 9): id -> { endsAt, adsToday, stonesToday, day }
       boosters: {},
 
+      // Sect Guild: research tree (Round 12)
+      sectGuild: { research: {} },
+
       // Achievements + Daily Missions (Round 11)
       achievements: {},
       lifetimeKills: 0,
@@ -176,6 +179,9 @@ const Game = {
     if (!this.state.heirloom) this.state.heirloom = { id: null, stacks: 0 };
     if (!this.state.weeklyChallenge) this.state.weeklyChallenge = { weekId: 0, claimed: false };
     if (!this.state.boosters) this.state.boosters = {};
+    // R12 migration: sect guild research state
+    if (!this.state.sectGuild) this.state.sectGuild = { research: {} };
+    if (!this.state.sectGuild.research) this.state.sectGuild.research = {};
     // R11 migrations: achievements + daily missions + lifetime counters
     if (!this.state.achievements) this.state.achievements = {};
     if (this.state.lifetimeKills              === undefined) this.state.lifetimeKills              = 0;

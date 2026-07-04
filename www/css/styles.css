@@ -1294,6 +1294,69 @@ small { font-weight:400; }
 .booster-actions { display:flex; flex-direction:column; gap:6px; flex:none; }
 .booster-actions .btn-mini { white-space:nowrap; }
 
+/* -- Round 12: Sect Guild ---------------------------------------------------- */
+.sect-header { display:flex; align-items:flex-start; gap:12px;
+  background:var(--surface); border:2px solid var(--line); border-radius:16px;
+  padding:14px 16px; margin-bottom:10px; }
+.sect-seal.lg { width:52px; height:52px; border-radius:14px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:900; font-size:22px; color:#fff; }
+.sect-header-info { flex:1; min-width:0; }
+.sect-header-name { font-weight:900; font-size:15px; margin-bottom:2px; }
+.sect-header-rank { font-size:12.5px; font-weight:700; color:var(--muted); margin-bottom:5px; }
+.sect-rank-bar-wrap { background:var(--line); border-radius:999px; height:5px; overflow:hidden; margin-bottom:4px; }
+.sect-rank-bar { height:100%; border-radius:999px; transition:width .3s; }
+.sect-contrib-line { font-size:11px; }
+
+.sect-tabs { display:flex; gap:4px; margin-bottom:12px; overflow-x:auto;
+  scrollbar-width:none; }
+.sect-tabs::-webkit-scrollbar { display:none; }
+.sect-tab { flex:none; padding:6px 14px; border-radius:999px; border:1px solid var(--line);
+  font-size:13px; font-weight:700; background:var(--surface); color:var(--muted);
+  cursor:pointer; transition:all .15s; white-space:nowrap; }
+.sect-tab.active { background:var(--jade); border-color:var(--jade); color:#fff; }
+
+.sect-bonus-list { display:flex; flex-direction:column; gap:4px; margin-bottom:12px; }
+.sect-bonus-row { display:flex; justify-content:space-between; align-items:baseline;
+  font-size:13px; padding:4px 0; border-bottom:1px solid var(--line); }
+.sect-bonus-row:last-child { border-bottom:none; }
+.sect-bonus-val { font-weight:800; font-size:14px; }
+
+.sect-offering-list { display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
+.sect-offering-row { display:flex; align-items:center; gap:10px;
+  background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+.sect-offer-icon { font-size:20px; flex:none; }
+.sect-offer-info { flex:1; min-width:0; }
+.sect-offer-name { font-weight:700; font-size:13px; display:block; }
+
+.sect-branch-label { font-size:11px; font-weight:800; letter-spacing:.07em;
+  text-transform:uppercase; color:var(--muted); margin:12px 0 6px; }
+.sect-research-chain { display:flex; align-items:stretch; gap:4px; overflow-x:auto;
+  scrollbar-width:none; margin-bottom:4px; padding-bottom:2px; }
+.sect-research-chain::-webkit-scrollbar { display:none; }
+.sect-node { flex:none; width:140px; background:var(--surface); border:1.5px solid var(--line);
+  border-radius:14px; padding:10px 12px; display:flex; flex-direction:column; gap:3px; }
+.sect-node.done     { border-color:var(--jade); background:var(--jade-soft); }
+.sect-node.available{ border-color:var(--gold); }
+.sect-node.need-funds{ opacity:.7; }
+.sect-node.locked   { opacity:.45; }
+.sect-node-tier { font-size:10px; font-weight:800; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--muted); }
+.sect-node-name { font-weight:800; font-size:13px; }
+.sect-node-desc { font-size:11px; }
+.sect-node-cost { font-size:11.5px; font-weight:700; color:var(--gold-d); margin-top:auto; padding-top:4px; }
+.sect-node.done .sect-node-cost { color:var(--jade); }
+.sect-chain-arrow { display:flex; align-items:center; color:var(--muted); font-size:18px; flex:none; padding:0 2px; }
+
+.sect-store-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.sect-store-item { background:var(--surface); border:1px solid var(--line); border-radius:14px;
+  padding:12px; display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; }
+.sect-store-item.cant-afford { opacity:.55; }
+.sect-store-ico { font-size:26px; }
+.sect-store-name { font-weight:800; font-size:13px; }
+.sect-store-desc { font-size:11px; }
+.sect-store-cost { font-size:12px; font-weight:700; color:var(--gold-d); }
+
 /* -- Round 11: Achievements ------------------------------------------------- */
 .ach-cat-label { font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
   color:var(--muted); padding:10px 0 4px; }

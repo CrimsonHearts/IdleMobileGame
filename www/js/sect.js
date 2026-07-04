@@ -105,15 +105,34 @@ const Sect = {
   nextRank() { return SECT_RANKS[this.rankIndex() + 1] || null; },
 
   // -- Bonuses (read by Game.multipliers / Combat) -------------------------
+  // Round 12: SectGuild research bonuses are folded in here so every
+  // consumer (combat, pets, offline, etc.) picks them up automatically.
   qiMult() {
     const s = this.current();
     if (!s) return 1;
-    return s.qiMult * (1 + this.rankIndex() * SECT_RANK_BONUS);
+    const research = window.SectGuild ? SectGuild.qiMult() : 1;
+    return s.qiMult * (1 + this.rankIndex() * SECT_RANK_BONUS) * research;
   },
-  combatMult()  { const s = this.current(); return s ? s.combatMult : 1; },
-  petBonusMult(){ const s = this.current(); return s ? (s.petMult || 1) : 1; },
-  offlineBonus(){ const s = this.current(); return s ? (s.offlineBonus || 0) : 0; },
-  lootMult()    { const s = this.current(); return s ? (s.lootMult || 1) : 1; },
+  combatMult()  {
+    const s = this.current();
+    const research = window.SectGuild ? SectGuild.combatMult() : 1;
+    return s ? s.combatMult * research : 1;
+  },
+  petBonusMult(){
+    const s = this.current();
+    const research = window.SectGuild ? SectGuild.petMult() : 1;
+    return s ? (s.petMult || 1) * research : 1;
+  },
+  offlineBonus(){
+    const s = this.current();
+    const research = window.SectGuild ? SectGuild.offlineBonus() : 0;
+    return (s ? (s.offlineBonus || 0) : 0) + research;
+  },
+  lootMult()    {
+    const s = this.current();
+    const research = window.SectGuild ? SectGuild.lootMult() : 1;
+    return s ? (s.lootMult || 1) * research : 1;
+  },
 
   // -- Membership ----------------------------------------------------------
   /** Karma gate: orthodox sects reject the demonic; the Blood Demon Sect
