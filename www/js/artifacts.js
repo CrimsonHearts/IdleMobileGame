@@ -77,6 +77,7 @@ const Artifacts = {
     s.inventory.splice(i, 1);
     if (prev) s.inventory.push(prev); // swap the old piece back to the bag
     this._trimToCap();
+    if (window.Dailies) Dailies.onEquip();
     Game.persist();
     return true;
   },

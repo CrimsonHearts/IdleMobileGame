@@ -84,6 +84,16 @@ const Combat = {
     const stones = Math.max(1, Math.round(baseHp * 0.04 * lootMult
                    * (window.Challenges ? Challenges.stoneMult() : 1) * trialMult));
     Game.state.spiritStones += stones;
+    // Lifetime + daily tracking (Round 11).
+    Game.state.lifetimeStones = (Game.state.lifetimeStones || 0) + stones;
+    if (mob.boss) {
+      Game.state.lifetimeBossKills = (Game.state.lifetimeBossKills || 0) + 1;
+      if (window.Dailies) Dailies.onBossKill();
+    } else {
+      Game.state.lifetimeKills = (Game.state.lifetimeKills || 0) + 1;
+      if (window.Dailies) Dailies.onKill();
+    }
+    if (window.Dailies) Dailies.onStonesGained(stones);
     // A little Qi too.
     Game._addQi(mob.maxHp * 2);
     // Blood Essence: tempering currency drawn from battle itself.

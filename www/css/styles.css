@@ -1293,3 +1293,52 @@ small { font-weight:400; }
 .booster-timer { font-size:11.5px; color:#e7c878; font-weight:700; min-height:14px; }
 .booster-actions { display:flex; flex-direction:column; gap:6px; flex:none; }
 .booster-actions .btn-mini { white-space:nowrap; }
+
+/* -- Round 11: Achievements ------------------------------------------------- */
+.ach-cat-label { font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--muted); padding:10px 0 4px; }
+.ach-list { display:flex; flex-direction:column; gap:6px; margin-bottom:4px; }
+.ach-card { display:flex; align-items:flex-start; gap:10px;
+  background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px 12px;
+  opacity:.6; }
+.ach-card.unlocked { opacity:1; border-color:var(--jade); }
+.ach-card.claimed  { opacity:1; border-color:var(--line); background:var(--surface-2); }
+.ach-icon { font-size:22px; flex:none; line-height:1; padding-top:2px; }
+.ach-body { flex:1; min-width:0; }
+.ach-name { font-weight:800; font-size:13.5px; }
+.ach-desc { font-size:11.5px; margin-top:1px; }
+.ach-bar-wrap { background:var(--line); border-radius:999px; height:4px; margin:5px 0 2px; overflow:hidden; }
+.ach-bar { height:100%; background:var(--jade); border-radius:999px; transition:width .3s; }
+.ach-prog { font-size:10.5px; }
+.ach-reward { font-size:11px; color:var(--gold-d); font-weight:700; margin-top:3px; }
+.ach-actions { display:flex; align-items:center; flex:none; }
+.ach-done { font-size:16px; color:var(--jade); font-weight:900; }
+.ach-locked { font-size:12px; }
+
+/* -- Round 11: Daily Missions ----------------------------------------------- */
+.daily-streak-banner { display:flex; align-items:center; gap:6px;
+  background:var(--gold-soft); border:1px solid #e7c878; border-radius:14px;
+  padding:10px 14px; margin-bottom:10px; }
+.daily-streak-fire { font-size:20px; }
+.daily-streak-num { font-size:22px; font-weight:900; color:var(--gold-d); }
+.daily-streak-badge { margin-left:4px; background:var(--gold-d); color:#fff;
+  font-size:10px; font-weight:800; padding:2px 8px; border-radius:999px; }
+.daily-week-banner { display:flex; align-items:center; gap:8px;
+  background:linear-gradient(135deg,#1a2240,#2a1a40);
+  border:1px solid #7864c8; border-radius:14px; padding:10px 14px; margin-bottom:10px;
+  color:#c8b8ff; font-size:13px; }
+.daily-mission-list { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+.daily-mission { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+.daily-mission.done { border-color:var(--jade); background:var(--jade-soft); }
+.daily-m-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+.daily-m-label { font-size:13px; font-weight:600; }
+.daily-m-count { font-size:12px; color:var(--muted); font-weight:700; }
+.daily-m-count.complete { color:var(--jade); }
+.daily-bar-wrap { background:var(--line); border-radius:999px; height:5px; overflow:hidden; }
+.daily-bar { height:100%; background:var(--jade); border-radius:999px; transition:width .3s; }
+.daily-mission.done .daily-bar { background:var(--jade-d); }
+.daily-seal-section { background:var(--surface); border:1px solid var(--line); border-radius:14px;
+  padding:12px 14px; margin-bottom:10px; }
+.daily-seal-title { font-weight:800; color:var(--gold-d); margin-bottom:4px; }
+.daily-seal-timer { font-size:12.5px; font-weight:700; color:var(--jade);
+  padding:6px 0; text-align:center; }

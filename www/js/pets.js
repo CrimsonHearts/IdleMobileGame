@@ -101,6 +101,7 @@ const Pets = {
     if (Game.state.spiritStones < cost) return false;
     Game.state.spiritStones -= cost;
     this._owned()[id].level += 1;
+    if (window.Dailies) Dailies.onPetLevelUp();
     Game.persist();
     return true;
   },

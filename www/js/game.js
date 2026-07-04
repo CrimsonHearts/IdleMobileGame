@@ -100,6 +100,14 @@ const Game = {
       // Cultivation Boosters (Round 9): id -> { endsAt, adsToday, stonesToday, day }
       boosters: {},
 
+      // Achievements + Daily Missions (Round 11)
+      achievements: {},
+      lifetimeKills: 0,
+      lifetimeBossKills: 0,
+      lifetimeStones: 0,
+      lifetimeBoosterActivations: 0,
+      dailies: { day: null, missions: [], allComplete: false, sealClaimed: false, sealEndsAt: 0, streak: 0, weekReady: false, weekClaimed: false },
+
       // Market (Round 8): drifting prices
       market: null,
 
@@ -168,6 +176,15 @@ const Game = {
     if (!this.state.heirloom) this.state.heirloom = { id: null, stacks: 0 };
     if (!this.state.weeklyChallenge) this.state.weeklyChallenge = { weekId: 0, claimed: false };
     if (!this.state.boosters) this.state.boosters = {};
+    // R11 migrations: achievements + daily missions + lifetime counters
+    if (!this.state.achievements) this.state.achievements = {};
+    if (this.state.lifetimeKills              === undefined) this.state.lifetimeKills              = 0;
+    if (this.state.lifetimeBossKills          === undefined) this.state.lifetimeBossKills          = 0;
+    if (this.state.lifetimeStones             === undefined) this.state.lifetimeStones             = 0;
+    if (this.state.lifetimeBoosterActivations === undefined) this.state.lifetimeBoosterActivations = 0;
+    if (!this.state.dailies) this.state.dailies = { day: null, missions: [], allComplete: false, sealClaimed: false, sealEndsAt: 0, streak: 0, weekReady: false, weekClaimed: false };
+    if (this.state.dailies.weekReady  === undefined) this.state.dailies.weekReady  = false;
+    if (this.state.dailies.weekClaimed=== undefined) this.state.dailies.weekClaimed= false;
     // R10 migration: clear orphaned heirloom id from saves where the artifact was salvaged
     if (this.state.heirloom && this.state.heirloom.id) {
       const s = this.state.artifacts;
@@ -589,6 +606,8 @@ const Game = {
     if (window.Challenges) m.allMult *= Challenges.qiMult();
     // Cultivation Boosters: stacking timed Qi buff (Round 9)
     if (window.Boosters) m.allMult *= Boosters.qiMult();
+    // Daily Cultivation Seal: timed 2× Qi buff (Round 11)
+    if (window.Dailies) m.allMult *= Dailies.qiMult();
     // Meridian tree (Round 2): Qi, tap, offline, beast bonuses.
     m.allMult    *= (1 + this.meridianMult('qi'));
     m.tapMult    *= (1 + this.meridianMult('tap'));
@@ -1019,6 +1038,13 @@ const Game = {
     // Track the highest wall-clock time we've seen (anti-cheat baseline).
     const wall = TimeService.now();
     if (wall > this.state.maxSeenTime) this.state.maxSeenTime = wall;
+
+    // Achievement scan every 5s (Round 11).
+    this._achievementTick = (this._achievementTick || 0) + dtSec;
+    if (this._achievementTick >= 5) {
+      this._achievementTick = 0;
+      if (window.Achievements) Achievements.checkAll();
+    }
 
     // Autosave every 10s.
     this._saveAccumulator += dtSec;

@@ -54,6 +54,8 @@ const Boosters = {
     if (!this.get(id) || this.adsLeftToday(id) <= 0) return false;
     this._state(id).adsToday += 1;
     this._extend(id);
+    Game.state.lifetimeBoosterActivations = (Game.state.lifetimeBoosterActivations || 0) + 1;
+    if (window.Dailies) Dailies.onBooster();
     Game.persist();
     return true;
   },
@@ -66,6 +68,8 @@ const Boosters = {
     Game.state.spiritStones -= cost;
     this._state(id).stonesToday += 1;
     this._extend(id);
+    Game.state.lifetimeBoosterActivations = (Game.state.lifetimeBoosterActivations || 0) + 1;
+    if (window.Dailies) Dailies.onBooster();
     Game.persist();
     return true;
   },

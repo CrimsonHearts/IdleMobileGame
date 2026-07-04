@@ -332,6 +332,7 @@ const UI = {
       case 'world':
         if (this.worldSub === 'trials') this.renderTrialsLive();
         else if (this.worldSub === 'boosters') this.renderBoostersLive();
+        else if (this.worldSub === 'dailies') this.renderDailiesLive();
         break;
     }
   },
@@ -1131,6 +1132,8 @@ const UI = {
     else if (this.worldSub === 'market') this.renderMarket();
     else if (this.worldSub === 'realm')  this.renderSecretRealm();
     else if (this.worldSub === 'boosters') this.renderBoosters();
+    else if (this.worldSub === 'feats')    this.renderAchievements();
+    else if (this.worldSub === 'dailies')  this.renderDailies();
   },
 
   // ======================================================================
@@ -2555,6 +2558,149 @@ const UI = {
       else this.toast('⭐ Thank you! (Set __gameStoreUrl to open the real store page.)');
     });
     document.body.appendChild(overlay);
+  },
+
+  // ======================================================================
+  // ACHIEVEMENTS (Round 11)
+  // ======================================================================
+  renderAchievements() {
+    const el = document.getElementById('sub-feats');
+    if (!el || !window.Achievements) return;
+    const stats = Achievements.stats();
+    const newUnlocks = Achievements.checkAll();
+    if (newUnlocks.length) {
+      newUnlocks.forEach(d => this.toast(`🏆 Achievement Unlocked: ${d.name}!`));
+    }
+
+    let html = `<div class="section-title">🏆 Cultivation Milestones
+      <small class="muted"> ${stats.unlocked}/${stats.total} unlocked · ${stats.claimed} claimed</small></div>`;
+
+    for (const cat of Achievements.CAT_ORDER) {
+      const defs = Achievements.defs.filter(d => d.cat === cat);
+      html += `<div class="ach-cat-label">${Achievements.CAT_LABELS[cat]}</div><div class="ach-list">`;
+      for (const def of defs) {
+        const unlocked = Achievements.isUnlocked(def.id);
+        const claimed  = Achievements.isClaimed(def.id);
+        const prog     = Achievements.progress(def.id);
+        const pct      = prog ? Math.round(prog.cur / prog.max * 100) : (unlocked ? 100 : 0);
+        const rewardStr = (() => {
+          const r = def.reward || {};
+          const parts = [];
+          if (r.stones) parts.push(`+${GameNumbers.formatNumber(r.stones)} Stones`);
+          if (r.eggs)   parts.push(`+${r.eggs} Beast Egg${r.eggs > 1 ? 's' : ''}`);
+          return parts.join(' · ');
+        })();
+        html += `<div class="ach-card${unlocked ? ' unlocked' : ''}${claimed ? ' claimed' : ''}">
+          <span class="ach-icon">${def.icon}</span>
+          <div class="ach-body">
+            <div class="ach-name">${def.name}</div>
+            <div class="ach-desc muted">${def.desc}</div>
+            ${prog ? `<div class="ach-bar-wrap"><div class="ach-bar" style="width:${pct}%"></div></div>
+              <div class="ach-prog muted">${prog.cur}/${prog.max}</div>` : ''}
+            ${rewardStr ? `<div class="ach-reward">${rewardStr}</div>` : ''}
+          </div>
+          <div class="ach-actions">
+            ${unlocked && !claimed ? `<button class="btn-mini claim-ach" data-id="${def.id}">Claim</button>` : ''}
+            ${claimed ? `<span class="ach-done">✓</span>` : ''}
+            ${!unlocked ? `<span class="ach-locked muted">${pct > 0 ? pct + '%' : '🔒'}</span>` : ''}
+          </div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    el.innerHTML = html;
+    el.querySelectorAll('.claim-ach').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (Achievements.claim(btn.dataset.id)) {
+          this.renderAchievements();
+          this.renderResources();
+        }
+      });
+    });
+  },
+
+  // ======================================================================
+  // DAILY MISSIONS (Round 11)
+  // ======================================================================
+  renderDailies() {
+    const el = document.getElementById('sub-dailies');
+    if (!el || !window.Dailies) return;
+
+    const missions    = Dailies.missions();
+    const streak      = Dailies.streak();
+    const allComplete = Dailies.allComplete();
+    const sealClaimed = Dailies.sealClaimed();
+    const weekReady   = Dailies.weekReady();
+
+    let html = `<div class="section-title">📋 Daily Missions</div>`;
+
+    // Streak banner
+    html += `<div class="daily-streak-banner">
+      <span class="daily-streak-fire">🔥</span>
+      <span class="daily-streak-num">${streak}</span>
+      <span class="muted"> day streak</span>
+      ${streak >= 7 ? '<span class="daily-streak-badge">Week!</span>' : ''}
+    </div>`;
+
+    // Weekly reward claim
+    if (weekReady) {
+      html += `<div class="daily-week-banner">
+        <span>🎁 <b>7-Day Streak!</b> Claim your Weekly Artifact Chest.</span>
+        <button class="btn-mini claim-week-reward" style="margin-left:auto">Claim</button>
+      </div>`;
+    }
+
+    // Mission list
+    html += `<div class="daily-mission-list">`;
+    for (const m of missions) {
+      const pct = Math.min(100, Math.round(m.progress / m.target * 100));
+      html += `<div class="daily-mission${m.completed ? ' done' : ''}">
+        <div class="daily-m-header">
+          <span class="daily-m-label">${m.label}</span>
+          <span class="daily-m-count ${m.completed ? 'complete' : ''}">${m.progress}/${m.target}</span>
+        </div>
+        <div class="daily-bar-wrap"><div class="daily-bar" style="width:${pct}%"></div></div>
+      </div>`;
+    }
+    html += `</div>`;
+
+    // Seal reward
+    html += `<div class="daily-seal-section">
+      <div class="daily-seal-title">⚜️ Cultivation Seal — ${allComplete ? (sealClaimed ? 'Active / Claimed' : 'Ready!') : 'Incomplete'}</div>
+      <div class="muted" style="font-size:12px;margin-bottom:8px">Complete all 5 missions to earn a 2-hour 2× Qi production buff.</div>`;
+    if (allComplete && !sealClaimed) {
+      html += `<button class="btn-mini claim-seal">Claim Seal (+2× Qi for 2h)</button>`;
+    }
+    html += `</div>`;
+
+    // Seal live timer is rendered by renderDailiesLive
+    html += `<div id="daily-seal-timer" class="daily-seal-timer"></div>`;
+
+    el.innerHTML = html;
+    el.querySelector('.claim-seal')?.addEventListener('click', () => {
+      if (Dailies.claimSeal()) { this.renderDailies(); this.toast('⚜️ Cultivation Seal activated! 2× Qi for 2 hours.'); }
+    });
+    el.querySelector('.claim-week-reward')?.addEventListener('click', () => {
+      if (Dailies.claimWeekReward()) { this.renderDailies(); this.toast('🎁 Weekly chest claimed! 3 Artifacts received.'); }
+    });
+    this.renderDailiesLive();
+  },
+
+  renderDailiesLive() {
+    const el = document.getElementById('daily-seal-timer');
+    if (!el || !window.Dailies) return;
+    if (Dailies.sealActive()) {
+      const left = Dailies.sealTimeLeft();
+      const h = Math.floor(left / 3600);
+      const m = Math.floor((left % 3600) / 60);
+      const s = left % 60;
+      el.textContent = `⚡ Seal active: ${h}h ${m}m ${s}s remaining`;
+      el.style.display = '';
+    } else {
+      el.textContent = '';
+      el.style.display = 'none';
+    }
   },
 };
 

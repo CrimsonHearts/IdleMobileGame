@@ -85,6 +85,7 @@ const Enchanting = {
     if (!artifact.runes) artifact.runes = [];
     if (artifact.runes.length >= MAX_RUNES) artifact.runes.shift();
     artifact.runes.push({ id: rune.id, value });
+    if (window.Dailies) Dailies.onEnchant();
     Game.persist();
     return { rune, value };
   },
