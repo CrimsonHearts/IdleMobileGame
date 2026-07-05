@@ -26,6 +26,18 @@ function freshState(shards) {
 console.log('Testing Round 13: Celestial Fracture...');
 
 // ════════════════════════════════════════════════════════════════════════
+// TEST 0 — Syntax gate: every shipped JS file must parse
+// (guards against e.g. smart-quote corruption that no eval-based test loads)
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 0: All www/js files parse');
+{
+  const cp = require('child_process');
+  const files = require('fs').readdirSync('www/js').filter(f => f.endsWith('.js'));
+  files.forEach(f => cp.execFileSync(process.execPath, ['--check', 'www/js/' + f]));
+  console.log(`    ${files.length} files parse cleanly ✓`);
+}
+
+// ════════════════════════════════════════════════════════════════════════
 // TEST 1 — Research prerequisite: tier 2 locked until tier 1 researched
 // ════════════════════════════════════════════════════════════════════════
 console.log('\n  Test 1: Research prerequisite chain');
@@ -135,10 +147,7 @@ console.log(`    Boss drop: ${boss} vs regular: ${regular} ✓`);
 console.log('\n  Test 8: shardGainMult multiplies onMobKill');
 
 Game.state = freshState(10000);
-const baseDropState = freshState(0);
-// Determine base drop without any research
-const baseDrop = Math.max(1, Math.round(Math.round(5 * 0.6) * 1)); // zone 5, no boss, mult 1
-// Now research Path C tier 1 for +25% shardGain
+// Research Path C tier 1 for +25% shardGain
 Fracture.research('fc_c1'); // requires 50 shards, we have 10000
 const multExpected = Fracture.shardGainMult();
 assert(Math.abs(multExpected - 1.25) < 0.001, `shardGainMult is 1.25 after fc_c1`);

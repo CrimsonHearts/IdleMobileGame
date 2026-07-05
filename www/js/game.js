@@ -195,6 +195,7 @@ const Game = {
     if (this.state.fracture.majorRiftsSealed === undefined) this.state.fracture.majorRiftsSealed = 0;
     if (this.state.fracture.grandRiftsSealed === undefined) this.state.fracture.grandRiftsSealed = 0;
     if (!this.state.fracture.investments) this.state.fracture.investments = {};
+    delete this.state.fracture.lastRiftTierKey; // transient log data, no longer persisted
     // R11 migrations: achievements + daily missions + lifetime counters
     if (!this.state.achievements) this.state.achievements = {};
     if (this.state.lifetimeKills              === undefined) this.state.lifetimeKills              = 0;

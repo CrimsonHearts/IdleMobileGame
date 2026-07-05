@@ -131,12 +131,13 @@ const Combat = {
   advanceWaveOrZone(clearedBoss) {
     const c = Game.state.combat;
     if (clearedBoss) {
+      const clearedZone = c.zone;
       c.highestZone = Math.max(c.highestZone || 1, c.zone + 1);
       c.zone += 1; c.wave = 1;
       this._pushLog(`⛰ Entered Zone ${c.zone}!`);
-      // Celestial Rift event (Round 13/14): tiered on zone depth.
+      // Celestial Rift event (Round 13/14): tiered on the depth of the cleared zone.
       if (window.Fracture) {
-        const riftShards = Fracture.tryRiftEvent(c.zone - 1); // zone before advance
+        const riftShards = Fracture.tryRiftEvent(clearedZone);
         if (riftShards > 0) this._pushLog(`${Fracture.lastRiftIcon()} ${Fracture.lastRiftName()} sealed! +${riftShards} Stellar Shards`);
       }
     } else {

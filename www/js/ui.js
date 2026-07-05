@@ -42,6 +42,8 @@ const UI = {
       buyButtons: document.querySelectorAll('.buy-amount-btn'),
       navBtns: document.querySelectorAll('.nav-btn'),
       tabPanels: document.querySelectorAll('.tab-panel'),
+      shards: $('res-shards'),
+      shardsChip: $('shards-chip'),
     };
     this.activeTab = 'cultivate';
 
@@ -315,12 +317,12 @@ const UI = {
     if (this.el.gen) this.el.gen.textContent = Game.state.generation || 1;
     this.el.dao.textContent = GameNumbers.formatNumber(Game.state.daoComprehension);
     this.el.tapGain.textContent = '+' + GameNumbers.formatNumber(Game.qiPerTap());
-    const shardsEl = document.getElementById('res-shards');
-    if (shardsEl) {
+    if (this.el.shards) {
       const shards = Game.state.stellarShards || 0;
-      shardsEl.textContent = GameNumbers.formatNumber(shards);
-      const chip = document.getElementById('shards-chip');
-      if (chip) chip.style.display = shards > 0 || (Game.state.combat && Game.state.combat.highestZone >= 3) ? '' : 'none';
+      this.el.shards.textContent = GameNumbers.formatNumber(shards);
+      if (this.el.shardsChip) {
+        this.el.shardsChip.style.display = shards > 0 || (Game.state.combat && Game.state.combat.highestZone >= 3) ? '' : 'none';
+      }
     }
   },
 
@@ -340,6 +342,7 @@ const UI = {
         if (this.worldSub === 'trials') this.renderTrialsLive();
         else if (this.worldSub === 'boosters') this.renderBoostersLive();
         else if (this.worldSub === 'dailies') this.renderDailiesLive();
+        else if (this.worldSub === 'fracture') this.renderFractureLive();
         break;
     }
   },
@@ -2943,6 +2946,28 @@ const UI = {
         }
       });
     });
+
+    this._fractureSig = this._fractureStateSig();
+  },
+
+  /** Signature of everything renderFracture bakes into the DOM besides the shard count. */
+  _fractureStateSig() {
+    let sig = Fracture.riftsSealed() + ':' + Fracture.majorRiftsSealed() + ':' + Fracture.grandRiftsSealed() + ':';
+    Fracture.nodes.forEach(n => { sig += Fracture.researched(n.id) ? 'r' : Fracture.canResearch(n.id) ? 'a' : 'l'; });
+    Fracture.investments.forEach(i => { sig += Fracture.invested(i.id) ? 'r' : Fracture.canInvest(i.id) ? 'a' : 'l'; });
+    return sig;
+  },
+
+  /** Lightweight per-frame update: shard counter always; full re-render only
+   *  when affordability/rift state changes (mirrors renderBoostersLive). */
+  renderFractureLive() {
+    if (!window.Fracture) return;
+    const el = document.getElementById('sub-fracture');
+    if (!el) return;
+    const amt = el.querySelector('.shard-amount');
+    if (!amt) { this.renderFracture(); return; }
+    if (this._fractureStateSig() !== this._fractureSig) { this.renderFracture(); return; }
+    amt.textContent = GameNumbers.formatNumber(Game.state.stellarShards || 0);
   },
 };
 

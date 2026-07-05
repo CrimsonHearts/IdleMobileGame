@@ -61,6 +61,11 @@ const SHARD_INVESTMENTS = [
   { id:'si_all',    name:'Primordial Fracture Core', icon:'🌌', cost:6000, desc:'+12% all stats (permanent)',            bonus:{ all:0.12 } },
 ];
 
+// Precomputed lookups so the hot-path multiplier sums stay allocation-free.
+const FRACTURE_PATH_NODES = {};
+FRACTURE_NODES.forEach(n => { (FRACTURE_PATH_NODES[n.path] = FRACTURE_PATH_NODES[n.path] || []).push(n); });
+const FRACTURE_MASTERY_LIST = Object.keys(FRACTURE_MASTERY).map(p => ({ path: p, bonus: FRACTURE_MASTERY[p].bonus }));
+
 // =============================================================================
 const Fracture = {
   nodes:       FRACTURE_NODES,
@@ -69,9 +74,13 @@ const Fracture = {
   mastery:     FRACTURE_MASTERY,
   investments: SHARD_INVESTMENTS,
 
+  _lastRift:   null,   // tier object of the most recent rift (transient, for the combat log)
+
   _s()         { return Game.state.fracture; },
   _resonance() { return this._s().resonance; },
   _invs()      { if (!this._s().investments) this._s().investments = {}; return this._s().investments; },
+
+  addShards(n) { Game.state.stellarShards = (Game.state.stellarShards || 0) + n; },
 
   // ── Resonance research ────────────────────────────────────────────────────
   researched(nodeId) { return !!this._resonance()[nodeId]; },
@@ -100,7 +109,8 @@ const Fracture = {
 
   // ── Path Mastery ──────────────────────────────────────────────────────────
   pathMastered(path) {
-    return FRACTURE_NODES.filter(n => n.path === path).every(n => this.researched(n.id));
+    const nodes = FRACTURE_PATH_NODES[path];
+    return !!nodes && nodes.every(n => this.researched(n.id));
   },
 
   // ── Shard Investments ─────────────────────────────────────────────────────
@@ -122,73 +132,55 @@ const Fracture = {
   },
 
   // ── Bonus aggregation ─────────────────────────────────────────────────────
+  // Sums a stat across researched nodes, mastered paths, and owned investments.
   // 'all' keys spread to qi / combat / loot / shardGain but not to other stats.
   _sum(stat) {
     const spreadAll = (stat === 'qi' || stat === 'combat' || stat === 'loot' || stat === 'shardGain');
+    const add = (b) => (b[stat] || 0) + (spreadAll ? (b.all || 0) : 0);
     let total = 0;
-    for (const n of FRACTURE_NODES) {
-      if (!this.researched(n.id)) continue;
-      if (n.bonus[stat])            total += n.bonus[stat];
-      if (spreadAll && n.bonus.all) total += n.bonus.all;
-    }
+    for (const n of FRACTURE_NODES)        if (this.researched(n.id))    total += add(n.bonus);
+    for (const m of FRACTURE_MASTERY_LIST) if (this.pathMastered(m.path)) total += add(m.bonus);
+    for (const inv of SHARD_INVESTMENTS)   if (this.invested(inv.id))     total += add(inv.bonus);
     return total;
   },
 
-  _masterySum(stat) {
-    const spreadAll = (stat === 'qi' || stat === 'combat' || stat === 'loot' || stat === 'shardGain');
-    let total = 0;
-    for (const [path, m] of Object.entries(FRACTURE_MASTERY)) {
-      if (!this.pathMastered(path)) continue;
-      if (m.bonus[stat])            total += m.bonus[stat];
-      if (spreadAll && m.bonus.all) total += m.bonus.all;
-    }
-    return total;
-  },
-
-  _investSum(stat) {
-    const spreadAll = (stat === 'qi' || stat === 'combat' || stat === 'loot' || stat === 'shardGain');
-    let total = 0;
-    for (const inv of SHARD_INVESTMENTS) {
-      if (!this.invested(inv.id)) continue;
-      if (inv.bonus[stat])            total += inv.bonus[stat];
-      if (spreadAll && inv.bonus.all) total += inv.bonus.all;
-    }
-    return total;
-  },
-
-  qiMult()       { return 1 + this._sum('qi')        + this._masterySum('qi')        + this._investSum('qi'); },
-  combatMult()   { return 1 + this._sum('combat')    + this._masterySum('combat')    + this._investSum('combat'); },
-  lootMult()     { return 1 + this._sum('loot')      + this._masterySum('loot')      + this._investSum('loot'); },
-  shardGainMult(){ return 1 + this._sum('shardGain') + this._masterySum('shardGain') + this._investSum('shardGain'); },
+  qiMult()       { return 1 + this._sum('qi'); },
+  combatMult()   { return 1 + this._sum('combat'); },
+  lootMult()     { return 1 + this._sum('loot'); },
+  shardGainMult(){ return 1 + this._sum('shardGain'); },
 
   // ── Shard drops (called from combat._loot) ────────────────────────────────
   onMobKill(zone, boss) {
     if (zone < 3) return 0;
     const base = boss ? Math.round(zone * 3) : Math.round(zone * 0.6);
     const shards = Math.max(1, Math.round(base * this.shardGainMult()));
-    Game.state.stellarShards = (Game.state.stellarShards || 0) + shards;
+    this.addShards(shards);
     return shards;
   },
 
   // ── Rift events (called from combat.advanceWaveOrZone after boss clear) ───
-  // Returns shard count awarded (0 if no rift triggered).
-  // Also stores the triggered tier key in state for the combat log.
+  // Picks the deepest tier whose minZone the zone satisfies, independent of
+  // RIFT_TIERS ordering, so the data table is the single source of truth.
   _riftTierForZone(zone) {
-    return RIFT_TIERS.find(t => zone >= t.minZone) || null;
+    let best = null;
+    for (const t of RIFT_TIERS) {
+      if (zone >= t.minZone && (!best || t.minZone > best.minZone)) best = t;
+    }
+    return best;
   },
 
+  // Returns shard count awarded (0 if no rift triggered). The triggered tier
+  // is kept in-memory for the combat log; persistence rides the autosave.
   tryRiftEvent(zone) {
-    if (zone < 5) return 0;
     const tier = this._riftTierForZone(zone);
     if (!tier || Math.random() > tier.prob) return 0;
     const shards = Math.max(5, Math.round(zone * 5 * tier.shardMult * this.shardGainMult()));
-    Game.state.stellarShards = (Game.state.stellarShards || 0) + shards;
+    this.addShards(shards);
     const s = this._s();
-    s.riftsSealed     = (s.riftsSealed     || 0) + 1;
+    s.riftsSealed = (s.riftsSealed || 0) + 1;
     if (tier.key === 'major') s.majorRiftsSealed = (s.majorRiftsSealed || 0) + 1;
     if (tier.key === 'grand') s.grandRiftsSealed = (s.grandRiftsSealed || 0) + 1;
-    s.lastRiftTierKey = tier.key;
-    Game.persist();
+    this._lastRift = tier;
     return shards;
   },
 
@@ -196,14 +188,8 @@ const Fracture = {
   majorRiftsSealed() { return this._s().majorRiftsSealed || 0; },
   grandRiftsSealed() { return this._s().grandRiftsSealed || 0; },
 
-  lastRiftIcon() {
-    const t = RIFT_TIERS.find(t => t.key === (this._s().lastRiftTierKey || 'minor'));
-    return t ? t.icon : '🌌';
-  },
-  lastRiftName() {
-    const t = RIFT_TIERS.find(t => t.key === (this._s().lastRiftTierKey || 'minor'));
-    return t ? t.name : 'Celestial Rift';
-  },
+  lastRiftIcon() { return this._lastRift ? this._lastRift.icon : '🌌'; },
+  lastRiftName() { return this._lastRift ? this._lastRift.name : 'Celestial Rift'; },
 };
 
 window.Fracture = Fracture;
