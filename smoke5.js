@@ -191,7 +191,7 @@ assert(Pets.canEvolve('crane'), 'canEvolve at level 30 star 1');
 const evolved = Pets.evolve('crane');
 assert(evolved, 'evolve() returns true');
 assert(Pets.starOf('crane') === 2, 'star incremented');
-assert(Pets.levelOf('crane') === 1, 'level reset to 1');
+assert(Pets.levelOf('crane') === 30, 'level kept after evolve (Round 10 fix — reset made evolved pets weaker)');
 
 // Can't evolve at max star
 Game.state.pets.owned['crane'] = { level: 30, star: 5 };
