@@ -2296,7 +2296,9 @@ const UI = {
     if (!queue || !queue.length) { this._dialogueShowing = false; return; }
     this._dialogueShowing = true;
     const entry = queue.shift();
-    const tagClass = entry.speaker === 'antagonist' ? 'story-antagonist' : 'story-mentor';
+    const tagClass = entry.speaker === 'antagonist' ? 'story-antagonist'
+                    : entry.speaker === 'void'       ? 'story-void'
+                    : 'story-mentor';
     const el = document.createElement('div');
     el.className = `story-toast ${tagClass}`;
     el.innerHTML = `

@@ -109,7 +109,7 @@ const SectGuild = {
   _sum(stat) {
     const sectId = Game.state.sect && Game.state.sect.id;
     if (!sectId) return 0;
-    const spreadAll = (stat === 'qi' || stat === 'combat' || stat === 'pet' || stat === 'loot' || stat === 'stones');
+    const spreadAll = (stat === 'qi' || stat === 'combat' || stat === 'pet' || stat === 'loot');
     let total = 0;
     for (const n of this.nodesFor(sectId)) {
       if (!this.researched(n.id)) continue;

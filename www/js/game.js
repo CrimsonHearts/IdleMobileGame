@@ -634,7 +634,9 @@ const Game = {
     m.allMult    *= (1 + this.meridianMult('qi'));
     m.tapMult    *= (1 + this.meridianMult('tap'));
     m.offlineBonus += this.meridianMult('offline');
-    m.pet        *= (1 + this.meridianMult('pet'));
+    // Beast Kinship scales the pet-bond FRACTION, not the baseline 1 — a player
+    // with zero pets must not get a free Qi multiplier from this node.
+    m.pet        = 1 + (m.pet - 1) * (1 + this.meridianMult('pet'));
     // Reincarnation (Round 3): Heavenly perk Qi + per-life stacking bonus.
     m.allMult *= (1 + this.perkBonus('qi'));
     m.allMult *= this.reincarnationMult();
@@ -1061,11 +1063,18 @@ const Game = {
     const wall = TimeService.now();
     if (wall > this.state.maxSeenTime) this.state.maxSeenTime = wall;
 
-    // Achievement scan every 5s (Round 11).
+    // Achievement scan every 5s (Round 11). Toast here — the periodic scan
+    // beats the Feats panel's own checkAll() to marking unlocks, so without
+    // this the panel's toast-on-unlock path never actually fires them.
     this._achievementTick = (this._achievementTick || 0) + dtSec;
     if (this._achievementTick >= 5) {
       this._achievementTick = 0;
-      if (window.Achievements) Achievements.checkAll();
+      if (window.Achievements) {
+        const unlocked = Achievements.checkAll();
+        if (unlocked.length && window.UI) {
+          unlocked.forEach(d => UI.toast(`🏆 Achievement Unlocked: ${d.name}!`));
+        }
+      }
     }
 
     // Autosave every 10s.

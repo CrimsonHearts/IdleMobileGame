@@ -53,9 +53,12 @@ const Dailies = {
     const s  = this._s();
     const td = this._today();
     if (s.day !== td) {
-      // If yesterday had all missions complete, extend the streak.
+      const todayNum = Game._dayNumber(TimeService.now());
+      // Extend the streak only if the last tracked day was truly yesterday —
+      // a multi-day gap (player away a week) must not silently preserve it.
+      const consecutive = s.dayNum !== undefined && s.dayNum === todayNum - 1;
       if (s.day !== null) {
-        if (s.allComplete) {
+        if (s.allComplete && consecutive) {
           s.streak = (s.streak || 0) + 1;
           if (s.streak >= WEEK_STREAK && !s.weekClaimed) s.weekReady = true;
         } else {
@@ -64,6 +67,7 @@ const Dailies = {
         }
       }
       s.day        = td;
+      s.dayNum     = todayNum;
       s.missions   = this._generate(td);
       s.allComplete = false;
       s.sealClaimed = false;
@@ -126,9 +130,12 @@ const Dailies = {
     if (window.Artifacts) {
       for (let i = 0; i < 3; i++) Artifacts.add(Artifacts.roll((Game.state.realm || 0) + 2));
     }
-    s.weekClaimed = true;
     s.weekReady   = false;
-    s.streak      = 0; // reset streak; start fresh
+    // Reset weekClaimed alongside streak — weekClaimed only guards against
+    // re-triggering weekReady WITHIN the current streak; leaving it true
+    // would permanently lock out every future 7-day chest.
+    s.weekClaimed = false;
+    s.streak      = 0; // reset streak; start a fresh cycle
     Game.persist();
     return true;
   },

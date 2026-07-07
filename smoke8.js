@@ -29,6 +29,7 @@ const Game = {
   state: null,
   persist() {},
   _today() { return todayStr(); },
+  _dayNumber(now) { return Math.floor((now - new Date(now).getTimezoneOffset() * 60000) / 86400000); },
   _addQi() {},
   karmaLootMult() { return 1; },
   combatUnlocked() { return true; },
@@ -164,9 +165,12 @@ console.log('    Seal claim & 2× Qi buff OK ✓');
 // ════════════════════════════════════════════════════════════════════════
 console.log('\n  Test 4: Day rollover and streak tracking');
 
+const todayNum = Game._dayNumber(TimeService.now());
+
 Game.state = freshState();
-// Simulate a completed day.
+// Simulate a completed day that really was yesterday (consecutive).
 Game.state.dailies.day       = 'yesterday';
+Game.state.dailies.dayNum    = todayNum - 1;
 Game.state.dailies.allComplete = true;
 Game.state.dailies.streak    = 0;
 
@@ -174,7 +178,7 @@ Game.state.dailies.streak    = 0;
 const newMissions = Dailies.missions();
 assert(Game.state.dailies.day === todayStr(), 'day updated to today on rollover');
 assert(newMissions.length === 5, '5 new missions generated');
-assert(Game.state.dailies.streak === 1, 'streak incremented to 1 after completed day');
+assert(Game.state.dailies.streak === 1, 'streak incremented to 1 after completed consecutive day');
 assert(Game.state.dailies.allComplete === false, 'allComplete reset to false');
 assert(Game.state.dailies.sealClaimed === false, 'sealClaimed reset to false');
 console.log('    Day rollover & streak increment OK ✓');
@@ -186,6 +190,7 @@ console.log('\n  Test 5: Streak resets when day incomplete');
 
 Game.state = freshState();
 Game.state.dailies.day       = 'yesterday';
+Game.state.dailies.dayNum    = todayNum - 1;
 Game.state.dailies.allComplete = false; // incomplete!
 Game.state.dailies.streak    = 5;
 
@@ -194,12 +199,29 @@ assert(Game.state.dailies.streak === 0, 'streak reset to 0 after incomplete day'
 console.log('    Streak reset on incomplete day OK ✓');
 
 // ════════════════════════════════════════════════════════════════════════
+// TEST 5b — Streak breaks on a multi-day gap even if that last day was
+// completed (regression: streak previously survived any-length gaps)
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 5b: Streak resets on non-consecutive gap');
+
+Game.state = freshState();
+Game.state.dailies.day       = 'five days ago';
+Game.state.dailies.dayNum    = todayNum - 5; // NOT yesterday — a real gap
+Game.state.dailies.allComplete = true;        // that day WAS fully completed
+Game.state.dailies.streak    = 5;
+
+Dailies.missions(); // rollover
+assert(Game.state.dailies.streak === 0, 'streak resets to 0 across a multi-day gap, even if allComplete was true');
+console.log('    Non-consecutive gap resets streak OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
 // TEST 6 — Weekly reward: weekReady fires at streak 7
 // ════════════════════════════════════════════════════════════════════════
 console.log('\n  Test 6: Weekly reward unlocks at 7-day streak');
 
 Game.state = freshState();
 Game.state.dailies.day       = 'yesterday';
+Game.state.dailies.dayNum    = todayNum - 1;
 Game.state.dailies.allComplete = true;
 Game.state.dailies.streak    = 6; // one more will hit 7
 
@@ -208,6 +230,30 @@ assert(Game.state.dailies.streak === 7, 'streak is 7');
 assert(Game.state.dailies.weekReady === true, 'weekReady set to true');
 assert(Dailies.weekReady() === true, 'weekReady() accessor returns true');
 console.log('    Weekly reward flag OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
+// TEST 6b — Weekly reward can be earned again after a second 7-day streak
+// (regression: weekClaimed used to lock the chest out forever after one claim)
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 6b: Weekly chest re-earnable after a second streak');
+
+assert(Dailies.claimWeekReward() === true, 'first weekly chest claims successfully');
+assert(Game.state.dailies.weekClaimed === false, 'weekClaimed resets after claim, not stuck true');
+assert(Game.state.dailies.streak === 0, 'streak reset to 0 to start a fresh cycle');
+
+// Play out 7 more consecutive completed days.
+let n = Game._dayNumber(TimeService.now());
+for (let i = 1; i <= 7; i++) {
+  Game.state.dailies.day       = 'cycle-2-day-' + i;
+  Game.state.dailies.dayNum    = n + i - 1;
+  Game.state.dailies.allComplete = true;
+  _now += 24 * 3600 * 1000; // advance the clock so _today()/dayNumber both roll forward
+  Dailies.missions(); // trigger rollover
+}
+assert(Game.state.dailies.streak === 7, `second streak reaches 7 (got ${Game.state.dailies.streak})`);
+assert(Dailies.weekReady() === true, 'weekReady true again after a second full streak');
+assert(Dailies.claimWeekReward() === true, 'second weekly chest claims successfully — not locked out');
+console.log('    Weekly chest re-earnable OK ✓');
 
 // ════════════════════════════════════════════════════════════════════════
 // TEST 7 — Achievements: unlock + claim lifecycle

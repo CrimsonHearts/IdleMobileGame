@@ -60,7 +60,8 @@ const Pets = {
     return this.active().reduce((s, id) => s + this.atkOf(id), 0) * sect;
   },
   combatHp() {
-    return this.active().reduce((s, id) => s + this.hpOf(id), 0);
+    const sect = (window.Sect && Sect.petBonusMult) ? Sect.petBonusMult() : 1;
+    return this.active().reduce((s, id) => s + this.hpOf(id), 0) * sect;
   },
 
   // -- Taming (gacha with Beast Eggs) --------------------------------------

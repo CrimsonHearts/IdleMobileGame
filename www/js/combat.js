@@ -103,14 +103,14 @@ const Combat = {
       const shards = Fracture.onMobKill(c.zone, mob.boss);
       if (shards > 0) this._pushLog(`✦ +${shards} Stellar Shards`);
     }
-    // A little Qi too.
-    Game._addQi(mob.maxHp * 2);
+    // A little Qi too. Use baseHp (pre-trialHard) — same reasoning as stones above.
+    Game._addQi(baseHp * 2);
     // Blood Essence: tempering currency drawn from battle itself.
     const blood = Math.max(1, Math.round(baseHp * 0.01 * (window.Challenges ? Challenges.bloodMult() : 1) * trialMult
                    * (window.Boosters ? Boosters.lootMult() : 1)));
     if (window.Blood) Blood.gain(blood);
-    // Sect contribution from battle.
-    Sect.addContribution(Math.round(mob.maxHp * 0.02));
+    // Sect contribution from battle. Use baseHp — same reasoning as stones above.
+    Sect.addContribution(Math.round(baseHp * 0.02));
     let egg = false;
     const luck = (window.Spirit ? Spirit.luckMult() : 1) * (window.Challenges ? Challenges.eggMult() : 1)
                * (window.Boosters ? Boosters.luckMult() : 1); // Cultivation Boosters: Lucky Star (Round 9)

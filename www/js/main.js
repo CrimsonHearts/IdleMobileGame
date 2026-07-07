@@ -25,6 +25,10 @@
 
   // 4. Build & render UI.
   UI.init();
+  // Show the quest badge for any reward left unclaimed from a prior session —
+  // checkAll() only reports quests completing THIS tick, so a quest completed
+  // last session (and never claimed) would otherwise leave the badge hidden.
+  if (window.Quests) UI.updateQuestBadge();
   if (window.Onboarding) Onboarding.init();
   UI.showWelcomeBack(offline);
 

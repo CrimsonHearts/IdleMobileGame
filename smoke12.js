@@ -101,6 +101,68 @@ assert(qpsAfter > qpsBefore, 'Stellar Qi research raises real qi/s through Game.
 console.log(`    Research raises qi/s: ${qpsBefore.toFixed(1)} → ${qpsAfter.toFixed(1)} ✓`);
 
 // ════════════════════════════════════════════════════════════════════════
+// TEST 5b — Regression: meridian pet bonus must not create a free Qi
+// multiplier when the player owns zero pets (m.pet baseline bug)
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 5b: Meridian pet bonus does not affect zero-pet baseline');
+Game.state.pets = { owned: {}, active: [] }; // own nothing
+const mBefore = Game.multipliers();
+assert(mBefore.pet === 1, 'm.pet is 1 with zero pets and no meridian node');
+Game.state.meridians['az4'] = true; // Beast Kinship: +25% spirit-beast bonuses
+const mAfter = Game.multipliers();
+assert(Math.abs(mAfter.pet - 1) < 1e-9, `m.pet stays 1 with zero pets even after opening a +pet meridian node (got ${mAfter.pet})`);
+delete Game.state.meridians['az4'];
+console.log('    Meridian pet baseline OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
+// TEST 5c — Regression: Pets.combatHp() applies the same sect bonus as
+// combatAtk()/qiMult() instead of silently skipping pet HP
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 5c: Pets.combatHp() applies sect bonus like combatAtk()');
+// Pull a real pet id straight from the pets module's own data table.
+const somePetId = Pets.rollPet().id;
+Game.state.pets = { owned: { [somePetId]: { level: 5, star: 1 } }, active: [somePetId] };
+const rawHp = Pets.hpOf(somePetId);
+const sectMult = (window.Sect && Sect.petBonusMult) ? Sect.petBonusMult() : 1;
+assert(Math.abs(Pets.combatHp() - rawHp * sectMult) < 1e-6,
+  `combatHp() = rawHp * sect.petBonusMult() (got ${Pets.combatHp().toFixed(2)}, expected ${(rawHp * sectMult).toFixed(2)})`);
+console.log('    Pets.combatHp() sect parity OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
+// TEST 5d — Regression: Trial of Steel challenge must not inflate Qi-per-kill
+// or Sect contribution by the 3× mob-HP multiplier (matches the Round 10 fix
+// already applied to stones/blood — Qi & contribution had been missed)
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 5d: Trial of Steel does not inflate Qi/contribution');
+const realTrialHard = Challenges.trialHard;
+Game.state.sect = { id: 'sword', contribution: 0 };
+Combat._mob = null;
+Game.state.combat = { zone: 3, wave: 1, highestZone: 3, playerHp: null, paused: false };
+Challenges.trialHard = () => false;
+Combat.spawnMob();
+const mobNormal = Combat._mob;
+const qiBefore = Game.state.qi, contribBefore = Sect.contribution();
+Combat._loot(mobNormal);
+const qiGainNormal = Game.state.qi - qiBefore, contribGainNormal = Sect.contribution() - contribBefore;
+
+Challenges.trialHard = () => true;
+Combat._mob = null;
+Combat.spawnMob(); // same zone/wave → same baseHp, this time with 3× HP inflation applied on top
+const mobHard = Combat._mob;
+assert(mobHard.baseHp === mobNormal.baseHp, 'baseHp unaffected by trialHard (sanity)');
+assert(mobHard.maxHp > mobNormal.maxHp, 'maxHp inflated 3× under Trial of Steel (sanity)');
+const qiBefore2 = Game.state.qi, contribBefore2 = Sect.contribution();
+Combat._loot(mobHard);
+const qiGainHard = Game.state.qi - qiBefore2, contribGainHard = Sect.contribution() - contribBefore2;
+Challenges.trialHard = realTrialHard;
+
+assert(Math.abs(qiGainHard - qiGainNormal) < 1e-6,
+  `Qi-per-kill unaffected by Trial of Steel HP inflation (normal ${qiGainNormal}, hard ${qiGainHard})`);
+assert(Math.abs(contribGainHard - contribGainNormal) < 1e-6,
+  `Sect contribution unaffected by Trial of Steel HP inflation (normal ${contribGainNormal}, hard ${contribGainHard})`);
+console.log('    Trial of Steel Qi/contribution OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
 // TEST 6 — Save round-trip: persist → load → init, state fully intact
 // ════════════════════════════════════════════════════════════════════════
 console.log('\n  Test 6: Save round-trip');

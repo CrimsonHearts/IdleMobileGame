@@ -710,8 +710,10 @@ small { font-weight:400; }
   box-shadow:var(--shadow); border:2px solid var(--jade-soft); }
 .story-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 .story-toast.story-antagonist { border-color:#e7c9c9; }
+.story-toast.story-void { border-color:#a880e0; background:linear-gradient(160deg,var(--surface) 0%,#f3edff 100%); }
 .story-toast-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; font-weight:800; font-size:13px; color:var(--jade-d); }
 .story-toast.story-antagonist .story-toast-head { color:var(--gold-d); }
+.story-toast.story-void .story-toast-head { color:#6236b0; }
 .story-toast-icon { font-size:1.2rem; }
 .story-toast-body { line-height:1.55; }
 
