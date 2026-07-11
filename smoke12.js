@@ -89,6 +89,40 @@ assert(!Quests.claim('fracture_premonition'), 'double-claim rejected');
 console.log('    Quests OK ✓');
 
 // ════════════════════════════════════════════════════════════════════════
+// TEST 4b — Regression: Act II quest gates must not be trivially satisfied
+// the instant their `after` predecessor unlocks them (redundant-condition
+// bugs: ancient_memory used realm>=6, weaker than its own ancestor
+// act1_end's realm>=7; major_rift's zone fallback duplicated fracture_
+// spreads' exact zone>=10 gate, so it always auto-passed).
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 4b: Act II quest gates require genuine forward progress');
+
+// Mark every quest through fracture_deepening as already completed (as the
+// `after` chain requires) without satisfying ancient_memory's OWN condition yet.
+['fracture_premonition', 'fracture_first_rift', 'fracture_cold_calculations',
+ 'fracture_the_voice', 'fracture_spreads', 'fracture_act1_end', 'fracture_deepening']
+  .forEach(id => { Quests.state.completed[id] = true; });
+Game.state.fracture.riftsSealed = 10; // exactly deepening's own threshold, not yet ancient_memory's
+let done2 = Quests.checkAll().map(q => q.id);
+assert(!done2.includes('fracture_ancient_memory'),
+  'ancient_memory does NOT auto-complete the instant its gate opens (needs riftsSealed>=15, not just the chain)');
+Game.state.fracture.riftsSealed = 15;
+done2 = Quests.checkAll().map(q => q.id);
+assert(done2.includes('fracture_ancient_memory'), 'ancient_memory completes once riftsSealed actually reaches 15');
+
+// Now do the same for major_rift's zone fallback.
+Quests.state.completed['fracture_ancient_memory'] = true;
+Game.state.fracture.majorRiftsSealed = 0;
+Game.state.combat.highestZone = 10; // satisfies the OLD buggy fallback; must NOT be enough now
+let done3 = Quests.checkAll().map(q => q.id);
+assert(!done3.includes('fracture_major_rift'),
+  'major_rift does NOT auto-complete at zone 10 (that threshold belongs to its ancestor fracture_spreads)');
+Game.state.combat.highestZone = 13;
+done3 = Quests.checkAll().map(q => q.id);
+assert(done3.includes('fracture_major_rift'), 'major_rift completes once genuinely past zone 13');
+console.log('    Act II quest gates OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
 // TEST 5 — Fracture research through real state
 // ════════════════════════════════════════════════════════════════════════
 console.log('\n  Test 5: Fracture research end-to-end');
@@ -217,13 +251,64 @@ assert(Game.state.stellarShards >= preOffline.shards, 'offline combat shards acc
 console.log(`    Offline OK — +${Math.round(Game.state.qi - preOffline.qi)} qi, +${Game.state.stellarShards - preOffline.shards} shards ✓`);
 
 // ════════════════════════════════════════════════════════════════════════
-// TEST 9 — Corrupt save resilience
+// TEST 8b — Anti-cheat: an UNSYNCED backward clock jump is still flagged
+// (regression guard: the drift fix below must not weaken real detection)
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 8b: Unsynced backward clock jump still flagged as cheating');
+const realIsSynced = TimeService.isSynced;
+TimeService.isSynced = () => false; // simulate offline / never synced
+const flagsBefore = Game.state.cheatFlags || 0;
+Game.state.maxSeenTime = TimeService.now() + 3600 * 1000; // 1h "in the future"
+Game.state.lastSaved   = Game.state.maxSeenTime;
+const cheatRes = Game.applyOffline();
+assert(cheatRes.cheated === true, 'unsynced backward jump still flagged as cheated');
+assert((Game.state.cheatFlags || 0) === flagsBefore + 1, 'cheatFlags incremented');
+assert(cheatRes.gained === 0, 'zero Qi granted on a flagged jump');
+TimeService.isSynced = realIsSynced;
+console.log('    Unsynced backward jump detection OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
+// TEST 8c — Anti-cheat: a SYNCED clock correction is trusted, not flagged
+// (regression: a fast device clock recorded an inflated maxSeenTime while
+// offline; reconnecting and syncing must not brick offline earnings forever)
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 8c: Synced clock correction is trusted, not flagged');
+TimeService.isSynced = () => true; // simulate a fresh, trusted server sync
+const flagsBefore2 = Game.state.cheatFlags || 0;
+const trueNow = TimeService.now();
+Game.state.maxSeenTime = trueNow + 3600 * 1000; // stale, drift-inflated high-water mark
+Game.state.lastSaved   = Game.state.maxSeenTime;
+const syncRes = Game.applyOffline();
+assert(syncRes.cheated === false, 'synced correction is NOT flagged as cheating');
+assert((Game.state.cheatFlags || 0) === flagsBefore2, 'cheatFlags NOT incremented on a trusted correction');
+assert(Game.state.maxSeenTime <= trueNow + 1000, 'maxSeenTime corrected down to the trusted reading');
+TimeService.isSynced = realIsSynced;
+console.log('    Synced clock correction OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
+// TEST 9 — Corrupt / malformed save resilience
 // ════════════════════════════════════════════════════════════════════════
 console.log('\n  Test 9: Corrupt save resilience');
 localStorage.setItem(GameData.saveKey, '{not valid json!!!');
 assert(Storage.load() === null, 'corrupt JSON returns null (fresh start), no throw');
 localStorage.setItem(GameData.saveKey, '"just a string"');
 assert(Storage.load() === null, 'non-object save returns null');
+localStorage.setItem(GameData.saveKey, '[1,2,3]');
+assert(Storage.load() === null, 'array save rejected (JSON.stringify would silently drop named props)');
 console.log('    Corrupt save OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
+// TEST 9b — A save missing `owned` entirely must not crash Game.init
+// (regression: this was an unguarded dereference that bricked boot)
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 9b: Malformed save (missing `owned`) self-heals instead of crashing');
+Game.init({ qi: 42, version: GameData.saveVersion }); // no `owned` field at all
+assert(Game.state.owned && typeof Game.state.owned === 'object', 'owned backfilled to {}');
+assert(Game.state.qi === 42, 'other fields from the malformed save are preserved');
+// Mirror main.js's real boot order (Quests/Life/Family/Market init after Game.init)
+// before ticking, matching how the app actually recovers from a bad save.
+Life.init(); Family.init(); Quests.init();
+Game.tick(); // must not throw
+console.log('    Malformed-save self-heal OK ✓');
 
 console.log('\n✓ All smoke12 integration tests passed.');

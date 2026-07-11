@@ -131,6 +131,11 @@ const Game = {
 
   init(loaded) {
     this.state = loaded || this.newState();
+    // A malformed/partial save (or a save from a build predating `owned`)
+    // must self-heal here rather than crash the generator backfill below.
+    if (!this.state.owned || typeof this.state.owned !== 'object' || Array.isArray(this.state.owned)) {
+      this.state.owned = {};
+    }
     // Backfill any new generators / fields added in updates.
     GameData.generators.forEach(g => {
       if (this.state.owned[g.id] === undefined) this.state.owned[g.id] = 0;
@@ -1101,6 +1106,16 @@ const Game = {
     // If the clock now reads EARLIER than the latest time we ever saw, the
     // user almost certainly rolled their clock back. Grant nothing and flag.
     if (now < maxSeen - 60 * 1000) { // 60s grace for tz/DST/jitter
+      // Exception: a server-synced `now()` is anchored to the actual HTTP
+      // Date header, not the (possibly drifted/fast) device clock — the user
+      // cannot manipulate it. A dip here means a PRIOR reading was inflated
+      // by unsynced device-clock drift, not that this one was rolled back.
+      // Trust the correction instead of punishing an honest player for it.
+      if (TimeService.isSynced()) {
+        this.state.maxSeenTime = now;
+        this.state.lastSaved = now;
+        return { seconds: 0, gained: 0, capped: false, cheated: false };
+      }
       this.state.cheatFlags = (this.state.cheatFlags || 0) + 1;
       this.state.lastSaved = now;
       // Don't lower maxSeenTime — keeps the cheat "sticky".

@@ -27,7 +27,10 @@ const Storage = {
       if (!raw) raw = localStorage.getItem(this._OLD_KEY);
       if (!raw) return null;
       const data = JSON.parse(raw);
-      if (!data || typeof data !== 'object') return null;
+      // Reject anything that isn't a plain save object — arrays pass
+      // `typeof === 'object'` but JSON.stringify silently drops named
+      // properties on them, which would corrupt every future save.
+      if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
       return data;
     } catch (e) {
       console.warn('Load failed', e);

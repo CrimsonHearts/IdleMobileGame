@@ -311,9 +311,9 @@ const QUEST_DEFS = [
   {
     id: 'fracture_ancient_memory', category: 'story', after: 'fracture_deepening', order: 20, icon: '🍵',
     title: 'Ancient Memory',
-    desc:  'Reach the Void Refinement realm — Granny Su shares what she has kept hidden.',
-    hint:  'Break through to the Void Refinement realm (realm 6).',
-    check: () => Game.state.realm >= 6,
+    desc:  'Seal 15 Celestial Rifts — Granny Su shares what she has kept hidden.',
+    hint:  'Keep sealing Rifts in the Trials — reach 15 total.',
+    check: () => Game.state.fracture && Game.state.fracture.riftsSealed >= 15,
     reward: { dao: 6, shards: 200 },
     rewardText: '+6 Dao & 200 Stellar Shards',
     dialogue: [
@@ -329,9 +329,9 @@ const QUEST_DEFS = [
     id: 'fracture_major_rift', category: 'story', after: 'fracture_ancient_memory', order: 21, icon: '💫',
     title: 'Escalation',
     desc:  'Survive a Major Rift — the fractures are deepening in quality, not just quantity.',
-    hint:  'Push to Zone 10 in the Trials where Major Rifts can form.',
+    hint:  'Keep pushing past Zone 13 in the Trials, where Major Rifts have had time to form.',
     check: () => (Game.state.fracture && Game.state.fracture.majorRiftsSealed >= 1) ||
-                 (Game.state.combat && Game.state.combat.highestZone >= 10),
+                 (Game.state.combat && Game.state.combat.highestZone >= 13),
     reward: { dao: 7, shards: 350 },
     rewardText: '+7 Dao & 350 Stellar Shards',
     dialogue: [

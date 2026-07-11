@@ -14,11 +14,23 @@
 
   // 3. Load save (or start fresh) and initialise the engine.
   const saved = Storage.load();
-  Game.init(saved);
-  if (window.Life) Life.init();
-  if (window.Family) Family.init();
-  if (window.Quests) Quests.init();
-  if (window.Market) Market.init();
+  const initAll = (state) => {
+    Game.init(state);
+    if (window.Life) Life.init();
+    if (window.Family) Family.init();
+    if (window.Quests) Quests.init();
+    if (window.Market) Market.init();
+  };
+  try {
+    initAll(saved);
+  } catch (e) {
+    // A malformed/tampered save shouldn't permanently brick the app — fall
+    // back to a fresh game rather than leaving the player on a dead page,
+    // and wipe the bad save so this doesn't repeat on every future launch.
+    console.error('Save appears corrupted — starting a fresh game.', e);
+    Storage.wipe();
+    initAll(null);
+  }
 
   // 3. Apply offline progress with anti-cheat checks.
   const offline = Game.applyOffline();
