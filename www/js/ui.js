@@ -771,11 +771,12 @@ const UI = {
 
     let html = `<div class="section-title">⚗️ Pill Alchemy <small>💠 ${GameNumbers.formatNumber(stones)}</small></div>`;
     html += `<div id="alchemy-buffs" class="alchemy-buffs">${this._buffsHtml(buffs)}</div>`;
-    html += `<div class="hint">Brew pills with 💠 Spirit Stones (earned in Trials & the Secret Realm), then consume them for powerful buffs.</div>`;
+    html += `<div class="hint">Brew pills with 💠 Spirit Stones (earned in Trials & the Secret Realm), then consume them for powerful buffs. Using more of the same pill extends its timer; a different pill of the same kind stacks its multiplier on top.</div>`;
     html += `<div class="pill-list">`;
     GameData.pills.forEach(p => {
       const owned = Game.pillCount(p.id);
       const canBrew = stones >= p.cost;
+      const maxBrew = Game.maxAffordablePills(p.id);
       html += `
         <div class="pill-row">
           <span class="pill-ico">${p.icon}</span>
@@ -784,8 +785,14 @@ const UI = {
             <span class="pill-desc">${p.desc}</span>
           </span>
           <span class="pill-actions">
-            <button class="btn-mini pill-brew" data-pill="${p.id}" ${canBrew?'':'disabled'}>Brew 💠${GameNumbers.formatNumber(p.cost)}</button>
-            <button class="btn-mini pill-use" data-pill="${p.id}" ${owned>0?'':'disabled'}>Use</button>
+            <span class="pill-action-row">
+              <button class="btn-mini pill-brew" data-pill="${p.id}" data-amt="1" ${canBrew?'':'disabled'}>Brew 💠${GameNumbers.formatNumber(p.cost)}</button>
+              <button class="btn-mini pill-brew" data-pill="${p.id}" data-amt="max" ${maxBrew>0?'':'disabled'}>Max ×${maxBrew}</button>
+            </span>
+            <span class="pill-action-row">
+              <button class="btn-mini pill-use" data-pill="${p.id}" data-amt="1" ${owned>0?'':'disabled'}>Use</button>
+              <button class="btn-mini pill-use" data-pill="${p.id}" data-amt="max" ${owned>0?'':'disabled'}>Use ×${owned}</button>
+            </span>
           </span>
         </div>`;
     });
@@ -793,16 +800,23 @@ const UI = {
     el.innerHTML = html;
 
     el.querySelectorAll('.pill-brew[data-pill]').forEach(b => b.addEventListener('click', () => {
-      if (Game.craftPill(b.dataset.pill)) {
-        this.toast(`⚗️ Brewed ${Game.pillDef(b.dataset.pill).name}`);
+      const id = b.dataset.pill;
+      const count = b.dataset.amt === 'max' ? Game.maxAffordablePills(id) : 1;
+      if (count > 0 && Game.craftPill(id, count)) {
+        const p = Game.pillDef(id);
+        this.toast(`⚗️ Brewed ${count > 1 ? count + '× ' : ''}${p.name}`);
         this.renderAlchemy(); this.renderResources();
       }
     }));
     el.querySelectorAll('.pill-use[data-pill]').forEach(b => b.addEventListener('click', () => {
-      const res = Game.usePill(b.dataset.pill);
+      const id = b.dataset.pill;
+      const count = b.dataset.amt === 'max' ? Game.pillCount(id) : 1;
+      if (count < 1) return;
+      const res = Game.usePill(id, count);
       if (res) {
         const p = res.pill;
-        this.toast(p.type === 'buff' ? `${p.icon} ${this._buffLabel(p.buff)} buff active!` : `${p.icon} ${p.name} consumed!`);
+        const qty = res.count > 1 ? `${res.count}× ` : '';
+        this.toast(p.type === 'buff' ? `${p.icon} ${qty}${this._buffLabel(p.buff)} buff active!` : `${p.icon} ${qty}${p.name} consumed!`);
         this.renderAlchemy(); this.renderResources(); this.renderRealm();
       }
     }));

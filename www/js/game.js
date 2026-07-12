@@ -529,35 +529,50 @@ const Game = {
   pillDef(id) { return GameData.pills.find(p => p.id === id); },
   pillCount(id) { return this.state.pillBag[id] || 0; },
 
-  craftPill(id) {
+  craftPill(id, count = 1) {
     const p = this.pillDef(id);
-    if (!p || this.state.spiritStones < p.cost) return false;
-    this.state.spiritStones -= p.cost;
-    this.state.pillBag[id] = this.pillCount(id) + 1;
+    if (!p || count < 1) return false;
+    const totalCost = p.cost * count;
+    if (this.state.spiritStones < totalCost) return false;
+    this.state.spiritStones -= totalCost;
+    this.state.pillBag[id] = this.pillCount(id) + count;
     this.persist();
     return true;
   },
-
-  usePill(id) {
+  /** How many of a pill can be brewed right now (flat cost, so no geometric series like generators). */
+  maxAffordablePills(id) {
     const p = this.pillDef(id);
-    if (!p || this.pillCount(id) < 1) return false;
-    this.state.pillBag[id] -= 1;
+    if (!p || p.cost <= 0) return 0;
+    return Math.floor(this.state.spiritStones / p.cost);
+  },
+
+  /** Consume `count` of a pill at once. Buff pills stack the same way
+   *  Boosters do: reusing the SAME pill extends its own timer additively
+   *  (Math.max(endsAt, now) + duration*count); a DIFFERENT pill sharing the
+   *  same buff key gets its own tracked entry, so its multiplier compounds
+   *  with the first via buffMult()'s existing "multiply every matching
+   *  entry" loop — e.g. Spirit Gathering Pill (×2 Qi) and Enlightenment
+   *  Pill (×3 Qi) active together give ×6 Qi, not one overwriting the other. */
+  usePill(id, count = 1) {
+    const p = this.pillDef(id);
+    if (!p || count < 1 || this.pillCount(id) < count) return false;
+    this.state.pillBag[id] -= count;
     if (p.type === 'buff') {
-      // Refresh any existing buff of the same key, else add.
       const now = TimeService.now();
-      const existing = this.state.buffs.find(b => b.buff === p.buff);
-      const endsAt = now + p.durationSec * 1000;
-      if (existing) { existing.mult = p.mult; existing.endsAt = Math.max(existing.endsAt, endsAt); }
-      else this.state.buffs.push({ buff: p.buff, mult: p.mult, endsAt });
+      const existing = this.state.buffs.find(b => b.pillId === p.id);
+      const base = existing ? Math.max(existing.endsAt, now) : now;
+      const endsAt = base + p.durationSec * 1000 * count;
+      if (existing) { existing.mult = p.mult; existing.endsAt = endsAt; }
+      else this.state.buffs.push({ buff: p.buff, mult: p.mult, endsAt, pillId: p.id });
     } else if (p.instant === 'eggs') {
-      this.state.beastEggs = (this.state.beastEggs || 0) + (p.amount || 1);
+      this.state.beastEggs = (this.state.beastEggs || 0) + (p.amount || 1) * count;
     } else if (p.instant === 'runqi') {
       const req = this.nextStageReq();
-      const add = req ? req * (p.frac || 0.25) : this.qiPerSecond() * 600;
+      const add = (req ? req * (p.frac || 0.25) : this.qiPerSecond() * 600) * count;
       this._addQi(add);
     }
     this.persist();
-    return { pill: p };
+    return { pill: p, count };
   },
 
   /** Product of active buff multipliers of a given key (prunes expired). */
