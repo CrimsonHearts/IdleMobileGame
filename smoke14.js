@@ -46,7 +46,7 @@ eval(require('fs').readFileSync('www/js/family.js', 'utf8'));
 function freshState() {
   return {
     qi: 0, realm: 3, name: 'TestCultivator', gender: 'male',
-    spiritualRoot: GameData.spiritualRoots[0],
+    spiritualRoot: GameData.spiritualRoots[0], daoComprehension: 0,
     traits: [], generation: 1, legacyBonus: 0, lineage: [], houseReputation: 0,
     life: { money: 1000000, age: 18, ageAcc: 0, intellect: 0, charm: 0, talent: 0, education: 0, study: null, jobId: null, jobXp: 0 },
     family: null,
@@ -279,8 +279,68 @@ assert(Game.state.family.spouse.bond === 0, 'spouse.bond backfilled');
 assert(Game.state.family.spouse.marriedAtAge === 18, 'spouse.marriedAtAge backfilled from life.age');
 assert(Game.state.family.children[0].path === null, 'child.path backfilled');
 assert(Game.state.family.children[0].lastStage === 'child', 'child.lastStage backfilled from current age');
+assert(Game.state.family.children[0].spouse === null, 'child.spouse backfilled');
 assert(Array.isArray(Game.state.family.candidates[0].milestonesSeen), 'candidate.milestonesSeen backfilled');
 Family.tick(1); // must not throw on the migrated shape
 console.log('    Round-15 migration OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
+// TEST 13 — Child marriage: eligibility gating (stage + affordability)
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 13: Child marriage eligibility gating');
+Game.state = freshState();
+Family.init();
+Game.state.life.money = 100000;
+const kidChild = { name: 'Kid Child', age: 5, root: GameData.spiritualRoots[0], traits: [], nurture: 0, path: null, lastStage: 'child', spouse: null };
+const kidYouth = { name: 'Kid Youth', age: 12, root: GameData.spiritualRoots[0], traits: [], nurture: 0, path: null, lastStage: 'youth', spouse: null };
+const kidAdult = { name: 'Kid Adult', age: 20, root: GameData.spiritualRoots[0], traits: [], nurture: 0, path: null, lastStage: 'adult', spouse: null };
+Game.state.family.children = [kidChild, kidYouth, kidAdult];
+assert(!Family.canArrangeMarriage(kidChild), 'a Child-stage kid cannot be married off');
+assert(!Family.canArrangeMarriage(kidYouth), 'a Youth-stage kid cannot be married off');
+assert(Family.canArrangeMarriage(kidAdult), 'an Adult-stage kid CAN be married off');
+Game.state.life.money = 0;
+assert(!Family.canArrangeMarriage(kidAdult), 'insufficient funds blocks arranging a marriage');
+console.log('    Child marriage eligibility OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
+// TEST 14 — Child marriage: arrangeMarriage() deducts cost, grants a
+// root-scaled gift, sets child.spouse, and feeds familyMult()
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 14: arrangeMarriage() end-to-end');
+Game.state = freshState();
+Family.init();
+Game.state.life.money = 100000;
+Game.state.family.children = [{ name: 'Marriageable', age: 20, root: GameData.spiritualRoots[0], traits: [], nurture: 0, path: null, lastStage: 'adult', spouse: null }];
+const moneyBefore = Game.state.life.money;
+const daoBefore = Game.state.daoComprehension;
+const multBefore = Family.familyMult();
+const marriageRes = Family.arrangeMarriage(0);
+assert(marriageRes, 'arrangeMarriage returns a result object on success');
+assert(Game.state.family.children[0].spouse !== null, 'child.spouse is now set');
+assert(Game.state.family.children[0].spouse.name === marriageRes.spouse.name, 'result matches the assigned spouse');
+const expectedMoney = moneyBefore - 2500 + marriageRes.gift; // CHILD_MARRIAGE_COST
+assert(Game.state.life.money === expectedMoney, `money = before - cost + gift (got ${Game.state.life.money}, expected ${expectedMoney})`);
+assert(Game.state.daoComprehension > daoBefore, 'dao comprehension gifted from the in-laws');
+assert(!Family.canArrangeMarriage(Game.state.family.children[0]), 'cannot arrange a second marriage for the same child');
+assert(Family.arrangeMarriage(0) === null, 'arrangeMarriage rejects an already-married child');
+assert(Family.familyMult() > multBefore, 'familyMult() increases once a child is married');
+console.log(`    arrangeMarriage: gift=¥${marriageRes.gift}, familyMult ${multBefore.toFixed(3)} -> ${Family.familyMult().toFixed(3)} ✓`);
+
+// ════════════════════════════════════════════════════════════════════════
+// TEST 15 — Child marriage feeds the Ancestor Hall's marriedChildCount
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 15: summaryForLineage() reports married children');
+Game.state = freshState();
+Family.init();
+Game.state.life.money = 100000;
+Game.state.family.children = [
+  { name: 'Married Kid', age: 20, root: GameData.spiritualRoots[0], traits: [], nurture: 0, path: null, lastStage: 'adult', spouse: null },
+  { name: 'Single Kid',  age: 20, root: GameData.spiritualRoots[0], traits: [], nurture: 0, path: null, lastStage: 'adult', spouse: null },
+];
+Family.arrangeMarriage(0);
+const lineageSummary = Family.summaryForLineage(null);
+assert(lineageSummary.childCount === 2, 'summary counts all children');
+assert(lineageSummary.marriedChildCount === 1, 'summary counts only the married child');
+console.log('    marriedChildCount OK ✓');
 
 console.log('\n✓ All smoke14 tests passed.');

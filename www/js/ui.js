@@ -1234,7 +1234,7 @@ const UI = {
           <span class="li-main">
             <span class="li-name">Gen ${g.generation}: ${g.name}</span>
             <span class="li-sub">${g.root} · reached ${g.realmReached}${g.endedAtAge != null ? ` at age ${g.endedAtAge}` : ''}</span>
-            <span class="li-sub">${g.spouseName ? `Married ${g.spouseName} · ` : ''}${g.childCount} child${g.childCount === 1 ? '' : 'ren'}${g.heirName ? ` · succeeded by ${g.heirName}` : ' · line continued by a distant descendant'}</span>
+            <span class="li-sub">${g.spouseName ? `Married ${g.spouseName} · ` : ''}${g.childCount} child${g.childCount === 1 ? '' : 'ren'}${g.marriedChildCount ? ` (${g.marriedChildCount} wed)` : ''}${g.heirName ? ` · succeeded by ${g.heirName}` : ' · line continued by a distant descendant'}</span>
           </span>`;
         list.appendChild(d);
       });

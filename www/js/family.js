@@ -45,8 +45,16 @@ const DESTINED_ENCOUNTERS = [
   'Threads of red destiny coil between you, visible only to those who have touched the Dao.',
   'Starlight bent around them as they turned to you, as if the firmament approved.',
 ];
+const CHILD_MARRIAGE_FLAVOR = [
+  'A matchmaker from a respected house came calling, and the match was too good to refuse.',
+  'They met at a sect gathering and the elders needed little convincing.',
+  'A family debt of honor, repaid in the oldest currency — a good marriage.',
+  'Neither planned it, but the tea ceremony went well and nobody objected.',
+];
 
 const MAX_CHILDREN = 6;
+const CHILD_MARRIAGE_COST = 2500;
+const CHILD_MARRIAGE_BOND = 0.02; // household bonus per married child
 const SPOUSAL_EVENT_EVERY_SEC = 300;   // ~5 min of married play between checks
 const SPOUSAL_EVENT_CHANCE    = 0.35;
 const WIDOW_EVENT_MIN_AGE_MARRIED = 8; // years married before it can even roll
@@ -82,6 +90,7 @@ const Family = {
     f.children.forEach(c => {
       if (c.path === undefined) c.path = null;
       if (c.lastStage === undefined) c.lastStage = this.stageOf(c.age).key;
+      if (c.spouse === undefined) c.spouse = null;
     });
     f.candidates.forEach(c => { if (!Array.isArray(c.milestonesSeen)) c.milestonesSeen = []; });
     if (!f.candidates.length && !f.spouse) this._seed();
@@ -162,7 +171,7 @@ const Family = {
   },
 
   // -- Bonuses (read by Game.multipliers) ----------------------------------
-  /** Household cultivation multiplier: spouse (base + bond) + children (base + cultivation-path). */
+  /** Household cultivation multiplier: spouse (base + bond) + children (base + cultivation-path + married-in-laws). */
   familyMult() {
     const s = this.s();
     let m = 1;
@@ -172,6 +181,7 @@ const Family = {
     }
     m += s.children.length * 0.05;
     m += this.childCultivationBonus();
+    m += this.childMarriageBonus();
     return m;
   },
   /** +0 to +0.15 as spouse bond climbs from 0 to 100. */
@@ -187,6 +197,10 @@ const Family = {
   /** Combat bonus from children on the Martial path (read by Combat). */
   combatBonus() {
     return this.s().children.reduce((sum, c) => sum + (c.path === 'martial' ? 0.04 : 0), 0);
+  },
+  /** Sum of a small bonus per married child — new in-laws strengthen the house. */
+  childMarriageBonus() {
+    return this.s().children.reduce((sum, c) => sum + (c.spouse ? CHILD_MARRIAGE_BOND : 0), 0);
   },
 
   // -- Romance actions ------------------------------------------------------
@@ -323,6 +337,7 @@ const Family = {
       nurture: 0,
       path: null,
       lastStage: 'infant',
+      spouse: null,
     };
     s.children.push(child);
     const cd = window.Game && Game.modVal ? Game.modVal('childCd') : 1;
@@ -352,7 +367,7 @@ const Family = {
     const child = {
       name: this._name(), gender: Math.random() < 0.5 ? 'female' : 'male',
       root: roots[idx], age: 0, traits: this._rollTraits(1), nurture: 0, adopted: true,
-      path: null, lastStage: 'infant',
+      path: null, lastStage: 'infant', spouse: null,
     };
     s.children.push(child);
     Game.persist();
@@ -380,6 +395,37 @@ const Family = {
     child.path = pathId;
     Game.persist();
     return true;
+  },
+
+  // -- Child marriages: an arranged match, not a full courtship ------------
+  canArrangeMarriage(child) {
+    return !child.spouse
+        && this.stageIndex(this.stageOf(child.age).key) >= this.stageIndex('adult')
+        && Game.state.life && Game.state.life.money >= CHILD_MARRIAGE_COST;
+  },
+  /** Roll a simple in-law partner for a child — an arrangement, not a courtship. */
+  _makeChildSpouse() {
+    const root = GameData.rollSpiritualRoot('free');
+    return {
+      name: this._name(),
+      gender: Math.random() < 0.5 ? 'female' : 'male',
+      root,
+      profession: this._pick(PROFESSIONS),
+      trait: this._pick(TRAITS),
+    };
+  },
+  arrangeMarriage(index) {
+    const child = this.s().children[index];
+    if (!child || !this.canArrangeMarriage(child)) return null;
+    Game.state.life.money -= CHILD_MARRIAGE_COST;
+    const spouse = this._makeChildSpouse();
+    child.spouse = spouse;
+    // Wedding gifts from the in-laws — richer roots bring a richer dowry.
+    const gift = Math.round(1000 * spouse.root.mult);
+    Game.state.life.money += gift;
+    Game.state.daoComprehension = (Game.state.daoComprehension || 0) + Math.ceil(spouse.root.mult);
+    Game.persist();
+    return { child, spouse, gift, story: this._pick(CHILD_MARRIAGE_FLAVOR) };
   },
 
   /** Called on every player age-up (life.js tick). Advances children a year,
@@ -444,6 +490,7 @@ const Family = {
       realmReached: (window.GameData && GameData.realms[Game.state.realm]) ? GameData.realms[Game.state.realm].name : '—',
       spouseName: s.spouse ? s.spouse.name : null,
       childCount: s.children.length,
+      marriedChildCount: s.children.filter(c => c.spouse).length,
       heirName: heir ? heir.name : null,
       endedAtAge: Game.state.life ? Game.state.life.age : null,
     };
@@ -580,12 +627,15 @@ const Family = {
       const maxed = nLvl >= GameData.nurture.maxLevel;
       const stage = this.stageOf(ch.age);
       const pathDef = ch.path ? GameData.childPaths.find(p => p.id === ch.path) : null;
+      const canMarry = this.canArrangeMarriage(ch);
       d.innerHTML = `<span class="li-icon" style="color:${ch.root.color}">${stage.icon}</span>
         <span class="li-main">
           <span class="li-name">${ch.name}${ch.adopted?' <span class="badge">adopted</span>':''} <span class="badge stage-badge">${stage.name}</span></span>
           <span class="li-sub">Age ${ch.age} · <span style="color:${ch.root.color}">${ch.root.name}</span> · Tutored Lv ${nLvl}/${GameData.nurture.maxLevel}${pathDef ? ` · ${pathDef.icon} ${pathDef.name}` : ''}</span>
+          ${ch.spouse ? `<span class="li-sub">💍 Married to ${ch.spouse.name}, <span style="color:${ch.spouse.root.color}">${ch.spouse.root.name}</span></span>` : ''}
           ${this._traitChips(ch.traits)}
           ${this.canChoosePath(ch) ? `<div class="path-choice-row" data-i="${i}">${GameData.childPaths.map(p => `<button class="btn-mini path-btn" data-path="${p.id}" title="${p.desc}">${p.icon} ${p.name}</button>`).join('')}</div>` : ''}
+          ${canMarry ? `<button class="btn-mini marry-child-btn" data-i="${i}">💍 Arrange Marriage (¥${GameNumbers.formatNumber(CHILD_MARRIAGE_COST)})</button>` : ''}
         </span>
         <button class="btn-mini tutor-btn" data-i="${i}" ${canT?'':'disabled'}>${maxed?'✓ Raised':'Tutor ¥'+GameNumbers.formatNumber(cost)}</button>`;
       kids.appendChild(d);
@@ -601,6 +651,13 @@ const Family = {
         const p = GameData.childPaths.find(x => x.id === pathId);
         this.render(el); UI.renderResources();
         UI.toast(`${p.icon} ${this.s().children[i].name} takes up the ${p.name}.`);
+      }
+    }));
+    kids.querySelectorAll('.marry-child-btn').forEach(b => b.addEventListener('click', () => {
+      const res = this.arrangeMarriage(parseInt(b.dataset.i, 10));
+      if (res) {
+        this.render(el); UI.renderResources();
+        UI.toast(`💍 ${res.child.name} marries ${res.spouse.name}! +¥${GameNumbers.formatNumber(res.gift)} in wedding gifts.`);
       }
     }));
     const hc = el.querySelector('#have-child');

@@ -1551,6 +1551,7 @@ small { font-weight:400; }
 .child-item .li-main { width:100%; }
 .path-choice-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
 .path-choice-row .path-btn { font-size:11px; }
+.marry-child-btn { margin-top:8px; display:block; }
 
 /* -- Heir eligibility (death modal) ---------------------------------------- */
 .heir-card.ineligible { opacity:.5; cursor:not-allowed; }
