@@ -1206,6 +1206,27 @@ small { font-weight:400; }
 .ev-karma { font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap; }
 .ev-karma.good { color:var(--jade-d); background:var(--jade-soft); }
 .ev-karma.bad { color:#c8503f; background:#fdeef0; }
+.ev-odds { font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap;
+  color:var(--gold-d); background:var(--gold-soft); }
+
+/* Academy Electives grid + Career rank/specialization (Round 17) */
+.elective-grid { display:flex; flex-direction:column; gap:10px; }
+.elective-path { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px; }
+.elective-path.mastered { border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-soft); }
+.ep-header { font-size:13px; font-weight:700; color:var(--text); margin-bottom:8px;
+  display:flex; align-items:center; gap:6px; }
+.ep-tiers { display:flex; gap:6px; }
+.ep-tier { flex:1; border-radius:10px; padding:8px 6px; text-align:center; border:1px solid var(--line);
+  background:var(--surface-2); font-family:inherit; cursor:default; }
+.ep-tier.available { cursor:pointer; border-color:var(--jade); background:var(--jade-soft); }
+.ep-tier.available:active { transform:scale(.97); }
+.ep-tier.done { border-color:var(--gold); background:var(--gold-soft); }
+.ep-tier.locked { opacity:.5; }
+.ept-name { font-size:11px; font-weight:600; color:var(--text); line-height:1.25; margin-bottom:3px; }
+.ept-cost { font-size:10.5px; color:var(--muted); }
+.ept-status { font-size:10.5px; color:var(--gold-d); font-weight:700; }
+.ep-mastery-row { margin-top:8px; font-size:11.5px; color:var(--gold-d); font-weight:600; }
+.job-rank-title { font-size:12px; font-weight:600; color:var(--gold-d); }
 
 /* -- Offline progress report ---------------------------------------------- */
 .offline-report { margin-top:12px; text-align:left; }

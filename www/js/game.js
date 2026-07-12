@@ -338,13 +338,23 @@ const Game = {
   /** Apply a life-event option's effects (mutates state). */
   applyEventEffects(eff) {
     if (!eff) return;
-    if (eff.money && this.state.life) this.state.life.money += eff.money;
+    if (eff.money && this.state.life) this.state.life.money = Math.max(0, this.state.life.money + eff.money);
     if (eff.talent && this.state.life) this.state.life.talent += eff.talent;
     if (eff.qiPct) this.state.questPermanentBonus = (this.state.questPermanentBonus || 0) + eff.qiPct;
     if (eff.qiHours) this._addQi(this.qiPerSecond() * 3600 * eff.qiHours + 100);
     if (eff.combatBuffSec) this.state.combatBuffEndsAt = TimeService.now() + eff.combatBuffSec * 1000;
     if (eff.lifespanLoss && this.state.life) this.state.life.age += eff.lifespanLoss;
     if (eff.adopt && window.Family && Family.adoptChild) Family.adoptChild();
+    // Round 17 — Study/Work skill-check event effects.
+    if (eff.intellect && this.state.life) this.state.life.intellect = Math.max(0, this.state.life.intellect + eff.intellect);
+    if (eff.charm && this.state.life) this.state.life.charm = Math.max(0, this.state.life.charm + eff.charm);
+    if (eff.jobXp && this.state.life) this.state.life.jobXp = Math.max(0, this.state.life.jobXp + eff.jobXp);
+    // Money granted/deducted as N seconds' worth of the current job's pay
+    // rate, so a flat-looking event reward auto-scales across job tiers.
+    if (eff.jobBonusSeconds && this.state.life) {
+      const amt = (window.Life ? Life.jobPayRate() : 0) * eff.jobBonusSeconds;
+      this.state.life.money = Math.max(0, this.state.life.money + amt);
+    }
   },
   payEventCost(cost) {
     if (!cost) return true;
@@ -651,6 +661,8 @@ const Game = {
     if (window.Dailies) m.allMult *= Dailies.qiMult();
     // Fracture Resonance: Stellar Qi path (Round 13)
     if (window.Fracture) m.allMult *= Fracture.qiMult();
+    // Elective "Qi Refinement Science" path (Round 17)
+    if (window.Life && this.state.life) m.allMult *= Life.qiStudyMult();
     // Meridian tree (Round 2): Qi, tap, offline, beast bonuses.
     m.allMult    *= (1 + this.meridianMult('qi'));
     m.tapMult    *= (1 + this.meridianMult('tap'));
@@ -1067,6 +1079,13 @@ const Game = {
       this.state.life.jobId = null; this.state.life.jobXp = 0;
       this.state.life.intellect = 0; this.state.life.charm = 0;
       this.state.life.talent = nurtureLvl * N.talentPerLevel; // tutoring pays off
+      // Round 17: electives/rank/specialization are earned this-lifetime,
+      // same as education/jobXp — the heir starts their own academic career.
+      this.state.life.electives = {};
+      this.state.life.jobRankClaimed = 0;
+      this.state.life.jobSpecialization = null;
+      this.state.life.studyEventAcc = 0;
+      this.state.life.workEventAcc = 0;
     }
     if (window.Family) this.state.family = Family.fresh();
     if (window.Family) Family.init();

@@ -207,7 +207,9 @@ const Family = {
   _gain(cand, base) {
     const charm = (Game.state.life && Game.state.life.charm) || 0;
     const charmMod = window.Game && Game.modVal ? Game.modVal('charm') : 1;
-    cand.affinity = Math.min(100, cand.affinity + base * (1 + charm * 0.01) * charmMod);
+    // Elective "Arts & Diplomacy" path (Round 17): boosts affinity-gain rate.
+    const lifeMod = window.Life && Life.courtshipMult ? Life.courtshipMult() : 1;
+    cand.affinity = Math.min(100, cand.affinity + base * (1 + charm * 0.01) * charmMod * lifeMod);
     this._updatePrimary(cand);
     this._tryCourtshipScene(cand);
   },

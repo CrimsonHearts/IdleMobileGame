@@ -807,6 +807,142 @@ const GameData = {
       ] },
   ],
 
+  /* ── Modern life-sim: Academy & Career base tables (life.js) ─────────────
+   * Kept in GameData (not local consts) so Study/Work line up with every
+   * other depth system (Family, Fracture) that stores its tables here.
+   */
+  courses: [
+    { id: 'self',     name: 'Self-Study Basics',   eduLevel: 1, cost: 0,      dur: 30,  grants: { intellect: 5,   talent: 2,   charm: 1 } },
+    { id: 'high',     name: 'High School Diploma',  eduLevel: 2, cost: 500,    dur: 75,  grants: { intellect: 15,  talent: 6,   charm: 5 } },
+    { id: 'uni',      name: 'University Degree',     eduLevel: 3, cost: 8000,   dur: 150, grants: { intellect: 45,  talent: 18,  charm: 10 } },
+    { id: 'dao',      name: 'Dao Cultivation Academy', eduLevel: 4, cost: 90000, dur: 300, grants: { intellect: 90, talent: 60, charm: 18 } },
+    { id: 'immortal', name: 'Immortal Institute',    eduLevel: 5, cost: 1.2e6,  dur: 600, grants: { intellect: 180, talent: 150, charm: 35 } },
+  ],
+  jobs: [
+    { id: 'courier',   name: 'Spirit Courier',       reqEdu: 0, pay: 2,     icon: '🛵' },
+    { id: 'clerk',     name: 'Corp Office Clerk',     reqEdu: 2, pay: 18,    icon: '💼' },
+    { id: 'engineer',  name: 'Qi-Tech Engineer',      reqEdu: 3, pay: 140,   icon: '🔧' },
+    { id: 'alchemist', name: 'Licensed Alchemist',    reqEdu: 4, pay: 1300,  icon: '⚗️' },
+    { id: 'exec',      name: 'Corporate Cultivator',  reqEdu: 5, pay: 12000, icon: '🏢' },
+  ],
+
+  /* ── Academy & Career depth (Round 17) ────────────────────────────────────
+   * Study: once University-educated, a parallel Elective grid unlocks
+   * alongside the base ladder (4 paths × 3 tiers, mastery-bonus capstone —
+   * same path/tier/mastery shape as the Fracture Resonance Tree). Only one
+   * activity — a base course OR an elective — can be in progress at a time,
+   * sharing life.study's slot via a `kind` tag.
+   * Work: job levels (unchanged, +10%/level, cap 50) now also cross discrete
+   * promotion Ranks with one-time pay bonuses, and unlock a permanent
+   * Specialization choice at the "Expert" rank.
+   * Both also gain rare active-play events (skill checks with a risk/reward
+   * choice), mirroring the karma life-event pattern above but scoped to
+   * whichever activity — studying or working — is currently in progress.
+   */
+  study: {
+    electiveMinEdu: 3,   // University Degree required before electives unlock
+    eventEverySec: 200,  // ~ once every 3-4 min of active studying
+    eventChance: 0.5,
+  },
+  work: {
+    eventEverySec: 200,
+    eventChance: 0.5,
+  },
+
+  electivePathLabels: {
+    cultivation: 'Cultivation Theory',
+    refinement:  'Qi Refinement Science',
+    business:    'Business Studies',
+    arts:        'Arts & Diplomacy',
+  },
+  // bonus keys: talent (→ Life.talentMult), qi (→ Life.qiStudyMult, folds into
+  // Game.multipliers().allMult), pay (→ Life.jobPayRate), courtship (→ Family
+  // affinity-gain rate via Life.courtshipMult). Each is an additive fraction.
+  electiveNodes: [
+    // Path: Cultivation Theory — talent stat + talent-multiplier bonus.
+    { id: 'el_cul1', path: 'cultivation', tier: 1, name: 'Meridian Fundamentals',   icon: '🧘', cost: 4000,   dur: 80,  grants: { talent: 20,  intellect: 5  }, bonus: { talent: 0.03 } },
+    { id: 'el_cul2', path: 'cultivation', tier: 2, name: 'Advanced Dao Theory',     icon: '🧘', cost: 22000,  dur: 180, grants: { talent: 55,  intellect: 10 }, bonus: { talent: 0.05 } },
+    { id: 'el_cul3', path: 'cultivation', tier: 3, name: 'Heavenly Insight Thesis', icon: '🧘', cost: 110000, dur: 360, grants: { talent: 140, intellect: 20 }, bonus: { talent: 0.08 } },
+    // Path: Qi Refinement Science — intellect stat + global Qi production bonus.
+    { id: 'el_ref1', path: 'refinement', tier: 1, name: 'Qi Flow Modeling',    icon: '🌀', cost: 4000,   dur: 80,  grants: { intellect: 25  }, bonus: { qi: 0.03 } },
+    { id: 'el_ref2', path: 'refinement', tier: 2, name: 'Resonance Engineering', icon: '🌀', cost: 22000,  dur: 180, grants: { intellect: 60  }, bonus: { qi: 0.05 } },
+    { id: 'el_ref3', path: 'refinement', tier: 3, name: 'Grand Refinement Thesis', icon: '🌀', cost: 110000, dur: 360, grants: { intellect: 150 }, bonus: { qi: 0.08 } },
+    // Path: Business Studies — intellect/charm + career pay-rate bonus.
+    { id: 'el_biz1', path: 'business', tier: 1, name: 'Market Fundamentals', icon: '💹', cost: 4000,   dur: 80,  grants: { intellect: 15, charm: 5  }, bonus: { pay: 0.05 } },
+    { id: 'el_biz2', path: 'business', tier: 2, name: 'Applied Economics',   icon: '💹', cost: 22000,  dur: 180, grants: { intellect: 35, charm: 10 }, bonus: { pay: 0.09 } },
+    { id: 'el_biz3', path: 'business', tier: 3, name: 'Executive Strategy',  icon: '💹', cost: 110000, dur: 360, grants: { intellect: 80, charm: 20 }, bonus: { pay: 0.14 } },
+    // Path: Arts & Diplomacy — charm stat + courtship affinity-gain bonus.
+    { id: 'el_art1', path: 'arts', tier: 1, name: 'Social Grace',      icon: '🎭', cost: 4000,   dur: 80,  grants: { charm: 25,  intellect: 5  }, bonus: { courtship: 0.08 } },
+    { id: 'el_art2', path: 'arts', tier: 2, name: 'Cultured Rhetoric', icon: '🎭', cost: 22000,  dur: 180, grants: { charm: 60,  intellect: 10 }, bonus: { courtship: 0.12 } },
+    { id: 'el_art3', path: 'arts', tier: 3, name: 'Master Diplomat',   icon: '🎭', cost: 110000, dur: 360, grants: { charm: 140, intellect: 15 }, bonus: { courtship: 0.18 } },
+  ],
+  // Capstone bonus on top of the summed tier bonuses once all 3 tiers of a
+  // path are complete (same shape as FRACTURE_MASTERY).
+  electiveMastery: {
+    cultivation: { name: 'Enlightened Scholar',  desc: '+6% Talent multiplier (path mastered)',           bonus: { talent: 0.06 } },
+    refinement:  { name: 'Grand Refiner',        desc: '+6% Qi production (path mastered)',               bonus: { qi: 0.06 } },
+    business:    { name: 'Titan of Industry',    desc: '+10% career pay (path mastered)',                 bonus: { pay: 0.10 } },
+    arts:        { name: 'Silver-Tongued Sage',  desc: '+12% courtship affinity gain (path mastered)',    bonus: { courtship: 0.12 } },
+  },
+
+  // Shared promotion ladder, applied within whichever job is currently held.
+  // bonusPaySeconds is paid out as `Life.jobPayRate() * bonusPaySeconds`, so
+  // the reward auto-scales whether you're a Courier or a Corporate Cultivator.
+  jobRanks: [
+    { atLevel: 0,  title: 'Trainee' },
+    { atLevel: 10, title: 'Associate', bonusPaySeconds: 120 },
+    { atLevel: 20, title: 'Senior',    bonusPaySeconds: 600 },
+    { atLevel: 35, title: 'Expert',    bonusPaySeconds: 1800, unlocksSpecialization: true },
+    { atLevel: 50, title: 'Master',    bonusPaySeconds: 6000 },
+  ],
+  // Chosen once, permanently, on reaching "Expert" in the current job.
+  // Resets along with jobXp on a job switch or reincarnation.
+  jobSpecializations: [
+    { id: 'climber',   name: 'The Climber',   icon: '📈', desc: '+25% career pay — pure ambition, nothing else.', payMult: 0.25 },
+    { id: 'connector', name: 'The Connector', icon: '🤝', desc: '+12% career pay and +25 Charm from the connections you build.', payMult: 0.12, bonusCharm: 25 },
+  ],
+
+  // Active-play skill-check events — fire rarely while studying/working.
+  // A "risk" option rolls successChance and applies success/fail effects; a
+  // "safe" option applies its own flat (usually empty) effects immediately.
+  // Effect keys are handled centrally by Game.applyEventEffects.
+  studyEvents: [
+    { id: 'se_debate', title: "A Rival's Challenge", icon: '🗣️',
+      text: 'A sharp-tongued classmate challenges your grasp of the material in front of everyone.',
+      options: [
+        { label: 'Rise to the challenge', successChance: 0.6,
+          success: { effects: { talent: 10, intellect: 5 }, toast: 'You out-argue them completely! (+10 Talent, +5 Intellect)' },
+          fail:    { effects: { money: -300 }, toast: 'You stumble and pay for a tutor to catch up. (-¥300)' } },
+        { label: 'Let it go', effects: {}, toast: 'Not worth the energy. You return to your books.' },
+      ] },
+    { id: 'se_extracredit', title: 'Extra Credit Offer', icon: '📚',
+      text: 'Your instructor offers an optional, brutal extra assignment for bonus marks.',
+      options: [
+        { label: 'Take it on', successChance: 0.65,
+          success: { effects: { intellect: 15 }, toast: 'Grueling, but it pays off. (+15 Intellect)' },
+          fail:    { effects: { charm: -5 }, toast: 'You botch the presentation. A little embarrassing. (-5 Charm)' } },
+        { label: 'Skip it', effects: {}, toast: 'You keep to the standard curriculum.' },
+      ] },
+  ],
+  workEvents: [
+    { id: 'we_overtime', title: 'Overtime Opportunity', icon: '🕒',
+      text: 'Your supervisor asks if you can stay late to close out an urgent job.',
+      options: [
+        { label: 'Stay late', successChance: 0.7,
+          success: { effects: { jobXp: 180 }, toast: 'Impressive work ethic, noticed. (+3min job experience)' },
+          fail:    { effects: { jobXp: -60 }, toast: "You're exhausted and make mistakes. (-1min job experience)" } },
+        { label: 'Go home', effects: {}, toast: 'Rest matters too.' },
+      ] },
+    { id: 'we_pitch', title: 'Client Pitch', icon: '💼',
+      text: 'A new client wants someone to lead the pitch meeting. It could go very well — or very badly.',
+      options: [
+        { label: 'Lead the pitch', successChance: 0.55,
+          success: { effects: { jobBonusSeconds: 600 }, toast: 'The client loves it! A fat bonus lands in your account.' },
+          fail:    { effects: { jobBonusSeconds: -120 }, toast: 'It falls flat. Your next paycheck takes a hit.' } },
+        { label: 'Let a manager handle it', effects: {}, toast: 'Safe, but unremarkable.' },
+      ] },
+  ],
+
   /* ── Artifacts / equipment (Round 6 depth) ──────────────────────────────
    * 4 slots × 5 rarities, drawn from Trials & Secret Realm loot. Matching SET
    * pieces escalate bonuses, so the loadout becomes a build decision. */

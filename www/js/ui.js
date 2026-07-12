@@ -1079,6 +1079,34 @@ const UI = {
     document.body.appendChild(overlay);
   },
 
+  /** A Study/Work active-play skill-check event (Round 17): a "risk" option
+   *  rolls its successChance client-side-visible odds; a "safe" option just
+   *  applies its (usually empty) effects. Mirrors showLifeEvent's shape. */
+  showLifeSkillEvent(kind, ev) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <h2>${ev.icon || ''} ${ev.title}</h2>
+        <p>${ev.text}</p>
+        <div class="event-options">
+          ${ev.options.map((o, i) => {
+            const odds = o.successChance !== undefined ? `<span class="ev-odds">${Math.round(o.successChance * 100)}% success</span>` : '';
+            return `<button class="event-opt" data-i="${i}"><span>${o.label}</span>${odds}</button>`;
+          }).join('')}
+        </div>
+      </div>`;
+    overlay.querySelectorAll('.event-opt').forEach(b => b.addEventListener('click', () => {
+      const res = Life.resolveLifeSkillEvent(kind, ev.id, parseInt(b.dataset.i, 10));
+      if (!res) return;
+      overlay.remove();
+      this.renderActiveTab();
+      this.renderResources();
+      if (res.outcome && res.outcome.toast) this.toast(res.outcome.toast);
+    }));
+    document.body.appendChild(overlay);
+  },
+
   /** Lifespan reached: choose an heir and continue the bloodline. */
   showDeathModal() {
     if (this._deathShown) return;
