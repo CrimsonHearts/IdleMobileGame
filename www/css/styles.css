@@ -640,6 +640,13 @@ small { font-weight:400; }
   border-radius:8px; padding:0.5rem; margin:0.4rem 0;
 }
 
+.roll-odds-breakdown {
+  text-align:center; font-size:0.72rem; color:var(--text-soft);
+  margin:-0.2rem 0 0.5rem; display:flex; flex-wrap:wrap;
+  justify-content:center; gap:0 0.5rem;
+}
+.roll-odds-breakdown span { font-weight:700; }
+
 .leftover-reward {
   text-align:center; font-size:0.8rem;
   color:#f59e0b; background:rgba(245,158,11,.08);

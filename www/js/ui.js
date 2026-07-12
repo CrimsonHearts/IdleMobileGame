@@ -1973,28 +1973,44 @@ const UI = {
   },
 
   // -- Character creation (Gacha system) -----------------------------------
+  /** Shared rarity ordering for comparing two Spiritual Root objects. */
+  _rootRank(root) { return ['mortal', 'true', 'heaven', 'saint', 'chaos'].indexOf(root.key); },
+
   /**
-   * @param {object} [presetRoot] a root already secured via a Spirit Root
-   *   Pack purchase (guaranteed or rolled) — opens with this as the current
-   *   best instead of re-rolling from scratch and silently discarding what
-   *   the player just paid for. Doesn't count against the free-roll budget.
-   * @param {number} [bonusRolls] extra free rolls granted by that same pack
-   *   (e.g. Wanderer's Fate), added on top of the standard 100.
+   * State carried across a character-creation session even when the modal
+   * gets torn down and rebuilt (buying a Spirit Root Pack does this — see
+   * showPackGrantResult). Mirrors the existing this._creationName pattern:
+   *   _creationBestRoot  — the best root secured so far (purchase or roll).
+   *   _creationFloorTier — the minimum tier a purchased pack has secured;
+   *                        every future roll this session must respect it
+   *                        (buying a min_true pack removes Mortal from the
+   *                        pool for the rest of the session, etc.).
+   *   _creationBonusRolls — extra rolls granted by purchased packs, added
+   *                         on top of the standard 100.
    */
-  showCharacterCreation(presetRoot, bonusRolls) {
+  showCharacterCreation() {
     const overlay = this._openModal();
     if (!overlay) return;
     overlay.id = 'creation-overlay';
     let gender = 'male';
-    let currentRoot = presetRoot || GameData.rollSpiritualRoot('free');
-    let rollsUsed = presetRoot ? 0 : 1;
-    const maxFreeRolls = 100 + (bonusRolls || 0);
+    let currentRoot = this._creationBestRoot || GameData.rollSpiritualRoot('free');
+    let rollsUsed = this._creationBestRoot ? 0 : 1;
+    const maxFreeRolls = 100 + (this._creationBonusRolls || 0);
     let bestRoot = currentRoot;
     let isRolling = false;
     let packsShown = false; // auto-show the packs popup once, when free rolls run out
+    // A purchased pack's tier floor — null once it's already the max tier
+    // (Chaos), meaning there's nothing left to roll for.
+    const floorMode = GameData.rollModeForFloor(this._creationFloorTier || 'mortal');
 
-    const rootRarityOrder = ['mortal', 'true', 'heaven', 'saint', 'chaos'];
-    const rootRank = r => rootRarityOrder.indexOf(r.key);
+    const rootRank = r => this._rootRank(r);
+
+    const oddsBreakdown = () => {
+      if (!floorMode) return `<div class="hint">You've already secured the rarest root — no further rolling needed.</div>`;
+      return `<div class="roll-odds-breakdown">${GameData.rollOdds(floorMode)
+        .map(o => `<span style="color:${o.root.color}">${o.root.name.replace(' Spirit Root', '')} ${o.pct.toFixed(1)}%</span>`)
+        .join(' · ')}</div>`;
+    };
 
     const leftoverRewards = (rollsLeft) => {
       if (rollsLeft <= 0) return '';
@@ -2014,7 +2030,7 @@ const UI = {
     const render = () => {
       const g = GameData.genders[gender];
       const rollsLeft = maxFreeRolls - rollsUsed;
-      const canRoll = rollsLeft > 0 && !isRolling;
+      const canRoll = rollsLeft > 0 && !isRolling && !!floorMode;
 
       overlay.innerHTML = `
         <div class="modal creation gacha-modal">
@@ -2036,11 +2052,14 @@ const UI = {
             <div class="gacha-bar-wrap"><div class="gacha-bar" style="width:${(rollsUsed/maxFreeRolls*100).toFixed(1)}%"></div></div>
           </div>
 
-          ${rollsLeft > 0 ? `
+          ${rollsLeft > 0 && floorMode ? `
           <div class="gacha-btn-row">
             <button id="roll-1" class="gacha-roll-btn" ${!canRoll?'disabled':''}>🎲 Roll ×1<span class="roll-odds">Free</span></button>
             <button id="roll-10" class="gacha-roll-btn roll-10-btn" ${rollsLeft<10||!canRoll?'disabled':''}>🎲 Roll ×10<span class="roll-odds">Free</span></button>
           </div>
+          ${oddsBreakdown()}
+          ` : !floorMode ? `
+          <div class="gacha-exhausted">🌟 You've secured the rarest root — no further rolling needed! Your root: <b style="color:${bestRoot.color}">${bestRoot.name}</b></div>
           ` : `
           <div class="gacha-exhausted">🌟 All free rolls used! Your best root: <b style="color:${bestRoot.color}">${bestRoot.name}</b></div>
           <button id="open-packs" class="open-packs-btn">🔮 Want a stronger root? View Spirit Root Packs</button>
@@ -2080,12 +2099,12 @@ const UI = {
       // Roll ×1
       const roll1Btn = overlay.querySelector('#roll-1');
       if (roll1Btn) roll1Btn.addEventListener('click', () => {
-        if (isRolling || rollsUsed >= maxFreeRolls) return;
+        if (isRolling || rollsUsed >= maxFreeRolls || !floorMode) return;
         this._creationName = overlay.querySelector('#creation-name')?.value || '';
         isRolling = true;
         render();
         setTimeout(() => {
-          currentRoot = GameData.rollSpiritualRoot('free');
+          currentRoot = GameData.rollSpiritualRoot(floorMode);
           rollsUsed = Math.min(rollsUsed + 1, maxFreeRolls);
           if (rootRank(currentRoot) > rootRank(bestRoot)) bestRoot = currentRoot;
           isRolling = false;
@@ -2098,14 +2117,14 @@ const UI = {
       // Roll ×10
       const roll10Btn = overlay.querySelector('#roll-10');
       if (roll10Btn) roll10Btn.addEventListener('click', () => {
-        if (isRolling || rollsUsed + 10 > maxFreeRolls) return;
+        if (isRolling || rollsUsed + 10 > maxFreeRolls || !floorMode) return;
         this._creationName = overlay.querySelector('#creation-name')?.value || '';
         isRolling = true;
         render();
         setTimeout(() => {
           let lastRoot = currentRoot;
           for (let i = 0; i < 10 && rollsUsed < maxFreeRolls; i++) {
-            lastRoot = GameData.rollSpiritualRoot('free');
+            lastRoot = GameData.rollSpiritualRoot(floorMode);
             rollsUsed++;
             if (rootRank(lastRoot) > rootRank(bestRoot)) bestRoot = lastRoot;
           }
@@ -2131,6 +2150,10 @@ const UI = {
         this.renderAll();
         overlay.remove();
         this.toast(`☯ Welcome, ${Game.state.name}. Your ${bestRoot.name} Root awakens!`);
+        // Clear session-scoped creation state now that it's been consumed.
+        this._creationBestRoot = null;
+        this._creationFloorTier = null;
+        this._creationBonusRolls = 0;
       });
 
       // Portrait
@@ -2185,6 +2208,11 @@ const UI = {
 
     ov.querySelectorAll('.pack-row[data-pack]').forEach(btn => {
       btn.addEventListener('click', async () => {
+        // Snapshot whatever's already been secured this session (naturally
+        // rolled or from an earlier purchase) BEFORE the purchase chain runs,
+        // so showPackGrantResult can never let a purchase regress it — only
+        // ever match or improve on it.
+        this._creationBestRoot = bestRoot;
         // showPackGrantResult (called synchronously inside the purchase
         // chain, before this await resolves) clears every open modal itself
         // — it supersedes both this popup and the character-creation screen
@@ -2564,6 +2592,18 @@ const UI = {
     // purchase result vanished and they were dropped straight into the game
     // with characterCreated still false.
     document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+    // Track the best-secured root, the roll-pool floor, and accumulated
+    // bonus rolls across the whole creation session — buying multiple packs
+    // (or rolling well for free, then buying) must never lose ground.
+    if (!this._creationBestRoot || this._rootRank(root) > this._rootRank(this._creationBestRoot)) {
+      this._creationBestRoot = root;
+    }
+    const packFloor = pack.guaranteedRoot || (pack.rollMode ? pack.rollMode.replace('min_', '') : null);
+    if (packFloor && (!this._creationFloorTier || this._rootRank({ key: packFloor }) > this._rootRank({ key: this._creationFloorTier }))) {
+      this._creationFloorTier = packFloor;
+    }
+    this._creationBonusRolls = (this._creationBonusRolls || 0) + (pack.extraRolls || 0);
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
@@ -2585,10 +2625,12 @@ const UI = {
       </div>`;
     overlay.querySelector('.modal-close').addEventListener('click', () => {
       overlay.remove();
-      // Re-show character creation with the just-purchased root already
-      // applied — a guaranteed-root pack (e.g. Chaos) must not send the
-      // player back to rolling for the very thing they just paid for.
-      if (!Game.state.characterCreated) this.showCharacterCreation(root, pack.extraRolls || 0);
+      // Re-show character creation — it reads _creationBestRoot/
+      // _creationFloorTier/_creationBonusRolls (set above) itself, so the
+      // just-purchased root and its tier floor are already applied. A
+      // guaranteed-root pack (e.g. Chaos) must not send the player back to
+      // rolling for the very thing they just paid for.
+      if (!Game.state.characterCreated) this.showCharacterCreation();
     });
     document.body.appendChild(overlay);
     this.spawnParticles(window.innerWidth / 2, 200, 16);

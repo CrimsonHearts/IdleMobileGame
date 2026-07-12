@@ -148,12 +148,31 @@ const GameData = {
   portraitDir: 'assets/portraits/',
 
   /**
-   * Roll a Spiritual Root.
+   * Shared pool + weight-key resolution for a roll mode. rollSpiritualRoot()
+   * and rollOdds() both read from this, so the odds ever shown to the
+   * player are guaranteed to come from the exact pool a roll actually draws
+   * from — never a separately hand-maintained number.
    * mode: 'free'        — standard weights (default)
    *       'paid'        — improved weights, no Mortal weighting advantage
    *       'min_true'    — True/Heaven/Saint/Chaos only
    *       'min_heaven'  — Heaven/Saint/Chaos only
    *       'min_saint'   — Saint/Chaos only
+   */
+  _rootPoolForMode(mode) {
+    const all = this.spiritualRoots;
+    let pool;
+    if      (mode === 'min_saint')  pool = all.filter(r => ['saint','chaos'].includes(r.key));
+    else if (mode === 'min_heaven') pool = all.filter(r => ['heaven','saint','chaos'].includes(r.key));
+    else if (mode === 'min_true')   pool = all.filter(r => r.key !== 'mortal');
+    else                            pool = all;
+    const wKey = (mode === 'paid' || mode === 'min_true' || mode === 'min_heaven' || mode === 'min_saint')
+                 ? 'paidWeight' : 'weight';
+    return { pool, wKey };
+  },
+
+  /**
+   * Roll a Spiritual Root.
+   * mode: see _rootPoolForMode, plus:
    *       'chaos'       — guaranteed Chaos
    *       'saint'       — guaranteed Saint
    *       'heaven'      — guaranteed Heaven
@@ -164,18 +183,31 @@ const GameData = {
     if (mode === 'saint')  return all.find(r => r.key === 'saint');
     if (mode === 'heaven') return all.find(r => r.key === 'heaven');
 
-    let pool;
-    if      (mode === 'min_saint')  pool = all.filter(r => ['saint','chaos'].includes(r.key));
-    else if (mode === 'min_heaven') pool = all.filter(r => ['heaven','saint','chaos'].includes(r.key));
-    else if (mode === 'min_true')   pool = all.filter(r => r.key !== 'mortal');
-    else                            pool = all;
-
-    const wKey = (mode === 'paid' || mode === 'min_true' || mode === 'min_heaven' || mode === 'min_saint')
-                 ? 'paidWeight' : 'weight';
+    const { pool, wKey } = this._rootPoolForMode(mode);
     const total = pool.reduce((s, r) => s + (r[wKey] || r.weight), 0);
     let n = Math.random() * total;
     for (const r of pool) { if ((n -= (r[wKey] || r.weight)) <= 0) return r; }
     return pool[pool.length - 1];
+  },
+
+  /** Auto-calculated roll odds (%) for a mode, straight from the same
+   *  weight table rollSpiritualRoot() draws from — never hand-typed, so it
+   *  can't drift out of sync with the actual odds. Returns [{root, pct}]. */
+  rollOdds(mode = 'free') {
+    if (mode === 'chaos' || mode === 'saint' || mode === 'heaven') {
+      return [{ root: this.rollSpiritualRoot(mode), pct: 100 }];
+    }
+    const { pool, wKey } = this._rootPoolForMode(mode);
+    const total = pool.reduce((s, r) => s + (r[wKey] || r.weight), 0);
+    return pool.map(r => ({ root: r, pct: total ? (r[wKey] || r.weight) / total * 100 : 0 }));
+  },
+
+  /** Maps a "floor tier" (the minimum root a purchased pack secured) to the
+   *  roll mode that keeps every future roll at or above it. null means the
+   *  floor is already the maximum tier — nothing left to roll for. */
+  rollModeForFloor(floorKey) {
+    const map = { mortal: 'free', true: 'min_true', heaven: 'min_heaven', saint: 'min_saint', chaos: null };
+    return floorKey in map ? map[floorKey] : 'free';
   },
 
   /* -- Spirit Root Gacha Packs (IAP) ----------------------------------------
