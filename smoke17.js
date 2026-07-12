@@ -1,7 +1,8 @@
-/* smoke17.js — Round 17 "Academy & Career Depth" regression tests.
+/* smoke17.js — Round 17 "Academy & Career Depth" + Round 18 "per-job
+ * progress memory" regression tests.
  *
- * Covers the four pillars added in response to "for the work and study I
- * would like to also have more layers":
+ * Covers the four Round 17 pillars added in response to "for the work and
+ * study I would like to also have more layers":
  *   1. Elective grid (4 paths × 3 tiers + mastery capstone), unlocked at
  *      University education, sharing the single `study` slot with the base
  *      course ladder via a `kind` tag.
@@ -9,6 +10,11 @@
  *      offline jobXp jumps) + a permanent Specialization choice at Expert.
  *   3. Active-play skill-check events for both Study and Work.
  *   4. GameData relocation (COURSES/JOBS moved out of life.js local consts).
+ * Plus the Round 18 fix: switching jobs used to reset level/rank/
+ * specialization to zero every time — level/rank/specialization now live
+ * per-job in life.jobProgress[jobId], so switching away and back resumes
+ * exactly where you left off (Test 7, Test 12) and old saves migrate their
+ * previously-flat progress into the new shape without losing it (Test 11b).
  */
 const assert = (cond, msg) => { if (!cond) throw new Error('FAIL: ' + msg); };
 
@@ -144,11 +150,11 @@ console.log('\n  Test 6: Job rank catch-up across a large jobXp jump');
   assert(Life.jobRankTitle() === 'Trainee', 'starts at Trainee');
 
   // Jump jobXp straight to level 40 (past Associate/Senior/Expert in one go).
-  Game.state.life.jobXp = 40 * 60;
+  Life.jobProgress('exec').xp = 40 * 60;
   const moneyBefore = Game.state.life.money;
   Life._checkJobRank();
   assert(Life.jobRankTitle() === 'Expert', `catches up to Expert in one pass (got ${Life.jobRankTitle()})`);
-  assert(Game.state.life.jobRankClaimed === GameData.jobRanks.findIndex(r => r.title === 'Expert'), 'jobRankClaimed index matches Expert');
+  assert(Life.jobProgress('exec').rankClaimed === GameData.jobRanks.findIndex(r => r.title === 'Expert'), 'rankClaimed index matches Expert');
   assert(Game.state.life.money > moneyBefore, 'cumulative bonus money from all 3 skipped ranks was granted');
 
   // Re-checking at the same level must not re-grant anything.
@@ -159,9 +165,11 @@ console.log('\n  Test 6: Job rank catch-up across a large jobXp jump');
 console.log('    Multi-rank catch-up grants cumulative bonuses exactly once ✓');
 
 // ════════════════════════════════════════════════════════════════════════
-// TEST 7 — Specialization: gated until Expert, permanent, affects pay
+// TEST 7 — Specialization: gated until Expert, permanent, and (Round 18)
+// per-job — switching away and back resumes the same rank/specialization
+// instead of resetting, while an untouched job still starts at Trainee.
 // ════════════════════════════════════════════════════════════════════════
-console.log('\n  Test 7: Specialization gating and permanence');
+console.log('\n  Test 7: Specialization gating, permanence, and per-job memory');
 {
   freshGame();
   Game.state.life.education = 5; Game.state.life.money = 0;
@@ -169,22 +177,31 @@ console.log('\n  Test 7: Specialization gating and permanence');
   assert(!Life.canChooseSpecialization(), 'cannot choose before reaching Expert');
   assert(!Life.chooseSpecialization('climber'), 'chooseSpecialization refuses before Expert');
 
-  Game.state.life.jobXp = 40 * 60; // -> Expert
+  Life.jobProgress('exec').xp = 40 * 60; // -> Expert
   Life._checkJobRank();
   assert(Life.canChooseSpecialization(), 'can choose once Expert is reached');
   const payBefore = Life.jobPayRate();
   assert(Life.chooseSpecialization('climber'), 'chooseSpecialization succeeds at Expert');
-  assert(Game.state.life.jobSpecialization === 'climber', 'specialization recorded');
+  assert(Life.jobProgress('exec').specialization === 'climber', 'specialization recorded on the exec job record');
   assert(Math.abs(Life.jobPayRate() / payBefore - 1.25) < 1e-9, 'climber grants exactly +25% pay');
   assert(!Life.canChooseSpecialization(), 'cannot choose again once already chosen');
   assert(!Life.chooseSpecialization('connector'), 'a second choice is refused (permanent)');
 
-  // Switching jobs resets rank + specialization.
+  // Round 18: switching to a DIFFERENT (never-held) job starts fresh at Trainee...
   Life.takeJob('alchemist');
-  assert(Game.state.life.jobSpecialization === null, 'specialization resets on job switch');
-  assert(Game.state.life.jobRankClaimed === 0, 'rank resets on job switch');
+  assert(Life.jobRankTitle() === 'Trainee', 'a never-held job starts at Trainee');
+  assert(!Life.canChooseSpecialization(), 'no specialization available yet on the new job');
+
+  // ...but exec's own progress is untouched and waiting.
+  assert(Life.jobProgress('exec').rankClaimed === GameData.jobRanks.findIndex(r => r.title === 'Expert'), "exec's rank survives the switch away");
+  assert(Life.jobProgress('exec').specialization === 'climber', "exec's specialization survives the switch away");
+
+  // Switching BACK to exec resumes exactly where it left off.
+  Life.takeJob('exec');
+  assert(Life.jobRankTitle() === 'Expert', 'switching back to exec resumes at Expert (no reset)');
+  assert(Math.abs(Life.jobPayRate() / payBefore - 1.25) < 1e-9, 'switching back also resumes the specialization pay bonus');
 }
-console.log('    Specialization locked behind Expert, permanent, resets on job switch ✓');
+console.log('    Specialization locked behind Expert, permanent, and now survives switching jobs and back ✓');
 
 // ════════════════════════════════════════════════════════════════════════
 // TEST 8 — Skill-check event resolution: success/fail branches + safe option
@@ -235,12 +252,12 @@ console.log('    jobBonusSeconds effect auto-scales with the current job\'s pay 
 // ════════════════════════════════════════════════════════════════════════
 // TEST 10 — Reincarnation (passToHeir) resets all Round 17 life fields
 // ════════════════════════════════════════════════════════════════════════
-console.log('\n  Test 10: passToHeir() resets electives/rank/specialization/events');
+console.log('\n  Test 10: passToHeir() resets electives/jobProgress/events');
 {
   freshGame();
   Game.state.life.education = 5; Game.state.life.money = 1e9;
   Life.takeJob('exec');
-  Game.state.life.jobXp = 40 * 60;
+  Life.jobProgress('exec').xp = 40 * 60;
   Life._checkJobRank();
   Life.chooseSpecialization('climber');
   Life.enrollElective('el_cul1');
@@ -253,34 +270,69 @@ console.log('\n  Test 10: passToHeir() resets electives/rank/specialization/even
   Game.passToHeir(null);
   const l = Game.state.life;
   assert(Object.keys(l.electives).length === 0, 'electives reset to {} on passToHeir');
-  assert(l.jobRankClaimed === 0, 'jobRankClaimed reset to 0');
-  assert(l.jobSpecialization === null, 'jobSpecialization reset to null');
+  assert(Object.keys(l.jobProgress).length === 0, 'jobProgress reset to {} on passToHeir — the heir starts every job fresh');
   assert(l.studyEventAcc === 0 && l.workEventAcc === 0, 'event accumulators reset to 0');
-  assert(l.jobId === null && l.jobXp === 0, 'job reset (pre-existing behavior, still intact)');
+  assert(l.jobId === null, 'job reset (pre-existing behavior, still intact)');
   assert(l.study === null, 'study slot cleared (pre-existing behavior, still intact)');
 }
-console.log('    All Round 17 life fields reset correctly on bloodline succession ✓');
+console.log('    All Round 17/18 life fields reset correctly on bloodline succession ✓');
 
 // ════════════════════════════════════════════════════════════════════════
-// TEST 11 — Backward-compat: a save missing every Round 17 field self-heals
+// TEST 11 — Backward-compat: two generations of old saves self-heal
 // ════════════════════════════════════════════════════════════════════════
-console.log('\n  Test 11: Old-save backfill for Round 17 fields');
+console.log('\n  Test 11: Old-save backfill/migration');
 {
+  // (a) Pre-Round-17 save: only the very original fields exist, no jobXp
+  // of any kind. Must backfill cleanly with no NaN.
   Game.state = Game.newState();
-  // Simulate a pre-Round-17 save: only the original fields exist.
   Game.state.life = { money: 500, age: 30, ageAcc: 0, intellect: 10, charm: 5, talent: 20,
-                       education: 3, study: null, jobId: 'clerk', jobXp: 700 };
+                       education: 3, study: null, jobId: 'clerk' };
   Life.init();
   assert(typeof Game.state.life.electives === 'object', 'electives backfilled');
-  assert(Game.state.life.jobRankClaimed === 0, 'jobRankClaimed backfilled to 0');
-  assert(Game.state.life.jobSpecialization === null, 'jobSpecialization backfilled to null');
+  assert(typeof Game.state.life.jobProgress === 'object', 'jobProgress backfilled to {}');
   assert(Game.state.life.studyEventAcc === 0 && Game.state.life.workEventAcc === 0, 'event accumulators backfilled to 0');
-  // Pre-existing fields must survive backfill untouched.
-  assert(Game.state.life.money === 500 && Game.state.life.jobXp === 700, 'pre-existing fields preserved, not clobbered');
-  // And derived getters must not throw/NaN on the backfilled state.
+  assert(Game.state.life.money === 500, 'pre-existing fields preserved, not clobbered');
   assert(!isNaN(Life.jobPayRate()) && Life.jobPayRate() > 0, 'jobPayRate() computes cleanly on a backfilled old save');
   assert(Life.jobRankTitle() === 'Trainee', 'jobRankTitle() computes cleanly on a backfilled old save');
 }
-console.log('    Old saves backfill cleanly with no NaN/throws ✓');
+{
+  // (b) Round-17-shaped save: has the flat jobXp/jobRankClaimed/
+  // jobSpecialization fields this exact update replaces. Must MIGRATE that
+  // progress into jobProgress[jobId], not discard it.
+  Game.state = Game.newState();
+  Game.state.life = { money: 500, age: 30, ageAcc: 0, intellect: 10, charm: 5, talent: 20,
+                       education: 5, study: null, jobId: 'exec',
+                       jobXp: 40 * 60, jobRankClaimed: 3, jobSpecialization: 'climber' };
+  Life.init();
+  assert(Game.state.life.jobXp === undefined, 'flat jobXp field removed after migration');
+  assert(Game.state.life.jobRankClaimed === undefined, 'flat jobRankClaimed field removed after migration');
+  assert(Game.state.life.jobSpecialization === undefined, 'flat jobSpecialization field removed after migration');
+  const prog = Life.jobProgress('exec');
+  assert(prog.xp === 40 * 60, 'xp carried over into jobProgress.exec (not reset to 0)');
+  assert(prog.rankClaimed === 3, 'rankClaimed carried over into jobProgress.exec');
+  assert(prog.specialization === 'climber', 'specialization carried over into jobProgress.exec');
+  assert(Life.jobRankTitle() === 'Expert', 'jobRankTitle() reflects the migrated rank, not Trainee');
+}
+console.log('    Both pre-Round-17 and Round-17-shaped saves migrate cleanly, no lost progress ✓');
+
+// ════════════════════════════════════════════════════════════════════════
+// TEST 12 — The reported bug, directly: switching jobs must NOT reset level
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 12: Switching jobs no longer resets job level (user-reported bug)');
+{
+  freshGame();
+  Game.state.life.education = 5; Game.state.life.money = 0;
+  Life.takeJob('clerk');
+  Life.jobProgress('clerk').xp = 15 * 60; // level 15, well short of any rank threshold
+  const levelBefore = Life.jobLevel();
+  assert(levelBefore === 15, `sanity: clerk sits at level 15 (got ${levelBefore})`);
+
+  Life.takeJob('engineer'); // switch away
+  assert(Life.jobLevel() === 0, 'the newly-taken engineer job starts at level 0, not clerk\'s level');
+
+  Life.takeJob('clerk'); // switch back
+  assert(Life.jobLevel() === 15, `switching back to clerk restores level 15 exactly, not reset to 0 (got ${Life.jobLevel()})`);
+}
+console.log('    Switching jobs and back preserves the exact level — bug fixed ✓');
 
 console.log('\n✓ All smoke17 tests passed.');

@@ -348,7 +348,10 @@ const Game = {
     // Round 17 — Study/Work skill-check event effects.
     if (eff.intellect && this.state.life) this.state.life.intellect = Math.max(0, this.state.life.intellect + eff.intellect);
     if (eff.charm && this.state.life) this.state.life.charm = Math.max(0, this.state.life.charm + eff.charm);
-    if (eff.jobXp && this.state.life) this.state.life.jobXp = Math.max(0, this.state.life.jobXp + eff.jobXp);
+    if (eff.jobXp && this.state.life && this.state.life.jobId && window.Life) {
+      const prog = Life.jobProgress(this.state.life.jobId);
+      prog.xp = Math.max(0, prog.xp + eff.jobXp);
+    }
     // Money granted/deducted as N seconds' worth of the current job's pay
     // rate, so a flat-looking event reward auto-scales across job tiers.
     if (eff.jobBonusSeconds && this.state.life) {
@@ -1076,14 +1079,13 @@ const Game = {
       this.state.life.education = Math.min((window.Life && Life.courses ? Life.courses.length : 5),
         Math.round(nurtureLvl * N.eduChancePerLevel));
       this.state.life.study = null;
-      this.state.life.jobId = null; this.state.life.jobXp = 0;
+      this.state.life.jobId = null;
+      this.state.life.jobProgress = {}; // Round 18: every job's progress is earned this-lifetime
       this.state.life.intellect = 0; this.state.life.charm = 0;
       this.state.life.talent = nurtureLvl * N.talentPerLevel; // tutoring pays off
-      // Round 17: electives/rank/specialization are earned this-lifetime,
-      // same as education/jobXp — the heir starts their own academic career.
+      // Round 17: electives are earned this-lifetime, same as education —
+      // the heir starts their own academic career.
       this.state.life.electives = {};
-      this.state.life.jobRankClaimed = 0;
-      this.state.life.jobSpecialization = null;
       this.state.life.studyEventAcc = 0;
       this.state.life.workEventAcc = 0;
     }
@@ -1222,7 +1224,7 @@ const Game = {
     if (window.Life && this.state.life && this.state.life.jobId) {
       money = Life.jobPayRate() * effective;
       this.state.life.money += money;
-      this.state.life.jobXp += effective; // job experience accrues too
+      Life.jobProgress(this.state.life.jobId).xp += effective; // job experience accrues too
     }
     // (Study completion needs no handling here: course endsAt is wall-clock,
     //  so Life.tick finishes any due course on the first tick after boot.

@@ -11,6 +11,12 @@
  * choice at "Expert". Both gain rare active-play skill-check events. All new
  * data tables live in GameData (gameData.js) — see the "Academy & Career
  * depth (Round 17)" section there.
+ *
+ * Round 18: job level/rank/specialization moved from a single flat set of
+ * fields (reset every time you switched jobs) into a per-job `jobProgress`
+ * map keyed by job id — switching jobs now just changes which job is
+ * active; each job remembers its own level/rank/specialization and you
+ * resume exactly where you left off if you switch back to it later.
  * ========================================================================= */
 
 const Life = {
@@ -20,9 +26,9 @@ const Life = {
   s() { return Game.state.life; },
   fresh() {
     return { money: 0, age: 18, ageAcc: 0, intellect: 0, charm: 0, talent: 0,
-             education: 0, study: null, jobId: null, jobXp: 0,
-             electives: {}, jobRankClaimed: 0, jobSpecialization: null,
-             studyEventAcc: 0, workEventAcc: 0 };
+             education: 0, study: null, jobId: null,
+             jobProgress: {}, // {jobId: {xp, rankClaimed, specialization}} — Round 18
+             electives: {}, studyEventAcc: 0, workEventAcc: 0 };
   },
   init() {
     if (!Game.state.life) Game.state.life = this.fresh();
@@ -31,13 +37,34 @@ const Life = {
     // jobXp undefined -> jobLevel() NaN -> money accumulates as NaN forever).
     const l = this.s(), defaults = this.fresh();
     for (const k in defaults) if (l[k] === undefined) l[k] = defaults[k];
+    // Round 18 migration: pre-Round-18 saves stored a single flat jobXp/
+    // jobRankClaimed/jobSpecialization for whichever job was active. Fold
+    // that into the new per-job jobProgress map so existing progress isn't
+    // silently discarded, then drop the old fields.
+    if (l.jobId && l.jobXp !== undefined && !l.jobProgress[l.jobId]) {
+      l.jobProgress[l.jobId] = {
+        xp: l.jobXp || 0,
+        rankClaimed: l.jobRankClaimed || 0,
+        specialization: l.jobSpecialization || null,
+      };
+    }
+    delete l.jobXp; delete l.jobRankClaimed; delete l.jobSpecialization;
   },
 
   // -- Derived --------------------------------------------------------------
   course(id) { return GameData.courses.find(c => c.id === id); },
   job(id) { return GameData.jobs.find(j => j.id === id); },
   currentJob() { return this.s().jobId ? this.job(this.s().jobId) : null; },
-  jobLevel() { return Math.min(50, Math.floor(this.s().jobXp / 60)); }, // +1 every 60s worked
+  /** Per-job progress record, created on first access. */
+  jobProgress(id) {
+    const s = this.s();
+    if (!s.jobProgress[id]) s.jobProgress[id] = { xp: 0, rankClaimed: 0, specialization: null };
+    return s.jobProgress[id];
+  },
+  jobLevel() {
+    if (!this.s().jobId) return 0;
+    return Math.min(50, Math.floor(this.jobProgress(this.s().jobId).xp / 60)); // +1 every 60s worked
+  },
   jobPayRate() {
     const j = this.currentJob(); if (!j) return 0;
     const s = this.s();
@@ -145,36 +172,41 @@ const Life = {
     Game.persist();
   },
 
-  // -- Work: job, ranks & specialization (Round 17 adds ranks/specialization) -
+  // -- Work: job, ranks & specialization ---------------------------------
+  // Round 18: switching jobs no longer resets progress — each job's level/
+  // rank/specialization lives in jobProgress(id) and simply isn't touched
+  // by other jobs, so returning to a job you've held before resumes it.
   takeJob(id) {
     const j = this.job(id), s = this.s();
     if (!j || s.education < j.reqEdu) return false;
-    if (s.jobId !== id) { s.jobId = id; s.jobXp = 0; s.jobRankClaimed = 0; s.jobSpecialization = null; }
+    s.jobId = id;
+    this.jobProgress(id); // ensure a record exists (harmless if one already does)
     Game.persist();
     return true;
   },
   quitJob() {
-    const s = this.s();
-    s.jobId = null; s.jobXp = 0; s.jobRankClaimed = 0; s.jobSpecialization = null;
+    this.s().jobId = null;
     Game.persist();
   },
-  jobRankTitle() { return GameData.jobRanks[this.s().jobRankClaimed || 0].title; },
-  jobRankInfo() { return GameData.jobRanks[this.s().jobRankClaimed || 0]; },
-  nextJobRank() { return GameData.jobRanks[(this.s().jobRankClaimed || 0) + 1] || null; },
+  jobRankTitle() { return this.s().jobId ? GameData.jobRanks[this.jobProgress(this.s().jobId).rankClaimed || 0].title : GameData.jobRanks[0].title; },
+  jobRankInfo() { return this.s().jobId ? GameData.jobRanks[this.jobProgress(this.s().jobId).rankClaimed || 0] : GameData.jobRanks[0]; },
+  nextJobRank() { return this.s().jobId ? (GameData.jobRanks[(this.jobProgress(this.s().jobId).rankClaimed || 0) + 1] || null) : null; },
   /** Catches up every rank threshold crossed since the last check (in one pass,
    *  so an offline jobXp jump — see Game.applyOffline — never skips a promotion). */
   _checkJobRank() {
     const s = this.s(), ranks = GameData.jobRanks;
+    if (!s.jobId) return;
+    const prog = this.jobProgress(s.jobId);
     const lvl = this.jobLevel();
-    let claimed = s.jobRankClaimed || 0, totalBonus = 0, lastTitle = null;
+    let claimed = prog.rankClaimed || 0, totalBonus = 0, lastTitle = null;
     while (claimed + 1 < ranks.length && lvl >= ranks[claimed + 1].atLevel) {
       claimed++;
       const r = ranks[claimed];
       if (r.bonusPaySeconds) totalBonus += this.jobPayRate() * r.bonusPaySeconds;
       lastTitle = r.title;
     }
-    if (claimed !== (s.jobRankClaimed || 0)) {
-      s.jobRankClaimed = claimed;
+    if (claimed !== (prog.rankClaimed || 0)) {
+      prog.rankClaimed = claimed;
       if (totalBonus) s.money += totalBonus;
       if (window.UI && lastTitle) {
         UI.toast(`⬆ Promoted to ${lastTitle}!` + (totalBonus ? ` +¥${GameNumbers.formatNumber(totalBonus)}` : ''));
@@ -185,23 +217,25 @@ const Life = {
   _specializationRankIndex() { return GameData.jobRanks.findIndex(r => r.unlocksSpecialization); },
   canChooseSpecialization() {
     const s = this.s();
-    return !!s.jobId && !s.jobSpecialization && (s.jobRankClaimed || 0) >= this._specializationRankIndex();
+    if (!s.jobId) return false;
+    const prog = this.jobProgress(s.jobId);
+    return !prog.specialization && (prog.rankClaimed || 0) >= this._specializationRankIndex();
   },
   chooseSpecialization(id) {
     if (!this.canChooseSpecialization()) return false;
     const spec = GameData.jobSpecializations.find(x => x.id === id);
     if (!spec) return false;
-    const s = this.s();
-    s.jobSpecialization = id;
-    if (spec.bonusCharm) s.charm += spec.bonusCharm;
+    const prog = this.jobProgress(this.s().jobId);
+    prog.specialization = id;
+    if (spec.bonusCharm) this.s().charm += spec.bonusCharm;
     if (window.UI) UI.toast(`🤝 Specialization chosen: ${spec.name}!`);
     Game.persist();
     return true;
   },
   specializationPayMult() {
     const s = this.s();
-    if (!s.jobSpecialization) return 1;
-    const spec = GameData.jobSpecializations.find(x => x.id === s.jobSpecialization);
+    if (!s.jobId) return 1;
+    const spec = GameData.jobSpecializations.find(x => x.id === this.jobProgress(s.jobId).specialization);
     return spec ? 1 + (spec.payMult || 0) : 1;
   },
 
@@ -236,7 +270,8 @@ const Life = {
   tick(dt) {
     const s = this.s();
     if (s.jobId) {
-      s.money += this.jobPayRate() * dt; s.jobXp += dt;
+      s.money += this.jobPayRate() * dt;
+      this.jobProgress(s.jobId).xp += dt;
       this._checkJobRank();
       s.workEventAcc = (s.workEventAcc || 0) + dt;
       if (s.workEventAcc >= GameData.work.eventEverySec) {
@@ -360,12 +395,13 @@ const Life = {
         <div class="hint">Experience grows your pay (+10% per level). Intellect adds +${(s.intellect*0.4).toFixed(0)}% bonus.${nextRank ? ` Next promotion (${nextRank.title}) at level ${nextRank.atLevel}.` : ' Highest rank reached.'}</div>
       </div>`;
 
+      const curSpecId = this.jobProgress(s.jobId).specialization;
       if (this.canChooseSpecialization()) {
         body += `<div class="section-title small">Choose a Specialization</div>
         <div class="hint">A permanent choice for this career — pick one.</div>
         <div id="spec-list"></div>`;
-      } else if (s.jobSpecialization) {
-        const spec = GameData.jobSpecializations.find(x => x.id === s.jobSpecialization);
+      } else if (curSpecId) {
+        const spec = GameData.jobSpecializations.find(x => x.id === curSpecId);
         body += `<div class="card"><div class="card-title">${spec.icon} ${spec.name}</div><div class="hint">${spec.desc}</div></div>`;
       }
     } else {

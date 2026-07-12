@@ -253,7 +253,7 @@ const partialSave = {
   qi: 42, owned: {}, characterCreated: true, name: 'PartialSaveTester',
   realm: undefined,          // was: crashes UI.init() -> currentRealm() -> .lifespan, no recovery
   family: {},                // was: crashes Family.init() -> .candidates.length
-  life: { money: 500 },      // was: jobXp undefined -> jobLevel() NaN -> money NaN forever
+  life: { money: 500 },      // was: jobXp undefined -> jobLevel() NaN -> money NaN forever (now: per-job jobProgress)
   market: { prices: undefined }, // was: crashes Market.init() -> prices[g.id]
 };
 Game.init(partialSave);
@@ -267,7 +267,7 @@ Family.init(); // must not throw on family:{}
 assert(Array.isArray(Game.state.family.candidates), 'family.candidates backfilled to an array');
 assert(Game.state.family.spouse === null, 'family.spouse backfilled');
 
-assert(Game.state.life.jobXp === 0, 'life.jobXp backfilled (was undefined -> NaN cascade)');
+assert(typeof Game.state.life.jobProgress === 'object', 'life.jobProgress backfilled (was undefined -> NaN cascade pre-Round-18)');
 assert(Game.state.life.money === 500, 'existing life.money is preserved, not clobbered by the backfill');
 assert(!isNaN(Life.jobLevel()), 'jobLevel() no longer produces NaN');
 
