@@ -7,6 +7,10 @@ const Game = {
   state: null,
   _lastTickMono: 0,      // monotonic timestamp of last tick (ms)
   _saveAccumulator: 0,   // seconds since last autosave
+  // Focus combo (Round 16): purely active/session state, never persisted —
+  // any reload implies more than focusWindowMs passed, so it should reset.
+  _focusCombo: 0,
+  _lastTapMono: 0,
 
   // -------------------------------------------------------------------------
   // State setup
@@ -684,6 +688,9 @@ const Game = {
     // House reputation (Round 15): a slow-growing, generation-spanning
     // prestige bonus — capped so it stays a long-term flourish, not a wall.
     if (this.state.houseReputation) m.allMult *= (1 + Math.min(0.25, this.state.houseReputation * 0.001));
+    // Realm bonus (Round 16): scales with the current MAJOR realm, distinct
+    // from m.stage (lifetime minor stages cleared) below.
+    m.allMult *= (1 + this.state.realm * GameData.realmBonusPerLevel);
     return m;
   },
 
@@ -718,7 +725,25 @@ const Game = {
   /** Qi gained per manual meditate tap. */
   qiPerTap() {
     const m = this.multipliers();
-    return GameData.tap.baseGain * m.tapMult * m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family * m.legacy;
+    return GameData.tap.baseGain * m.tapMult * (1 + this.focusBonus()) * m.root * m.stage * m.dao * m.sect * m.pet * m.talent * m.family * m.legacy;
+  },
+
+  /** Current focus-combo bonus fraction (Round 16) — active-tap-only, not
+   *  applied to idle/offline production. See _updateFocusCombo(). */
+  focusBonus() {
+    return Math.min(GameData.tap.focusMaxCombo, this._focusCombo) * GameData.tap.focusBonusPerStack;
+  },
+  /** Advances the tap combo: a gap under focusWindowMs since the last tap
+   *  extends it, a longer gap starts a fresh one. Called once per tap. */
+  _updateFocusCombo() {
+    const now = TimeService.monotonicNow();
+    if (this._lastTapMono && (now - this._lastTapMono) <= GameData.tap.focusWindowMs) {
+      this._focusCombo = Math.min(GameData.tap.focusMaxCombo, this._focusCombo + 1);
+    } else {
+      this._focusCombo = 1;
+    }
+    this._lastTapMono = now;
+    return this._focusCombo;
   },
 
   generatorCost(g, count = 1) {
@@ -734,6 +759,7 @@ const Game = {
   // Player actions
   // -------------------------------------------------------------------------
   meditate() {
+    const combo = this._updateFocusCombo(); // must run BEFORE qiPerTap() so gain reflects this tap's combo
     let gain = this.qiPerTap();
     // Meridian crit (Radiant Soul): chance for a ×N tap.
     let crit = false;
@@ -752,12 +778,13 @@ const Game = {
         if (window.UI) UI.showInsight();
       }
     }
-    return { gain, crit };
+    return { gain, crit, combo };
   },
 
   buyGenerator(id, count = 1) {
     const g = GameData.generators.find(x => x.id === id);
     if (!g) return false;
+    if (g.reqRealm && this.state.realm < g.reqRealm) return false;
     const cost = this.generatorCost(g, count);
     if (this.state.qi < cost) return false;
     this.state.qi -= cost;
@@ -770,6 +797,7 @@ const Game = {
   maxAffordable(id) {
     const g = GameData.generators.find(x => x.id === id);
     if (!g) return 0;
+    if (g.reqRealm && this.state.realm < g.reqRealm) return 0;
     const owned = this.state.owned[id];
     const r = g.costGrowth;
     const first = g.baseCost * Math.pow(r, owned);

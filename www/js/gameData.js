@@ -25,11 +25,21 @@ const GameData = {
   // -- Manual tap -----------------------------------------------------------
   tap: {
     baseGain: 1,            // Qi per meditate tap (before multipliers)
+    // Focus combo (Round 16): rapid taps within focusWindowMs keep the combo
+    // alive and stacking; a gap longer than that resets it. Purely an active-
+    // play bonus on TOP of tapMult — idle/offline production is unaffected.
+    focusWindowMs: 2000,
+    focusBonusPerStack: 0.02, // +2% tap Qi per combo stack
+    focusMaxCombo: 50,        // caps at +100% tap Qi
   },
 
   /* -- Generators ----------------------------------------------------------
    * Each generator produces Qi/sec. Cost grows by costGrowth^owned.
    * baseProd is the Qi/sec PER unit owned (before global multipliers).
+   * reqRealm (optional): minimum Game.state.realm index to see/buy this one —
+   * late-game generators (Round 16) unlock as you break through realms,
+   * so the shop keeps offering new goals instead of just re-buying the same
+   * 10 buildings all the way to Immortal Ascension.
    */
   generators: [
     { id: 'mat',     name: 'Meditation App',        icon: '🧘', baseCost: 15,           costGrowth: 1.15, baseProd: 0.15,
@@ -52,6 +62,17 @@ const GameData = {
       desc: 'A satellite array harvesting starlight Qi from low orbit.' },
     { id: 'heaven',  name: 'Dao Quantum Core',         icon: '🪷', baseCost: 75000000000, costGrowth: 1.15, baseProd: 2400000,
       desc: 'A quantum computer that simulates the Heavenly Dao itself.' },
+    // -- Late-game tier (Round 16) — each unlocks at a higher realm --------
+    { id: 'rift',    name: 'Rift Extraction Array',   icon: '🌀', baseCost: 1.125e12,    costGrowth: 1.15, baseProd: 14400000,
+      reqRealm: 4, desc: "Harvests raw Qi bleeding through the Celestial Fracture itself." },
+    { id: 'reactor', name: 'Jiutian Seized Reactor',  icon: '🏢', baseCost: 1.6875e13,   costGrowth: 1.15, baseProd: 86400000,
+      reqRealm: 5, desc: 'Confiscated Jiutian Holdings prototype tech, repurposed against its makers.' },
+    { id: 'bridge',  name: 'Nine Heavens Bridge',     icon: '🌉', baseCost: 2.53125e14,  costGrowth: 1.15, baseProd: 518400000,
+      reqRealm: 6, desc: 'A causeway of condensed starlight, spanning the gap between realms.' },
+    { id: 'maw',     name: 'Star-Devouring Engine',   icon: '☄️', baseCost: 3.796875e15, costGrowth: 1.15, baseProd: 3110400000,
+      reqRealm: 7, desc: 'Consumes dying stars, converting their final throes into raw Qi.' },
+    { id: 'ascend',  name: 'Ascendant Dao Engine',    icon: '🔱', baseCost: 5.6953125e16, costGrowth: 1.15, baseProd: 18662400000,
+      reqRealm: 8, desc: 'Simulates the ascension of a thousand immortals at once, feeding their Dao into you.' },
   ],
 
   /* -- Cultivation Realms (the prestige ladder) ----------------------------
@@ -280,6 +301,13 @@ const GameData = {
     { at: 81,  icon:'🔥', name:'Nine-Nine Return',   bonus:0.20, dao:9,  desc:'Eighty-one tribulations — the complete journey. You have walked every trial.' },
     { at: 99,  icon:'🌙', name:'Near the Veil',      bonus:0.25, dao:12, desc:'Ninety-nine — one step from a hundred, one breath from the immortal veil.' },
     { at: 108, icon:'✨', name:'Stars of Destiny',   bonus:0.30, dao:15, desc:'One hundred and eight — the number of fated stars. Your destiny is no longer hidden.' },
+    // -- Late-game milestones (Round 16) — 108 used to be the last reward --
+    { at: 168, icon:'🎋', name:'Guiding Prosperity',   bonus:0.35, dao:18, desc:'One-six-eight — a path smoothed toward prosperity. Fortune itself seems to favor your every step now.' },
+    { at: 216, icon:'☯',  name:'Six-Six Convergence',  bonus:0.40, dao:22, desc:'Two hundred sixteen: six cubed, a perfected hexagram cycle. Your Dao converges toward completion.' },
+    { at: 360, icon:'🌀', name:'Full Circle',           bonus:0.48, dao:28, desc:'Three hundred sixty — one complete revolution of Heaven. You have walked the entire wheel and returned changed.' },
+    { at: 500, icon:'🙏', name:'Five Hundred Arhats',   bonus:0.55, dao:35, desc:'The Five Hundred Arhats once guarded the Dharma. Now their number marks a cultivator who has guarded their own path just as long.' },
+    { at: 720, icon:'♾️', name:'Double Convergence',    bonus:0.65, dao:45, desc:'Seven hundred twenty — two full revolutions. What once took a lifetime to complete, you now complete twice over.' },
+    { at: 999, icon:'🐉', name:"Heaven's Threshold",    bonus:0.80, dao:60, desc:'Nine hundred ninety-nine — one breath from the mythic thousand. You stand now at the very threshold of Heaven itself.' },
   ],
 
   /* -- Extra Breakthrough Conditions ----------------------------------------
@@ -331,6 +359,13 @@ const GameData = {
   // Each point of Dao Comprehension grants this fractional global bonus.
   // Total multiplier = 1 + (daoComprehension * daoBonusPerPoint).
   daoBonusPerPoint: 0.02, // +2% global production per point
+
+  // Round 16: a bonus tied to which MAJOR realm you currently sit in — a
+  // distinct axis from stageBonusPerStage (minor stages cleared, lifetime).
+  // Total multiplier = 1 + (realm index * realmBonusPerLevel). Modest by
+  // design (+72% at the final realm, index 9) since stage/dao bonuses
+  // already dominate in absolute terms by then.
+  realmBonusPerLevel: 0.08,
 
   /* Dao Comprehension earned when breaking through, based on lifetime Qi this
    * run. Exponent tamed from 0.4 → 0.22: the old curve let dao compound faster
@@ -403,8 +438,10 @@ const GameData = {
    * Each time a generator's owned count crosses one of these thresholds, that
    * generator's output is multiplied by genMilestoneMult (compounding). This
    * rewards going deep on a generator, not just buying the next tier.
+   * Extended (Round 16) past the old 500 cap — dedicated late-game players
+   * pushing a single generator past 500 owned had nothing left to chase.
    */
-  genMilestones: [10, 25, 50, 100, 150, 200, 300, 400, 500],
+  genMilestones: [10, 25, 50, 100, 150, 200, 300, 400, 500, 750, 1000, 1500, 2000],
   genMilestoneMult: 2,
 
   /* Synergy: owning many distinct generators at a "mastered" depth grants a

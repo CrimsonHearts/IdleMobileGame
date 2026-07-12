@@ -45,6 +45,9 @@ const UI = {
       tabPanels: document.querySelectorAll('.tab-panel'),
       shards: $('res-shards'),
       shardsChip: $('shards-chip'),
+      focusCombo: $('focus-combo'),
+      focusComboFill: $('focus-combo-fill'),
+      focusComboLabel: $('focus-combo-label'),
     };
     this.activeTab = 'cultivate';
 
@@ -57,6 +60,7 @@ const UI = {
       this.floatText(e, (crit ? '✦ CRIT +' : '+') + GameNumbers.formatNumber(gain) + ' ' + GameData.theme.currencyIcon, crit);
       this.flashQiCounter();
       this.renderResources();
+      this.renderFocusCombo();
     });
 
     // Buy-amount selector.
@@ -347,7 +351,7 @@ const UI = {
   tickRender() {
     this.renderResources();
     switch (this.activeTab) {
-      case 'cultivate':  this.renderShop(); this.renderRealm(); this.renderBoosts(); break;
+      case 'cultivate':  this.renderShop(); this.renderRealm(); this.renderBoosts(); this.renderFocusCombo(); break;
       case 'study':      if (Life.isStudying()) Life.renderStudy(this.el.studyPanel); break;
       case 'techniques':
         if (this.artsSub === 'alchemy') this.renderAlchemyBuffs();
@@ -403,6 +407,9 @@ const UI = {
     GameData.generators.forEach(g => {
       const owned = Game.state.owned[g.id];
       const row = document.getElementById('gen-' + g.id);
+      // Realm-gated late-game generators (Round 16) stay fully hidden until
+      // reached — no partial teaser, matching how the rest of the shop reveals.
+      if (g.reqRealm && Game.state.realm < g.reqRealm) { row.style.display = 'none'; return; }
       // Hide generators far above what the player could know about yet.
       const cost1 = Game.generatorCost(g, 1);
       const visible = owned > 0 || Game.state.qi >= cost1 * 0.3 || g === GameData.generators[0]
@@ -2283,6 +2290,23 @@ const UI = {
         ? '✓ Applied'
         : 'Stage Aid';
     }
+  },
+
+  /** Update the tap-combo meter. Reads Game's runtime combo state without
+   * mutating it — only an actual tap (Game._updateFocusCombo) advances or
+   * resets the combo; this just reflects whether the window has lapsed. */
+  renderFocusCombo() {
+    const el = this.el.focusCombo;
+    if (!el) return;
+    const now = TimeService.monotonicNow();
+    const expired = !Game._lastTapMono || (now - Game._lastTapMono) > GameData.tap.focusWindowMs;
+    const combo = expired ? 0 : Game._focusCombo;
+    if (combo <= 1) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    const pct = Math.min(100, (combo / GameData.tap.focusMaxCombo) * 100);
+    this.el.focusComboFill.style.width = pct + '%';
+    const bonusPct = Math.round(Math.min(GameData.tap.focusMaxCombo, combo) * GameData.tap.focusBonusPerStack * 100);
+    this.el.focusComboLabel.textContent = `Focus x${combo} (+${bonusPct}%)`;
   },
 
   // -- Shop -----------------------------------------------------------------
