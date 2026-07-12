@@ -1105,17 +1105,24 @@ const Game = {
     // --- Anti-cheat: backward time jump --------------------------------
     // If the clock now reads EARLIER than the latest time we ever saw, the
     // user almost certainly rolled their clock back. Grant nothing and flag.
-    if (now < maxSeen - 60 * 1000) { // 60s grace for tz/DST/jitter
-      // Exception: a server-synced `now()` is anchored to the actual HTTP
-      // Date header, not the (possibly drifted/fast) device clock — the user
-      // cannot manipulate it. A dip here means a PRIOR reading was inflated
-      // by unsynced device-clock drift, not that this one was rolled back.
-      // Trust the correction instead of punishing an honest player for it.
-      if (TimeService.isSynced()) {
-        this.state.maxSeenTime = now;
-        this.state.lastSaved = now;
-        return { seconds: 0, gained: 0, capped: false, cheated: false };
-      }
+    //
+    // NOTE: an earlier version of this check trusted TimeService.isSynced()
+    // to distinguish "honest clock-drift correction" from "actual rollback,"
+    // exempting synced readings from the flag. That was reverted: on the
+    // packaged Capacitor/Android build (this game's actual distribution
+    // target — see CLAUDE.md), TimeService.sync() HEADs the app's OWN local
+    // origin, so a "synced" reading can just be the device's own clock
+    // echoed back — it proves nothing. Worse, isSynced() is a plain mutable
+    // property with no encapsulation, trivially forced true from devtools or
+    // a patched APK, which would have reopened the exact rollback-then-
+    // fast-forward offline-farming exploit maxSeenTime exists to prevent.
+    // Instead we widen the flat grace window generously (15 min covers real
+    // clock drift / sync jitter) without trusting any spoofable signal —
+    // the same bounded, already-accepted risk category as the original 60s
+    // grace, just larger, capped well below anything worth exploiting
+    // against an 8h offline-earnings ceiling (GameData.offline.maxSeconds).
+    const CLOCK_GRACE_MS = 15 * 60 * 1000;
+    if (now < maxSeen - CLOCK_GRACE_MS) {
       this.state.cheatFlags = (this.state.cheatFlags || 0) + 1;
       this.state.lastSaved = now;
       // Don't lower maxSeenTime — keeps the cheat "sticky".

@@ -9,6 +9,17 @@
  *   3. Backward-jump detection — handled in game.js: if wall-clock < lastSaved,
  *      we grant ZERO offline Qi (you can't go back in time honestly).
  *   4. Offline cap — also in game.js: earnings capped at GameData.offline.
+ *
+ * CAVEAT on (1): sync() below HEADs `window.location.href` — the app's own
+ * origin. On the web that's a real remote server with its own clock. On the
+ * packaged Capacitor/Android build (this game's actual distribution target)
+ * that origin is the local in-app webview server, so a successful sync can
+ * just echo the device's own clock back — it is NOT proof of an independent,
+ * unmanipulable time source there. isSynced() must never be treated as an
+ * unforgeable signal in anti-cheat logic (it's also a plain, unencapsulated
+ * property — trivially overridable from devtools or a patched build). If
+ * this ever points at a real backend (see the comment on sync() below),
+ * that caveat goes away and isSynced() becomes meaningful again.
  * ========================================================================= */
 
 const TimeService = {

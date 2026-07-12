@@ -251,39 +251,51 @@ assert(Game.state.stellarShards >= preOffline.shards, 'offline combat shards acc
 console.log(`    Offline OK — +${Math.round(Game.state.qi - preOffline.qi)} qi, +${Game.state.stellarShards - preOffline.shards} shards ✓`);
 
 // ════════════════════════════════════════════════════════════════════════
-// TEST 8b — Anti-cheat: an UNSYNCED backward clock jump is still flagged
-// (regression guard: the drift fix below must not weaken real detection)
+// TEST 8b — Anti-cheat: a large backward clock jump is flagged regardless
+// of TimeService.isSynced(). A prior version of this check trusted
+// isSynced() to bypass the flag, but on the packaged Capacitor/Android
+// build sync() just HEADs the app's own local origin (not a real external
+// clock), and isSynced() is a plain mutable property trivially forced true
+// from devtools or a patched build — trusting it would have reopened the
+// exact rollback-then-fast-forward offline-farming exploit this guards
+// against. Verify a forced-true isSynced() grants NO exemption.
 // ════════════════════════════════════════════════════════════════════════
-console.log('\n  Test 8b: Unsynced backward clock jump still flagged as cheating');
+console.log('\n  Test 8b: Backward clock jump flagged even with isSynced() forced true');
 const realIsSynced = TimeService.isSynced;
-TimeService.isSynced = () => false; // simulate offline / never synced
+TimeService.isSynced = () => true; // simulate a spoofed/forced "synced" flag
 const flagsBefore = Game.state.cheatFlags || 0;
 Game.state.maxSeenTime = TimeService.now() + 3600 * 1000; // 1h "in the future"
 Game.state.lastSaved   = Game.state.maxSeenTime;
 const cheatRes = Game.applyOffline();
-assert(cheatRes.cheated === true, 'unsynced backward jump still flagged as cheated');
+assert(cheatRes.cheated === true, 'backward jump flagged even when isSynced() reports true');
 assert((Game.state.cheatFlags || 0) === flagsBefore + 1, 'cheatFlags incremented');
 assert(cheatRes.gained === 0, 'zero Qi granted on a flagged jump');
 TimeService.isSynced = realIsSynced;
-console.log('    Unsynced backward jump detection OK ✓');
+console.log('    isSynced() spoofing does not bypass detection OK ✓');
 
 // ════════════════════════════════════════════════════════════════════════
-// TEST 8c — Anti-cheat: a SYNCED clock correction is trusted, not flagged
-// (regression: a fast device clock recorded an inflated maxSeenTime while
-// offline; reconnecting and syncing must not brick offline earnings forever)
+// TEST 8c — Anti-cheat: the widened grace window absorbs realistic clock
+// drift (small dip, no flag) while still catching anything beyond it —
+// verifies the actual fix for the original false-positive bug (an honest
+// player's slightly-fast device clock) without trusting any spoofable signal.
 // ════════════════════════════════════════════════════════════════════════
-console.log('\n  Test 8c: Synced clock correction is trusted, not flagged');
-TimeService.isSynced = () => true; // simulate a fresh, trusted server sync
-const flagsBefore2 = Game.state.cheatFlags || 0;
+console.log('\n  Test 8c: Grace window absorbs small drift but still catches large jumps');
 const trueNow = TimeService.now();
-Game.state.maxSeenTime = trueNow + 3600 * 1000; // stale, drift-inflated high-water mark
+
+// Small dip (10 min) — within the grace window: not flagged, no punishment.
+Game.state.maxSeenTime = trueNow + 10 * 60 * 1000;
 Game.state.lastSaved   = Game.state.maxSeenTime;
-const syncRes = Game.applyOffline();
-assert(syncRes.cheated === false, 'synced correction is NOT flagged as cheating');
-assert((Game.state.cheatFlags || 0) === flagsBefore2, 'cheatFlags NOT incremented on a trusted correction');
-assert(Game.state.maxSeenTime <= trueNow + 1000, 'maxSeenTime corrected down to the trusted reading');
-TimeService.isSynced = realIsSynced;
-console.log('    Synced clock correction OK ✓');
+const flagsBefore2 = Game.state.cheatFlags || 0;
+const smallDipRes = Game.applyOffline();
+assert(smallDipRes.cheated === false, '10-minute dip is within the grace window — not flagged');
+assert((Game.state.cheatFlags || 0) === flagsBefore2, 'cheatFlags NOT incremented on small drift');
+
+// Large dip (1h) — well beyond the grace window: still flagged.
+Game.state.maxSeenTime = trueNow + 3600 * 1000;
+Game.state.lastSaved   = Game.state.maxSeenTime;
+const largeDipRes = Game.applyOffline();
+assert(largeDipRes.cheated === true, '1-hour dip is well beyond the grace window — flagged');
+console.log('    Grace window sizing OK ✓');
 
 // ════════════════════════════════════════════════════════════════════════
 // TEST 9 — Corrupt / malformed save resilience
