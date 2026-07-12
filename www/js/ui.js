@@ -1973,14 +1973,22 @@ const UI = {
   },
 
   // -- Character creation (Gacha system) -----------------------------------
-  showCharacterCreation() {
+  /**
+   * @param {object} [presetRoot] a root already secured via a Spirit Root
+   *   Pack purchase (guaranteed or rolled) — opens with this as the current
+   *   best instead of re-rolling from scratch and silently discarding what
+   *   the player just paid for. Doesn't count against the free-roll budget.
+   * @param {number} [bonusRolls] extra free rolls granted by that same pack
+   *   (e.g. Wanderer's Fate), added on top of the standard 100.
+   */
+  showCharacterCreation(presetRoot, bonusRolls) {
     const overlay = this._openModal();
     if (!overlay) return;
     overlay.id = 'creation-overlay';
     let gender = 'male';
-    let currentRoot = GameData.rollSpiritualRoot('free');
-    let rollsUsed = 1;
-    const maxFreeRolls = 100;
+    let currentRoot = presetRoot || GameData.rollSpiritualRoot('free');
+    let rollsUsed = presetRoot ? 0 : 1;
+    const maxFreeRolls = 100 + (bonusRolls || 0);
     let bestRoot = currentRoot;
     let isRolling = false;
     let packsShown = false; // auto-show the packs popup once, when free rolls run out
@@ -2177,8 +2185,12 @@ const UI = {
 
     ov.querySelectorAll('.pack-row[data-pack]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const ok = await Monetization.purchaseSpiritPack(btn.dataset.pack);
-        if (ok) { ov.remove(); if (parentOverlay) parentOverlay.remove(); } // grant result takes over
+        // showPackGrantResult (called synchronously inside the purchase
+        // chain, before this await resolves) clears every open modal itself
+        // — it supersedes both this popup and the character-creation screen
+        // beneath it. Nothing to clean up here on success; on cancel/decline
+        // this popup is left open so the player can pick another pack.
+        await Monetization.purchaseSpiritPack(btn.dataset.pack);
       });
     });
     ov.querySelector('#packs-close').addEventListener('click', () => ov.remove());
@@ -2543,8 +2555,17 @@ const UI = {
 
   /** Show result after a spirit pack is purchased and granted. */
   showPackGrantResult(pack, root) {
-    const overlay = this._openModal();
-    if (!overlay) return;
+    // This modal always supersedes whatever purchase-flow UI led to it (the
+    // packs popup, and the character-creation screen beneath it) — it must
+    // NOT be silently skipped by _openModal()'s one-modal-at-a-time guard,
+    // which is exactly what happened before: with the packs popup + creation
+    // overlay still in the DOM at this point in the call chain, _openModal()
+    // saw "a modal is already open" and this never rendered — the player's
+    // purchase result vanished and they were dropped straight into the game
+    // with characterCreated still false.
+    document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
     overlay.innerHTML = `
       <div class="modal pack-result-modal">
         <h2>🔮 Root Awakened!</h2>
@@ -2564,8 +2585,10 @@ const UI = {
       </div>`;
     overlay.querySelector('.modal-close').addEventListener('click', () => {
       overlay.remove();
-      // Re-show character creation with new root applied
-      if (!Game.state.characterCreated) this.showCharacterCreation();
+      // Re-show character creation with the just-purchased root already
+      // applied — a guaranteed-root pack (e.g. Chaos) must not send the
+      // player back to rolling for the very thing they just paid for.
+      if (!Game.state.characterCreated) this.showCharacterCreation(root, pack.extraRolls || 0);
     });
     document.body.appendChild(overlay);
     this.spawnParticles(window.innerWidth / 2, 200, 16);
