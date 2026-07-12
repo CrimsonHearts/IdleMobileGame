@@ -30,7 +30,14 @@ const Life = {
     return { money: 0, age: 18, ageAcc: 0, intellect: 0, charm: 0, talent: 0,
              education: 0, study: null, jobId: null, jobXp: 0 };
   },
-  init() { if (!Game.state.life) Game.state.life = this.fresh(); },
+  init() {
+    if (!Game.state.life) Game.state.life = this.fresh();
+    // Backfill each sub-field individually — a `life` object that exists but
+    // predates one of these must not silently corrupt downstream math (e.g.
+    // jobXp undefined -> jobLevel() NaN -> money accumulates as NaN forever).
+    const l = this.s(), defaults = this.fresh();
+    for (const k in defaults) if (l[k] === undefined) l[k] = defaults[k];
+  },
 
   // -- Derived --------------------------------------------------------------
   course(id) { return COURSES.find(c => c.id === id); },

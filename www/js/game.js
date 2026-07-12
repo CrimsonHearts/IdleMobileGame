@@ -141,6 +141,12 @@ const Game = {
       if (this.state.owned[g.id] === undefined) this.state.owned[g.id] = 0;
     });
     if (!this.state.upgrades) this.state.upgrades = {};
+    // realm is dereferenced unguarded all over the codebase (currentRealm(),
+    // lifespan(), combat scaling…) and that lookup happens OUTSIDE this
+    // module's own try/catch boot recovery (main.js's UI.init() runs after
+    // it) — a missing/invalid realm here would crash the whole app with no
+    // fallback at all, not just trigger a save wipe.
+    if (this.state.realm == null || isNaN(this.state.realm) || !GameData.realms[this.state.realm]) this.state.realm = 0;
     if (this.state.stage === undefined) this.state.stage = 0;
     if (this.state.stagesCleared === undefined) this.state.stagesCleared = 0;
     if (this.state.characterCreated === undefined) this.state.characterCreated = false;

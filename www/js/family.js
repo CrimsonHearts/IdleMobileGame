@@ -45,7 +45,16 @@ const Family = {
   fresh() { return { candidates: [], spouse: null, children: [], childCooldown: 0 }; },
   init() {
     if (!Game.state.family) Game.state.family = this.fresh();
-    if (!this.s().candidates.length && !this.s().spouse) this._seed();
+    // Backfill each sub-field individually — a `family` object that exists
+    // but predates one of these (or was otherwise partially shaped) must not
+    // crash init(); an unguarded `.candidates.length` here previously threw
+    // and triggered the top-level save-wipe fallback in main.js.
+    const f = this.s();
+    if (!Array.isArray(f.candidates)) f.candidates = [];
+    if (f.spouse === undefined) f.spouse = null;
+    if (!Array.isArray(f.children)) f.children = [];
+    if (f.childCooldown === undefined) f.childCooldown = 0;
+    if (!f.candidates.length && !f.spouse) this._seed();
   },
 
   _name() { return FIRST_NAMES[Math.floor(Math.random()*FIRST_NAMES.length)] + ' ' + LAST_NAMES[Math.floor(Math.random()*LAST_NAMES.length)]; },

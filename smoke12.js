@@ -237,17 +237,72 @@ if (window.Achievements) Achievements.checkAll();
 console.log('    Migration OK — old save ticks cleanly ✓');
 
 // ════════════════════════════════════════════════════════════════════════
+// TEST 7b — Regression: a save whose sub-objects exist but are PARTIALLY
+// shaped (not entirely missing) must not throw during boot init. Found via
+// live-browser reproduction: a save with family:{} (no `candidates` array)
+// threw inside Family.init(), which main.js's boot try/catch then turned
+// into a full Storage.wipe() — silently discarding the player's ENTIRE
+// save and re-prompting for character creation on every future launch.
+// Also covers Life.init()/Market.init() (same class of gap) and a missing/
+// invalid `realm`, which crashes OUTSIDE that try/catch entirely (in
+// UI.init()'s first render) with no recovery at all.
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 7b: Partially-shaped sub-objects self-heal instead of throwing');
+
+const partialSave = {
+  qi: 42, owned: {}, characterCreated: true, name: 'PartialSaveTester',
+  realm: undefined,          // was: crashes UI.init() -> currentRealm() -> .lifespan, no recovery
+  family: {},                // was: crashes Family.init() -> .candidates.length
+  life: { money: 500 },      // was: jobXp undefined -> jobLevel() NaN -> money NaN forever
+  market: { prices: undefined }, // was: crashes Market.init() -> prices[g.id]
+};
+Game.init(partialSave);
+assert(Game.state.realm === 0, 'missing/invalid realm self-heals to 0');
+assert(GameData.realms[Game.state.realm], 'realm is a valid index into GameData.realms');
+Game.currentRealm(); // must not throw
+Game.lifespan();     // must not throw
+
+Life.init();
+Family.init(); // must not throw on family:{}
+assert(Array.isArray(Game.state.family.candidates), 'family.candidates backfilled to an array');
+assert(Game.state.family.spouse === null, 'family.spouse backfilled');
+
+assert(Game.state.life.jobXp === 0, 'life.jobXp backfilled (was undefined -> NaN cascade)');
+assert(Game.state.life.money === 500, 'existing life.money is preserved, not clobbered by the backfill');
+assert(!isNaN(Life.jobLevel()), 'jobLevel() no longer produces NaN');
+
+if (window.Market) Market.init();
+if (window.Market) {
+  assert(Game.state.market.prices && typeof Game.state.market.prices === 'object', 'market.prices backfilled');
+  assert(Game.state.market.trend && typeof Game.state.market.trend === 'object', 'market.trend backfilled');
+}
+
+// The full boot sequence (mirroring main.js's initAll) must complete and
+// tick cleanly on this exact save shape with zero exceptions.
+Quests.init();
+Game.tick();
+// renderResources() is where the realm crash actually surfaced live —
+// exercise the same call chain without needing a DOM.
+Game.qiPerSecond(); Game.qiPerTap(); Game.lifespan();
+console.log('    Partial sub-objects self-heal OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
 // TEST 8 — Offline catch-up: 2h away at zone 5+, no crash, gains applied
 // ════════════════════════════════════════════════════════════════════════
 console.log('\n  Test 8: Offline catch-up (2h, combat + rifts in the loop)');
+// Self-sufficient setup (don't rely on state left behind by earlier tests —
+// Test 7b in particular resets to a fresh, zero-generator save on purpose).
+Game.state.owned.mat = 50;
+Game.state.realm = 5; Game.state.stagesCleared = 40;
+Game.state.combat = { zone: 5, wave: 1, highestZone: 6, playerHp: null, paused: false };
 Game.state.lastSaved = TimeService.now() - 2 * 3600 * 1000;
 Game.state.maxSeenTime = Game.state.lastSaved;
 const preOffline = { qi: Game.state.qi, shards: Game.state.stellarShards };
 const res = Game.applyOffline();
 assert(res && !res.cheated, 'offline not flagged as cheating');
 assert(res.seconds > 7000, `offline seconds ≈ 7200 (got ${Math.round(res.seconds)})`);
-assert(Game.state.qi >= preOffline.qi, 'offline qi applied');
-assert(Game.state.stellarShards >= preOffline.shards, 'offline combat shards accrued');
+assert(Game.state.qi > preOffline.qi, 'offline qi strictly increased');
+assert(Game.state.stellarShards > preOffline.shards, 'offline combat shards strictly increased');
 console.log(`    Offline OK — +${Math.round(Game.state.qi - preOffline.qi)} qi, +${Game.state.stellarShards - preOffline.shards} shards ✓`);
 
 // ════════════════════════════════════════════════════════════════════════

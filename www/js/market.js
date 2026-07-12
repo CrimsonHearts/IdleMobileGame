@@ -12,7 +12,13 @@ const Market = {
   },
   init() {
     if (!Game.state.market) Game.state.market = this.fresh();
+    // Backfill sub-fields individually — a `market` object that exists but
+    // predates one of these must not crash init() (an unguarded prices[g.id]
+    // on a missing `prices` object would throw).
+    if (!this.s().prices) this.s().prices = {};
     GameData.market.goods.forEach(g => { if (this.s().prices[g.id] === undefined) this.s().prices[g.id] = 1; });
+    if (!this.s().trend) this.s().trend = {};
+    if (this.s().lastDrift === undefined) this.s().lastDrift = 0;
   },
 
   good(id) { return GameData.market.goods.find(g => g.id === id); },
