@@ -103,6 +103,9 @@ const Monetization = {
    * @param {string} reason  label for analytics, e.g. 'offline_double'
    */
   async showRewardedAd(reason = 'reward') {
+    // Ad-removal purchasers should never see another ad prompt, period —
+    // grant the reward as if the ad were watched instead of gating it.
+    if (this.adsRemoved) return true;
     if (this._admob) {
       try {
         const adId = AD_CONFIG.unit('rewarded', this._isIOS);

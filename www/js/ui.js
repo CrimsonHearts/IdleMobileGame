@@ -2118,7 +2118,7 @@ const UI = {
             <span class="shop-card-ico">🚫</span>
             <span class="shop-card-info">
               <span class="shop-card-name">Remove Ads</span>
-              <span class="shop-card-desc">Removes all banner & interstitial ads. Rewarded ads remain (they're optional & beneficial).</span>
+              <span class="shop-card-desc">Removes all ads — including banners, interstitials, and rewarded-video prompts. Every ad-gated bonus is granted instantly instead.</span>
             </span>
             <button class="shop-card-btn ${adsOwned ? 'muted-btn' : 'jade-btn'}" data-product="remove_ads" ${adsOwned ? 'disabled' : ''}>
               ${adsOwned ? '✓ Owned' : '$10.99'}

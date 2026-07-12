@@ -59,14 +59,14 @@ Maven access, this whole section is moot — just verify with
 ## Regression testing
 
 This project uses hand-rolled Node smoke tests, not a test framework —
-`smoke5.js` through `smoke12.js` in the repo root (numbered by the feature
+`smoke5.js` through `smoke13.js` in the repo root (numbered by the feature
 round that introduced them; earlier `smoke1–4` were superseded/folded in).
 Each `eval()`s the relevant `www/js/*.js` source directly with minimal stubs.
 
 Run them all before considering any change done:
 
 ```bash
-for t in smoke5 smoke6 smoke7 smoke8 smoke9 smoke10 smoke11 smoke12; do
+for t in smoke5 smoke6 smoke7 smoke8 smoke9 smoke10 smoke11 smoke12 smoke13; do
   node $t.js || echo "FAILED: $t"
 done
 ```
@@ -82,3 +82,37 @@ a new `smokeN.js` (or the relevant existing one) for single-module logic.
 Also run `node --check www/js/*.js` — this repo has shipped at least one
 regression where corrupted string-quote characters silently broke a file's
 syntax without any smoke test catching it (nothing evals every file).
+
+## Reproducing a live-gameplay bug report
+
+The smoke suites stub every sibling module, so they can't catch a bug that
+only shows up when the REAL boot sequence runs in a REAL browser (DOM,
+localStorage, confirm() dialogs, etc.). When a user reports something like
+"X keeps happening" or "Y purchase doesn't work," don't just read code and
+guess — reproduce it empirically:
+
+```bash
+node tools/static-server.mjs &          # serves the game at :8080
+```
+
+Playwright isn't a project dependency (don't add it to package.json for a
+one-off repro) — install it into the scratchpad dir instead:
+`npm install playwright --prefix <scratchpad>`. The pre-installed Chromium
+at `/opt/pw-browsers/chromium-<N>/chrome-linux/chrome` is usually a
+DIFFERENT build number than whatever `playwright`'s own npm version expects
+by default (`chromium.launch()` looks for a `chromium_headless_shell-<M>`
+that isn't there) — pass `executablePath` explicitly pointing at the
+`chrome` binary under whichever `/opt/pw-browsers/chromium-*` dir actually
+exists (`ls /opt/pw-browsers`), rather than trying to get Playwright to
+auto-detect it.
+
+Drive the page with `page.evaluate()` to call real game functions
+(`Game.buyGenerator(...)`, `Monetization.showRewardedAd(...)`, etc.) and
+inspect real state — this catches classes of bug the stubbed smoke tests
+structurally cannot: exceptions thrown by the real boot try/catch chain in
+main.js, localStorage persistence gaps, and anything gated on
+`window.Capacitor`/`confirm()`/DOM APIs the Node harness doesn't have. Two
+real bugs were caught exactly this way and would NOT have been caught by
+the existing smoke suites: a save-shape edge case that silently wiped the
+player's save on every boot, and a rewarded-ad prompt that kept showing
+after the "Remove Ads" purchase.
