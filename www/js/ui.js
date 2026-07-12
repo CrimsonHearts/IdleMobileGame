@@ -20,7 +20,8 @@ const UI = {
       gen: $('gen-val'),
       studyPanel: $('tab-study'),
       workPanel: $('tab-work'),
-      lifePanel: $('tab-life'),
+      lifePanel: $('lsub-partner'),
+      lineagePanel: $('lsub-lineage'),
       realm: $('realm-name'),
       stageName: $('stage-name'),
       charName: $('char-name'),
@@ -104,6 +105,19 @@ const UI = {
         else if (this.artsSub === 'heaven') this.renderHeaven();
         else if (this.artsSub === 'alchemy') this.renderAlchemy();
         else this.renderUpgrades();
+      });
+    });
+
+    // Life sub-navigation (Partner / Lineage).
+    this.lifeSub = 'partner';
+    document.querySelectorAll('#life-subnav .subnav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.lifeSub = btn.dataset.lsub;
+        document.querySelectorAll('#life-subnav .subnav-btn').forEach(b => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('#tab-life .subpanel').forEach(p =>
+          p.classList.toggle('active', p.id === 'lsub-' + this.lifeSub));
+        if (this.lifeSub === 'lineage') this.renderLineage();
+        else Family.render(this.el.lifePanel);
       });
     });
 
@@ -299,7 +313,10 @@ const UI = {
     this.renderRealm();
     if (this.activeTab === 'study') Life.renderStudy(this.el.studyPanel);
     else if (this.activeTab === 'work') Life.renderWork(this.el.workPanel);
-    else if (this.activeTab === 'life') Family.render(this.el.lifePanel);
+    else if (this.activeTab === 'life') {
+      if (this.lifeSub === 'lineage') this.renderLineage();
+      else Family.render(this.el.lifePanel);
+    }
   },
 
   renderResources() {
@@ -354,7 +371,10 @@ const UI = {
       case 'cultivate':  this.renderShop(); this.renderRealm(); break;
       case 'study':      Life.renderStudy(this.el.studyPanel); break;
       case 'work':       Life.renderWork(this.el.workPanel); break;
-      case 'life':       Family.render(this.el.lifePanel); break;
+      case 'life':
+        if (this.lifeSub === 'lineage') this.renderLineage();
+        else Family.render(this.el.lifePanel);
+        break;
       case 'techniques':
         if (this.artsSub === 'meridians') this.renderMeridians();
         else if (this.artsSub === 'blood') this.renderBlood();
@@ -1059,26 +1079,33 @@ const UI = {
     if (!overlay) return;
     this._deathShown = true;
     const children = (Game.state.family && Game.state.family.children) || [];
+    const eligible = window.Family ? Family.isHeirEligible.bind(Family) : () => true;
 
     const heirCards = children.length
-      ? children.map((c, i) => `
-          <button class="heir-card" data-i="${i}">
+      ? children.map((c, i) => {
+          const ok = eligible(c);
+          const stage = window.Family ? Family.stageOf(c.age).name : '';
+          return `
+          <button class="heir-card${ok ? '' : ' ineligible'}" data-i="${i}" ${ok ? '' : 'disabled'} title="${ok ? '' : `Too young to inherit — reaches heir age at ${GameData.heirMinStage}`}">
             <span class="li-icon" style="color:${c.root.color}">${c.gender === 'female' ? '👧' : '👦'}</span>
-            <span class="li-main"><span class="li-name">${c.name}</span>
+            <span class="li-main"><span class="li-name">${c.name}${ok ? '' : ` <span class="badge stage-badge">${stage}</span>`}</span>
               <span class="li-sub" style="color:${c.root.color}">${c.root.name}</span></span>
-          </button>`).join('')
+          </button>`;
+        }).join('')
       : `<p class="hint">You leave no children. A distant descendant will inherit a
          scattered fraction of your dao (+${(Game.pendingLegacyGain(null) * 100).toFixed(0)}% legacy).</p>`;
+    const anyEligible = children.some(eligible);
 
-    const legacyWithHeir = children.length ? (Game.pendingLegacyGain(children[0]) * 100).toFixed(0) : null;
+    const legacyWithHeir = anyEligible ? (Game.pendingLegacyGain(children[0]) * 100).toFixed(0) : null;
     overlay.innerHTML = `
       <div class="modal">
         <h2>⏳ Your Lifespan Ends</h2>
         <p>At age <b>${Game.state.life.age}</b>, ${Game.state.name}'s dao reaches its mortal limit.
            Dao Comprehension and your family legacy pass on to the next generation${legacyWithHeir !== null ? ` (<b>+${legacyWithHeir}%</b> permanent legacy)` : ''}.</p>
-        ${children.length ? '<p class="hint">Choose your heir:</p>' : ''}
+        ${anyEligible ? '<p class="hint">Choose your heir:</p>'
+          : children.length ? `<p class="hint">Your children are too young to inherit (heir-eligible at ${GameData.childStages.find(s=>s.key===GameData.heirMinStage).name}). A distant descendant carries the bloodline forward instead.</p>` : ''}
         <div class="heir-list">${heirCards}</div>
-        <button class="modal-close" id="descendant-btn">${children.length ? 'Skip — Continue as a Distant Descendant' : 'Continue the Bloodline'}</button>
+        <button class="modal-close" id="descendant-btn">${anyEligible ? 'Skip — Continue as a Distant Descendant' : 'Continue the Bloodline'}</button>
       </div>`;
 
     const finish = (heir) => {
@@ -1094,6 +1121,124 @@ const UI = {
     const d = overlay.querySelector('#descendant-btn');
     if (d) d.addEventListener('click', () => finish(null));
     document.body.appendChild(overlay);
+  },
+
+  /** Rare narrative event that deepens spouse Bond (Round 15). */
+  showSpousalEvent(ev) {
+    const overlay = this._openModal();
+    if (!overlay) return;
+    const sp = Game.state.family.spouse;
+    const money = (Game.state.life && Game.state.life.money) || 0;
+    overlay.innerHTML = `
+      <div class="modal">
+        <h2>💞 ${ev.title}</h2>
+        <p>${ev.text.replace('{spouse}', sp.name)}</p>
+        <div class="event-options">
+          ${ev.options.map((o, i) => {
+            const afford = !o.cost || !o.cost.money || money >= o.cost.money;
+            return `<button class="event-opt" data-i="${i}" ${afford ? '' : 'disabled'}>
+              <span>${o.label}</span><span class="ev-karma good">+${o.bond} bond</span></button>`;
+          }).join('')}
+        </div>
+      </div>`;
+    overlay.querySelectorAll('.event-opt').forEach(b => b.addEventListener('click', () => {
+      const res = Family.resolveSpousalEvent(ev, parseInt(b.dataset.i, 10));
+      if (res && res.ok) {
+        overlay.remove();
+        this.renderAll();
+        if (res.toast) this.toast(`💞 ${res.toast}`);
+      }
+    }));
+    document.body.appendChild(overlay);
+  },
+
+  /** Rare event that can end a marriage (Round 15). */
+  showWidowEvent(widow) {
+    const overlay = this._openModal();
+    if (!overlay) return;
+    overlay.innerHTML = `
+      <div class="modal">
+        <h2>🕊 ${widow.title}</h2>
+        <p>${widow.text}</p>
+        <button class="modal-close" id="widow-continue">Continue</button>
+      </div>`;
+    overlay.querySelector('#widow-continue').addEventListener('click', () => {
+      Family.endMarriage();
+      overlay.remove();
+      this.renderAll();
+      this.toast(`🕊 ${widow.spouseName} is no longer by your side.`);
+    });
+    document.body.appendChild(overlay);
+  },
+
+  /** Branching scene at a courtship affinity milestone (Round 15). */
+  showCourtshipScene(pending) {
+    const overlay = this._openModal();
+    if (!overlay) return;
+    const { scene, candId, candName } = pending;
+    const money = (Game.state.life && Game.state.life.money) || 0;
+    overlay.innerHTML = `
+      <div class="modal">
+        <h2>💘 ${scene.title}</h2>
+        <p>${scene.text.replace(/\{name\}/g, candName)}</p>
+        <div class="event-options">
+          ${scene.options.map((o, i) => {
+            const afford = !o.cost || !o.cost.money || money >= o.cost.money;
+            const a = o.affinity > 0 ? `+${o.affinity} affinity` : `${o.affinity} affinity`;
+            const cls = o.affinity >= 0 ? 'good' : 'bad';
+            return `<button class="event-opt" data-i="${i}" ${afford ? '' : 'disabled'}>
+              <span>${o.label}</span><span class="ev-karma ${cls}">${a}</span></button>`;
+          }).join('')}
+        </div>
+      </div>`;
+    overlay.querySelectorAll('.event-opt').forEach(b => b.addEventListener('click', () => {
+      const res = Family.resolveCourtshipScene(scene, candId, parseInt(b.dataset.i, 10));
+      if (res && res.ok) {
+        overlay.remove();
+        this.renderActiveTab();
+        if (res.toast) this.toast(`💘 ${res.toast}`);
+      }
+    }));
+    document.body.appendChild(overlay);
+  },
+
+  // ======================================================================
+  // ANCESTOR HALL — lineage history + house reputation (Round 15)
+  // ======================================================================
+  renderLineage() {
+    const el = this.el.lineagePanel;
+    if (!el) return;
+    const rep = Game.state.houseReputation || 0;
+    const repBonus = Math.min(25, Math.floor(rep * 0.1));
+    const lineage = Game.state.lineage || [];
+
+    let html = `<div class="section-title">🏛 Ancestor Hall</div>
+      <div class="card house-rep-card">
+        <div class="row-between"><span>Generation <b>${Game.state.generation || 1}</b></span><span>House Reputation <b>${rep}</b></span></div>
+        <div class="hint">Every generation you carry forward — through an heir or a distant descendant — adds to your house's standing. Current bonus: <b>+${repBonus}%</b> production (caps at +25%).</div>
+      </div>`;
+
+    if (!lineage.length) {
+      html += `<div class="hint">No ancestors recorded yet. Your story is the first page — outlive your lifespan (or reincarnate) to begin the Hall.</div>`;
+    } else {
+      html += `<div class="section-title small">Past Generations</div><div id="lineage-list"></div>`;
+    }
+    el.innerHTML = html;
+
+    if (lineage.length) {
+      const list = el.querySelector('#lineage-list');
+      [...lineage].reverse().forEach(g => {
+        const d = document.createElement('div');
+        d.className = 'list-item lineage-item';
+        d.innerHTML = `<span class="li-icon">🕯</span>
+          <span class="li-main">
+            <span class="li-name">Gen ${g.generation}: ${g.name}</span>
+            <span class="li-sub">${g.root} · reached ${g.realmReached}${g.endedAtAge != null ? ` at age ${g.endedAtAge}` : ''}</span>
+            <span class="li-sub">${g.spouseName ? `Married ${g.spouseName} · ` : ''}${g.childCount} child${g.childCount === 1 ? '' : 'ren'}${g.heirName ? ` · succeeded by ${g.heirName}` : ' · line continued by a distant descendant'}</span>
+          </span>`;
+        list.appendChild(d);
+      });
+    }
   },
 
   multAll() {

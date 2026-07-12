@@ -555,6 +555,104 @@ const GameData = {
     maxLevel: 5,
   },
 
+  /* ── Family depth (Round 15) ─────────────────────────────────────────────
+   * Life stages for children (ages use the same 10min/year clock as the
+   * player — see aging.secondsPerYear), paths a Youth+ child can pursue,
+   * spousal bond-deepening events, and branching courtship milestone scenes.
+   */
+  childStages: [
+    { key: 'infant', name: 'Infant', icon: '👶', minAge: 0 },
+    { key: 'child',  name: 'Child',  icon: '🧒', minAge: 3 },
+    { key: 'youth',  name: 'Youth',  icon: '🧑',  minAge: 9 },
+    { key: 'adult',  name: 'Adult',  icon: '🧑‍🎓', minAge: 16 },
+  ],
+  heirMinStage: 'youth', // a child must reach this stage before becoming heir-eligible
+
+  childPaths: [
+    { id: 'cultivation', name: 'Cultivation Path', icon: '☯', desc: '+3% household Qi (stacks with the base per-child bonus)' },
+    { id: 'scholar',     name: 'Scholar Path',      icon: '📖', desc: 'Occasionally gifts you Dao Comprehension from their studies' },
+    { id: 'merchant',    name: 'Merchant Path',     icon: '💹', desc: 'Runs a small trade — trickles ¥ income while idle' },
+    { id: 'martial',     name: 'Martial Path',      icon: '🥋', desc: '+4% combat power, training in the Trials' },
+  ],
+
+  childStageEvents: {
+    child: [
+      'toddles after {name} everywhere, asking why the sky glows at night.',
+      'draws a wobbly picture of the family and proudly pins it to the wall.',
+      'insists on "helping" with chores, which mostly means more chores.',
+    ],
+    youth: [
+      'starts sneaking off to watch cultivators duel in the market square.',
+      'asks pointed questions about the Fracture the whole city whispers of.',
+      'declares a life ambition, then changes it three times before dinner.',
+    ],
+    adult: [
+      'stands taller than {name} remembers, ready to choose their own path.',
+      'thanks {name} for everything, in that quiet way that means they mean it.',
+    ],
+  },
+
+  spousalEvents: [
+    { id: 'sp_cook', title: 'A Quiet Evening',
+      text: '{spouse} sets down a home-cooked meal, the kind that tastes like time you don\'t get back.',
+      options: [
+        { label: 'Savor it together', bond: 8, toast: 'A small evening, held onto.' },
+        { label: 'Eat quickly, back to cultivation', bond: 2, effects: { qiPct: 0.02 }, toast: '{spouse} understands. Mostly.' },
+      ] },
+    { id: 'sp_worry', title: 'A Quiet Worry',
+      text: '{spouse} finally says it: "Promise me you won\'t vanish into the Dao and forget to come home."',
+      options: [
+        { label: 'I promise', bond: 12, toast: '{spouse} exhales, the worry unknotting.' },
+        { label: '"The Dao comes first."', bond: -4, effects: { qiPct: 0.03 }, toast: '{spouse} nods, quieter than before.' },
+      ] },
+    { id: 'sp_gift', title: 'A Small Gift',
+      text: 'A traveling merchant has jade hairpins carved with twin phoenixes. {spouse} would love one.',
+      options: [
+        { label: 'Buy it (¥1,500)', bond: 10, cost: { money: 1500 }, toast: '{spouse} wears it every day after.' },
+        { label: 'Save the coin', bond: 0, toast: 'Practical. {spouse} understands, this time.' },
+      ] },
+    { id: 'sp_pride', title: 'Told the Neighbors', bondMin: 40,
+      text: '{spouse} was overheard bragging about your cultivation to the whole street — badly exaggerated, utterly sincere.',
+      options: [
+        { label: 'Laugh it off together', bond: 6, toast: 'You let them have this one.' },
+      ] },
+    { id: 'sp_anniv', title: 'An Anniversary Remembered', bondMin: 60,
+      text: '{spouse} remembers the day you met, down to the weather. You almost didn\'t.',
+      options: [
+        { label: 'Celebrate properly', bond: 10, cost: { money: 2000 }, toast: 'A night neither of you will need cultivation to remember.' },
+        { label: 'A quiet toast at home', bond: 6, toast: 'Simple. Enough.' },
+      ] },
+  ],
+
+  /** Rare event that can end a marriage — reopens courtship. Kept gentle in
+   *  tone (parting, not tragedy) to match the game's register. */
+  widowEvent: {
+    title: 'A Parting of Ways',
+    lowBondText: 'The years of cultivation have pulled you apart. {spouse} leaves at dawn, without bitterness, just distance grown too wide to close.',
+    highBondText: '{spouse} passes peacefully, having lived a long life beside you. You sit with the quiet a long while before you can move again.',
+  },
+
+  courtshipScenes: [
+    { atAffinity: 25, id: 'cs_open', title: 'Opening Up',
+      text: '{name} finally drops the polite distance. "Can I tell you something I haven\'t told anyone?"',
+      options: [
+        { label: 'Listen closely', affinity: 6, toast: '{name} trusts you a little more.' },
+        { label: 'Change the subject, gently', affinity: 2, toast: '{name} lets it go, for now.' },
+      ] },
+    { atAffinity: 50, id: 'cs_rival', title: 'A Rival Appears',
+      text: 'Someone else has been asking around about {name}. They mention it, watching for your reaction.',
+      options: [
+        { label: '"I only have eyes for you."', affinity: 10, toast: '{name} beams.' },
+        { label: 'Stay noncommittal', affinity: -2, toast: '{name} looks faintly disappointed.' },
+      ] },
+    { atAffinity: 75, id: 'cs_meet_family', title: 'Meeting the Family',
+      text: '{name} wants you to meet their family — a real step, not a casual one.',
+      options: [
+        { label: 'Go, and go prepared', affinity: 12, cost: { money: 800 }, toast: 'It goes better than {name} expected.' },
+        { label: 'Go as you are', affinity: 6, toast: 'Nervous, but it works out.' },
+      ] },
+  ],
+
   /* ── Karma & life events (Round 5) ──────────────────────────────────────
    * A Righteous(+) / Demonic(−) axis. Random dilemmas shift karma and grant
    * or cost resources; both options trade something. Karma gates flavour and

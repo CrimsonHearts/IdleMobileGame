@@ -1531,3 +1531,32 @@ small { font-weight:400; }
   font-size:18px; color:#80e0a0; font-weight:900;
   flex-shrink:0; padding:0 4px;
 }
+
+/* =========================================================================
+   FAMILY DEPTH (Round 15) — courtship stakes, marriage bond, child life
+   stages & paths, Ancestor Hall.
+   ========================================================================= */
+
+/* -- Courtship: primary/exclusivity --------------------------------------- */
+.badge.primary-badge { background:linear-gradient(135deg,var(--rose),#c8407a); color:#fff; }
+.card.candidate.primary-candidate { border-color:var(--rose); box-shadow:0 0 0 1px var(--rose); }
+
+/* -- Marriage: bond bar + spend-time action -------------------------------- */
+.progress-track.bond .progress-fill { background:linear-gradient(90deg,#c8503f,#e7b94e); }
+#spend-time { margin-top:10px; }
+
+/* -- Children: life-stage badges + path selection -------------------------- */
+.badge.stage-badge { background:var(--surface-2); color:var(--muted); border:1px solid var(--line); }
+.child-item { flex-direction:column; align-items:stretch; }
+.child-item .li-main { width:100%; }
+.path-choice-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.path-choice-row .path-btn { font-size:11px; }
+
+/* -- Heir eligibility (death modal) ---------------------------------------- */
+.heir-card.ineligible { opacity:.5; cursor:not-allowed; }
+.heir-card.ineligible:hover { border-color:var(--line); background:var(--surface-2); }
+
+/* -- Ancestor Hall ---------------------------------------------------------- */
+.house-rep-card { margin-bottom:14px; }
+.lineage-item { flex-direction:column; align-items:stretch; gap:2px; }
+.lineage-item .li-main { width:100%; display:flex; flex-direction:column; gap:2px; }

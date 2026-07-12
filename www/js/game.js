@@ -71,6 +71,10 @@ const Game = {
       generation: 1,           // which generation of the bloodline is playing
       legacyBonus: 0,          // permanent multiplier accumulated from past lives
 
+      // Family depth (Round 15): Ancestor Hall lineage log + house reputation
+      lineage: [],             // [{generation, name, root, realmReached, spouseName, childCount, heirName, endedAtAge}]
+      houseReputation: 0,      // slow-growing prestige stat from generational milestones
+
       // Depth (Round 5): Dao Path, inherited traits, karma & life events
       daoPath: null,           // chosen path id (locked for this life)
       traits: [],              // innate traits inherited from being born an heir
@@ -179,6 +183,8 @@ const Game = {
     if (this.state.breakthroughPills === undefined) this.state.breakthroughPills = 0;
     if (this.state.generation === undefined) this.state.generation = 1;
     if (this.state.legacyBonus === undefined) this.state.legacyBonus = 0;
+    if (!Array.isArray(this.state.lineage)) this.state.lineage = [];
+    if (this.state.houseReputation === undefined) this.state.houseReputation = 0;
     if (this.state.daoPath === undefined) this.state.daoPath = null;
     if (!this.state.traits) this.state.traits = [];
     if (this.state.karma === undefined) this.state.karma = 0;
@@ -675,6 +681,9 @@ const Game = {
         .reduce((s, ms) => s + ms.bonus, 0);
       if (milestoneBonus) m.allMult *= (1 + milestoneBonus);
     }
+    // House reputation (Round 15): a slow-growing, generation-spanning
+    // prestige bonus — capped so it stays a long-term flourish, not a wall.
+    if (this.state.houseReputation) m.allMult *= (1 + Math.min(0.25, this.state.houseReputation * 0.001));
     return m;
   },
 
@@ -983,6 +992,17 @@ const Game = {
   passToHeir(heir) {
     const L = GameData.legacy;
     this.state.legacyBonus = (this.state.legacyBonus || 0) + this.pendingLegacyGain(heir);
+
+    // Ancestor Hall: log the generation that just ended (BEFORE incrementing
+    // the counter below, and before family state gets wiped further down —
+    // summaryForLineage reads the current generation/spouse/children).
+    if (window.Family) {
+      if (!Array.isArray(this.state.lineage)) this.state.lineage = [];
+      const summary = Family.summaryForLineage(heir);
+      this.state.lineage.push(summary);
+      this.state.houseReputation = (this.state.houseReputation || 0)
+        + 2 + this.state.realm + Math.min(summary.childCount, 6);
+    }
     this.state.generation = (this.state.generation || 1) + 1;
 
     // New body inherits the heir's identity, root & traits (or rolls a descendant).
@@ -1020,7 +1040,7 @@ const Game = {
       this.state.life.intellect = 0; this.state.life.charm = 0;
       this.state.life.talent = nurtureLvl * N.talentPerLevel; // tutoring pays off
     }
-    if (this.state.family) this.state.family = { candidates: [], spouse: null, children: [], childCooldown: 0 };
+    if (window.Family) this.state.family = Family.fresh();
     if (window.Family) Family.init();
     this.persist();
     return { generation: this.state.generation, legacy: this.state.legacyBonus };

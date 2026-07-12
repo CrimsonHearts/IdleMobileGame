@@ -106,7 +106,10 @@ const Life = {
     s.ageAcc += dt;
     if (s.ageAcc >= spy) {
       s.ageAcc -= spy; s.age += 1;
-      if (window.Family) Family.ageUp();
+      if (window.Family) {
+        const stageEvents = Family.ageUp();
+        if (stageEvents && window.UI) stageEvents.forEach(msg => UI.toast(msg));
+      }
       if (Game.isDying() && window.UI) UI.showDeathModal();
     }
   },

@@ -40,7 +40,8 @@ const Combat = {
     const gear = (window.Game && Game.gearAtk) ? Game.gearAtk() : 0;
     const boost = window.Boosters ? Boosters.combatMult() : 1; // Cultivation Boosters: Battle Fury (Round 9)
     const fracture = window.Fracture ? Fracture.combatMult() : 1;
-    return (this.baseAtk() + (window.Pets ? Pets.combatAtk() : 0) + gear) * Sect.combatMult() * meridian * perk * pill * path * boost * fracture;
+    const family = window.Family ? (1 + Family.combatBonus()) : 1; // Martial-path children (Round 15)
+    return (this.baseAtk() + (window.Pets ? Pets.combatAtk() : 0) + gear) * Sect.combatMult() * meridian * perk * pill * path * boost * fracture * family;
   },
   playerHpMax() {
     const hpMult = (window.Game && Game.hpExternalMult) ? Game.hpExternalMult() : 1;

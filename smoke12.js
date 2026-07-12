@@ -353,6 +353,28 @@ assert(largeDipRes.cheated === true, '1-hour dip is well beyond the grace window
 console.log('    Grace window sizing OK ✓');
 
 // ════════════════════════════════════════════════════════════════════════
+// TEST 8d — Round 15: passToHeir() logs the DECEASED generation's number in
+// the Ancestor Hall, not the new generation that's about to begin. Caught
+// live in a browser: summaryForLineage() alone always passed (it just reads
+// whatever Game.state.generation happens to be), but passToHeir() was
+// incrementing the counter BEFORE building the summary — an ordering bug
+// only an integration test exercising the real call sequence can catch.
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 8d: passToHeir() lineage entry uses the correct (pre-increment) generation');
+Game.state.generation = 1;
+Game.state.lineage = [];
+Family.init();
+Game.state.family.spouse = { name: 'Test Spouse', gender: 'female', root: Game.state.spiritualRoot, trait: 'Kind', traits: [], bond: 10, marriedAtAge: 18 };
+Game.state.family.children = [{ name: 'Test Heir', gender: 'male', age: 20, root: Game.state.spiritualRoot, traits: [], nurture: 0, path: null, lastStage: 'adult' }];
+const heirChild = Game.state.family.children[0];
+Game.passToHeir(heirChild);
+assert(Game.state.lineage.length === 1, 'one lineage entry logged');
+assert(Game.state.lineage[0].generation === 1, `lineage entry records generation 1 (the one that died), not 2 (got ${Game.state.lineage[0].generation})`);
+assert(Game.state.generation === 2, 'the live generation counter is now 2');
+assert(Game.state.lineage[0].heirName === 'Test Heir', 'lineage entry records the chosen heir');
+console.log('    passToHeir generation numbering OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
 // TEST 9 — Corrupt / malformed save resilience
 // ════════════════════════════════════════════════════════════════════════
 console.log('\n  Test 9: Corrupt save resilience');
