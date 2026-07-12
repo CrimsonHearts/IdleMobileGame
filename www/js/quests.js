@@ -318,7 +318,7 @@ const QUEST_DEFS = [
     rewardText: '+6 Dao & 200 Stellar Shards',
     dialogue: [
       { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
-        "Void Refinement. I suppose now you've earned the rest of the story.",
+        "Fifteen rifts sealed by your own hand. I suppose now you've earned the rest of the story.",
         "I heard that Voice once before. Three hundred years ago, when the last Fracture opened. I was younger and considerably less careful.",
         "I sealed nineteen rifts before I understood what it was actually teaching me. I thought I was closing wounds. I was being shown how to open them.",
         "Don't ask me how that story ended. Ask me how you want yours to.",

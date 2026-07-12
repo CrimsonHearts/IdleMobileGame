@@ -215,6 +215,35 @@ assert(Game.state.dailies.streak === 0, 'streak resets to 0 across a multi-day g
 console.log('    Non-consecutive gap resets streak OK ✓');
 
 // ════════════════════════════════════════════════════════════════════════
+// TEST 5c — Regression: an existing save from BEFORE the dayNum field
+// existed must not have its in-progress streak silently wiped the first
+// time it rolls over post-update, even though the transition truly was
+// consecutive. The dayNum-based check can only start enforcing strictly
+// once it has a real prior dayNum to compare against.
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n  Test 5c: Pre-existing streak survives the first rollover after update (no dayNum yet)');
+
+Game.state = freshState();
+Game.state.dailies.day       = 'yesterday';
+delete Game.state.dailies.dayNum; // simulates a save saved before this field existed
+Game.state.dailies.allComplete = true; // player genuinely finished yesterday's board
+Game.state.dailies.streak    = 4;
+
+Dailies.missions(); // rollover: first time this save has ever computed dayNum
+assert(Game.state.dailies.streak === 5,
+  `pre-existing streak is preserved/extended on the first dayNum-less rollover (got ${Game.state.dailies.streak}, expected 5)`);
+assert(Game.state.dailies.dayNum === todayNum, 'dayNum is now backfilled for future strict checks');
+
+// The FOLLOWING rollover must enforce strictly now that dayNum exists —
+// simulate a real gap and confirm the grandfather clause doesn't linger.
+Game.state.dailies.day       = 'stale'; // never equals today's string, so this alone triggers rollover
+Game.state.dailies.dayNum    = todayNum - 4; // a real gap this time
+Game.state.dailies.allComplete = true;
+Dailies.missions();
+assert(Game.state.dailies.streak === 0, 'strict consecutive-day enforcement resumes immediately after dayNum is backfilled');
+console.log('    Pre-existing streak preserved through migration OK ✓');
+
+// ════════════════════════════════════════════════════════════════════════
 // TEST 6 — Weekly reward: weekReady fires at streak 7
 // ════════════════════════════════════════════════════════════════════════
 console.log('\n  Test 6: Weekly reward unlocks at 7-day streak');

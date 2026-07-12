@@ -56,7 +56,11 @@ const Dailies = {
       const todayNum = Game._dayNumber(TimeService.now());
       // Extend the streak only if the last tracked day was truly yesterday —
       // a multi-day gap (player away a week) must not silently preserve it.
-      const consecutive = s.dayNum !== undefined && s.dayNum === todayNum - 1;
+      // Saves from before this check existed have no dayNum yet — grandfather
+      // that ONE transition (trust the old allComplete-only signal) instead of
+      // wiping an honest player's in-progress streak the moment they update;
+      // dayNum gets backfilled below, so every transition after this is strict.
+      const consecutive = s.dayNum === undefined ? true : s.dayNum === todayNum - 1;
       if (s.day !== null) {
         if (s.allComplete && consecutive) {
           s.streak = (s.streak || 0) + 1;
