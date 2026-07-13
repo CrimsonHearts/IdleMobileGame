@@ -42,36 +42,36 @@ const GameData = {
    * 10 buildings all the way to Immortal Ascension.
    */
   generators: [
-    { id: 'mat',     name: 'Meditation App',        icon: '🧘', baseCost: 15,           costGrowth: 1.15, baseProd: 0.15,
+    { id: 'mat',     name: 'Meditation App',        icon: '🧘', baseCost: 15,           costGrowth: 1.16, baseProd: 0.138,
       desc: 'A smartphone app that guides your breathing and trickles in ambient Qi.' },
-    { id: 'herb',    name: 'Hydroponic Spirit Garden', icon: '🌿', baseCost: 100,       costGrowth: 1.15, baseProd: 1.5,
+    { id: 'herb',    name: 'Hydroponic Spirit Garden', icon: '🌿', baseCost: 100,       costGrowth: 1.16, baseProd: 1.38,
       desc: 'A smart-glass greenhouse growing gene-edited spirit herbs around the clock.' },
-    { id: 'stone',   name: 'Spirit Crystal Rig',    icon: '💎', baseCost: 1100,         costGrowth: 1.15, baseProd: 12,
+    { id: 'stone',   name: 'Spirit Crystal Rig',    icon: '💎', baseCost: 1100,         costGrowth: 1.16, baseProd: 11.04,
       desc: 'A mining rig that refines raw spirit crystals into usable Qi.' },
-    { id: 'furnace', name: 'Auto-Alchemy Lab',       icon: '⚗️', baseCost: 12000,        costGrowth: 1.15, baseProd: 70.5,
+    { id: 'furnace', name: 'Auto-Alchemy Lab',       icon: '⚗️', baseCost: 12000,        costGrowth: 1.16, baseProd: 64.86,
       desc: 'A robotic pill furnace that synthesises Qi-dense compounds.' },
-    { id: 'library', name: 'Cloud Scripture Server',  icon: '📜', baseCost: 130000,      costGrowth: 1.15, baseProd: 390,
+    { id: 'library', name: 'Cloud Scripture Server',  icon: '📜', baseCost: 130000,      costGrowth: 1.16, baseProd: 358.8,
       desc: 'A datacenter streaming the collected Dao to your neural link.' },
-    { id: 'sword',   name: 'Sword-Drone Bay',         icon: '🗡️', baseCost: 1400000,     costGrowth: 1.15, baseProd: 2100,
+    { id: 'sword',   name: 'Sword-Drone Bay',         icon: '🗡️', baseCost: 1400000,     costGrowth: 1.16, baseProd: 1932,
       desc: 'A hangar of autonomous flying swords humming with sword-intent.' },
-    { id: 'array',   name: 'Qi Fusion Reactor',       icon: '🏯', baseCost: 20000000,    costGrowth: 1.15, baseProd: 11700,
+    { id: 'array',   name: 'Qi Fusion Reactor',       icon: '🏯', baseCost: 20000000,    costGrowth: 1.16, baseProd: 10764,
       desc: 'A city-scale reactor condensing spiritual energy from the grid.' },
-    { id: 'dragon',  name: 'Dragon-Vein Power Plant', icon: '🐉', baseCost: 330000000,   costGrowth: 1.15, baseProd: 66000,
+    { id: 'dragon',  name: 'Dragon-Vein Power Plant', icon: '🐉', baseCost: 330000000,   costGrowth: 1.16, baseProd: 60720,
       desc: 'Tapped directly into the earth-dragon ley lines beneath the metropolis.' },
-    { id: 'star',    name: 'Orbital Star Collector',   icon: '🌌', baseCost: 5100000000, costGrowth: 1.15, baseProd: 390000,
+    { id: 'star',    name: 'Orbital Star Collector',   icon: '🌌', baseCost: 5100000000, costGrowth: 1.16, baseProd: 358800,
       desc: 'A satellite array harvesting starlight Qi from low orbit.' },
-    { id: 'heaven',  name: 'Dao Quantum Core',         icon: '🪷', baseCost: 75000000000, costGrowth: 1.15, baseProd: 2400000,
+    { id: 'heaven',  name: 'Dao Quantum Core',         icon: '🪷', baseCost: 75000000000, costGrowth: 1.16, baseProd: 2208000,
       desc: 'A quantum computer that simulates the Heavenly Dao itself.' },
     // -- Late-game tier (Round 16) — each unlocks at a higher realm --------
-    { id: 'rift',    name: 'Rift Extraction Array',   icon: '🌀', baseCost: 1.125e12,    costGrowth: 1.15, baseProd: 14400000,
+    { id: 'rift',    name: 'Rift Extraction Array',   icon: '🌀', baseCost: 1.125e12,    costGrowth: 1.16, baseProd: 13248000,
       reqRealm: 4, desc: "Harvests raw Qi bleeding through the Celestial Fracture itself." },
-    { id: 'reactor', name: 'Jiutian Seized Reactor',  icon: '🏢', baseCost: 1.6875e13,   costGrowth: 1.15, baseProd: 86400000,
+    { id: 'reactor', name: 'Jiutian Seized Reactor',  icon: '🏢', baseCost: 1.6875e13,   costGrowth: 1.16, baseProd: 79488000,
       reqRealm: 5, desc: 'Confiscated Jiutian Holdings prototype tech, repurposed against its makers.' },
-    { id: 'bridge',  name: 'Nine Heavens Bridge',     icon: '🌉', baseCost: 2.53125e14,  costGrowth: 1.15, baseProd: 518400000,
+    { id: 'bridge',  name: 'Nine Heavens Bridge',     icon: '🌉', baseCost: 2.53125e14,  costGrowth: 1.16, baseProd: 476928000,
       reqRealm: 6, desc: 'A causeway of condensed starlight, spanning the gap between realms.' },
-    { id: 'maw',     name: 'Star-Devouring Engine',   icon: '☄️', baseCost: 3.796875e15, costGrowth: 1.15, baseProd: 3110400000,
+    { id: 'maw',     name: 'Star-Devouring Engine',   icon: '☄️', baseCost: 3.796875e15, costGrowth: 1.16, baseProd: 2861568000,
       reqRealm: 7, desc: 'Consumes dying stars, converting their final throes into raw Qi.' },
-    { id: 'ascend',  name: 'Ascendant Dao Engine',    icon: '🔱', baseCost: 5.6953125e16, costGrowth: 1.15, baseProd: 18662400000,
+    { id: 'ascend',  name: 'Ascendant Dao Engine',    icon: '🔱', baseCost: 5.6953125e16, costGrowth: 1.16, baseProd: 17169408000,
       reqRealm: 8, desc: 'Simulates the ascension of a thousand immortals at once, feeding their Dao into you.' },
   ],
 
@@ -353,19 +353,22 @@ const GameData = {
     },
   ],
 
-  // +5% permanent global production per minor stage ever cleared (Cultivation Base).
-  stageBonusPerStage: 0.05,
+  // +4.5% permanent global production per minor stage ever cleared (Cultivation Base).
+  // Trimmed from 0.05 (Round 22 rebalance — the always-on multiplier stack
+  // compounded too fast; see realmBonusPerLevel/daoBonusPerPoint below).
+  stageBonusPerStage: 0.045,
 
   // Each point of Dao Comprehension grants this fractional global bonus.
   // Total multiplier = 1 + (daoComprehension * daoBonusPerPoint).
-  daoBonusPerPoint: 0.02, // +2% global production per point
+  daoBonusPerPoint: 0.018, // +1.8% global production per point (was 0.02, Round 22)
 
   // Round 16: a bonus tied to which MAJOR realm you currently sit in — a
   // distinct axis from stageBonusPerStage (minor stages cleared, lifetime).
-  // Total multiplier = 1 + (realm index * realmBonusPerLevel). Modest by
-  // design (+72% at the final realm, index 9) since stage/dao bonuses
-  // already dominate in absolute terms by then.
-  realmBonusPerLevel: 0.08,
+  // Total multiplier = 1 + (realm index * realmBonusPerLevel). Trimmed in
+  // Round 22 (was 0.08) — this is always-on and compounds with every other
+  // multiplier in the stack, so it was one of the bigger contributors to
+  // production feeling too fast.
+  realmBonusPerLevel: 0.07,
 
   /* Dao Comprehension earned when breaking through, based on lifetime Qi this
    * run. Exponent tamed from 0.4 → 0.22: the old curve let dao compound faster
@@ -442,12 +445,16 @@ const GameData = {
    * pushing a single generator past 500 owned had nothing left to chase.
    */
   genMilestones: [10, 25, 50, 100, 150, 200, 300, 400, 500, 750, 1000, 1500, 2000],
-  genMilestoneMult: 2,
+  // Trimmed from 2 (Round 22 rebalance): doubling per threshold across 13
+  // thresholds compounds to a theoretical 2^13 (~8192x) on a single
+  // generator — 1.8 per threshold (~2270x at the cap) still rewards going
+  // deep without the runaway growth being quite so extreme.
+  genMilestoneMult: 1.8,
 
   /* Synergy: owning many distinct generators at a "mastered" depth grants a
    * compounding global production bonus. */
   synergyThreshold: 25,        // a generator is "mastered" at this many owned
-  synergyBonusPer: 0.12,       // +12% global production per mastered generator
+  synergyBonusPer: 0.11,       // +11% global production per mastered generator (was 0.12, Round 22)
 
   /** Multiplier on a single generator from its ownership milestones. */
   genMilestoneMultiplier(owned) {
