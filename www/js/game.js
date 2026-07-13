@@ -113,7 +113,7 @@ const Game = {
 
       // Celestial Fracture (Round 13)
       stellarShards: 0,
-      fracture: { resonance: {}, riftsSealed: 0 },
+      fracture: { resonance: {}, riftsSealed: 0, guardiansDefeated: {} },
 
       // Achievements + Daily Missions (Round 11)
       achievements: {},
@@ -230,6 +230,8 @@ const Game = {
     if (this.state.fracture.grandRiftsSealed === undefined) this.state.fracture.grandRiftsSealed = 0;
     if (!this.state.fracture.investments) this.state.fracture.investments = {};
     delete this.state.fracture.lastRiftTierKey; // transient log data, no longer persisted
+    // R26 migration: Act III Rift Guardians
+    if (!this.state.fracture.guardiansDefeated) this.state.fracture.guardiansDefeated = {};
     // R11 migrations: achievements + daily missions + lifetime counters
     if (!this.state.achievements) this.state.achievements = {};
     if (this.state.lifetimeKills              === undefined) this.state.lifetimeKills              = 0;

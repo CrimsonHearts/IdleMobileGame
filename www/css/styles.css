@@ -843,6 +843,14 @@ small { font-weight:400; }
 .fighter-ico { font-size:46px; line-height:1; filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
 .fighter.enemy.boss .fighter-ico { font-size:56px; animation:bossPulse 1.2s ease-in-out infinite; }
 @keyframes bossPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.12);} }
+/* Rift Guardians (Round 26, Act III) — named one-time story bosses get a
+   distinct void-purple glow instead of the plain boss pulse, so a player
+   immediately recognises this isn't a normal zone boss. */
+.fighter.enemy.guardian .fighter-ico { font-size:58px; animation:guardianPulse 1.4s ease-in-out infinite;
+  filter:drop-shadow(0 0 10px rgba(167,120,255,.85)); }
+@keyframes guardianPulse { 0%,100%{transform:scale(1); filter:drop-shadow(0 0 10px rgba(167,120,255,.85));}
+  50%{transform:scale(1.14); filter:drop-shadow(0 0 18px rgba(167,120,255,1));} }
+.fighter.enemy.guardian .fighter-name { color:#c9a8ff; }
 .fighter-name { font-size:12px; font-weight:700; color:#e8eef6; margin:6px 0 5px; }
 .fighter-stat { font-size:10px; color:#9aa6b8; margin-top:5px; }
 .vs { font-size:20px; color:#e7b94e; flex-shrink:0; padding:0 4px; }

@@ -1577,8 +1577,16 @@ const UI = {
       qilin:'🦄', phoenix:'🦅', dragon:'🐲' })[id] || '🐾';
   },
   _mobEmoji(icon) {
-    return ({ 'ic-mob-wolf':'🐺', 'ic-mob-ghoul':'🧟', 'ic-mob-scorpion':'🦂',
-      'ic-mob-demon':'👹' })[icon] || '👾';
+    return ({
+      'ic-mob-wolf':'🐺', 'ic-mob-ghoul':'🧟', 'ic-mob-scorpion':'🦂', 'ic-mob-demon':'👹',
+      // Round 26 zone bands
+      'ic-mob-bat':'🦇', 'ic-mob-hound':'🐕', 'ic-mob-wraith':'👻', 'ic-mob-voidling':'🌀',
+      'ic-mob-corrupted':'😈', 'ic-mob-warden':'🛡️', 'ic-mob-sentinel':'🗿', 'ic-mob-colossus':'🪨',
+      'ic-mob-enforcer':'🕴️', 'ic-mob-reaver':'🌑', 'ic-mob-abomination':'🦑', 'ic-mob-wisp':'💠',
+      'ic-mob-sovereign':'🌌',
+      // Round 26 Rift Guardians
+      'ic-mob-ledger':'📋', 'ic-mob-choir':'🎭', 'ic-mob-shadow':'🕳️',
+    })[icon] || '👾';
   },
 
   // -- TRIALS (combat) ------------------------------------------------------
@@ -1651,9 +1659,9 @@ const UI = {
         <div class="fighter-stat">HP ${GameNumbers.formatNumber(pHp)} · ATK ${GameNumbers.formatNumber(Combat.playerAtk())}</div>
       </div>
       <div class="vs">⚔</div>
-      <div class="fighter enemy ${mob.boss?'boss':''}">
+      <div class="fighter enemy ${mob.boss?'boss':''} ${mob.guardianId?'guardian':''}">
         <div class="fighter-ico">${this._mobEmoji(mob.icon)}</div>
-        <div class="fighter-name">${mob.name}${mob.boss?' 👑':''}</div>
+        <div class="fighter-name">${mob.name}${mob.guardianId?' 🌀':(mob.boss?' 👑':'')}</div>
         <div class="hp-bar"><div class="hp-fill enemy" style="width:${mHpPct}%"></div></div>
         <div class="fighter-stat">HP ${GameNumbers.formatNumber(Math.max(0,mob.hp))} · ATK ${GameNumbers.formatNumber(mob.atk)}</div>
       </div>`;

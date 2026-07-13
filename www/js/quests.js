@@ -400,6 +400,143 @@ const QUEST_DEFS = [
     ],
   },
 
+  // ── ACT III: THE DOOR ────────────────────────────────────────────────────
+  // Delivered through combat (Round 26): three named Rift Guardians (see
+  // combat.js GUARDIANS) override the normal zone boss at 16/18/20 until
+  // defeated once. Each gets an "intro" quest (arrival heads-up, mirrors the
+  // Act I/II fracture_spreads pattern) and a "defeat" quest gated on
+  // Game.state.fracture.guardiansDefeated.<id>.
+  {
+    id: 'guardian_ledger_intro', category: 'story', after: 'fracture_act2_end', order: 25, icon: '📋',
+    title: 'The First Coordinate',
+    desc:  "Reach Zone 16 in the Trials — Lu Heng's data leads somewhere real.",
+    hint:  'Push your highest Zone in the Trials to 16.',
+    check: () => Game.state.combat && Game.state.combat.highestZone >= 16,
+    reward: { dao: 8, shards: 300 },
+    rewardText: '+8 Dao & 300 Stellar Shards',
+    dialogue: [
+      { speaker: 'antagonist', name: 'Lu Heng · Jiutian Holdings', icon: '🏢', lines: [
+        "You'll find something waiting at the first coordinate. We call it the Ledger.",
+        "An audit-construct, tuned to itemize whatever a Rift disturbs before Jiutian decides what's salvage and what's a liability. It doesn't distinguish those two categories as cleanly as it should.",
+        "I wrote the itemizing logic myself, eleven years ago. I am not proud of how well it still runs.",
+        "Seal it. Don't negotiate with it — it isn't built for that conversation.",
+      ] },
+    ],
+  },
+  {
+    id: 'guardian_ledger_defeat', category: 'story', after: 'guardian_ledger_intro', order: 26, icon: '📋',
+    title: 'What the Ledger Kept',
+    desc:  'Defeat The Ledger — see what it was really counting.',
+    hint:  'Clear the Zone 16 boss wave to face The Ledger.',
+    check: () => Game.state.fracture && Game.state.fracture.guardiansDefeated && Game.state.fracture.guardiansDefeated.ledger,
+    reward: { dao: 12, shards: 600, permanentBonus: 0.06 },
+    rewardText: '+12 Dao, 600 Stellar Shards & permanent +6% production',
+    dialogue: [
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "I felt that thing go still from three zones away. Whatever it was made of, it isn't anymore.",
+        "Its 'itemizing logic,' as Lu Heng calls it — I saw the ledger itself, child. Names. Hundreds of them. Cultivators who forged a Core and then simply stopped filing paperwork with the world.",
+        "He tells himself it's inventory. Some part of him knows exactly what he's built.",
+        "Keep the names. Somebody should.",
+      ] },
+    ],
+  },
+  {
+    id: 'guardian_choir_intro', category: 'story', after: 'guardian_ledger_defeat', order: 27, icon: '🎭',
+    title: 'A Chorus, Not a Voice',
+    desc:  'Reach Zone 18 — something with many mouths is waiting.',
+    hint:  'Push your highest Zone in the Trials to 18.',
+    check: () => Game.state.combat && Game.state.combat.highestZone >= 18,
+    reward: { dao: 9, shards: 400 },
+    rewardText: '+9 Dao & 400 Stellar Shards',
+    dialogue: [
+      { speaker: 'void', name: 'Voice from the Fracture', icon: '🔮', lines: [
+        "Careful with this one. It is not me, though it will sound like it wants to be.",
+        "Before I learned to speak with one voice, there were attempts. Many of us, all talking at once, none of us listening. Call it a rehearsal that never stopped rehearsing.",
+        "I am not proud of the Choir. I am also not able to silence it. That part is yours.",
+        "Listen if you must. Do not answer all of it at once. That is how it grows.",
+      ] },
+    ],
+  },
+  {
+    id: 'guardian_choir_defeat', category: 'story', after: 'guardian_choir_intro', order: 28, icon: '🎭',
+    title: 'Names in the Static',
+    desc:  'Defeat The Hollow Choir — and recognize what it was made from.',
+    hint:  'Clear the Zone 18 boss wave to face The Hollow Choir.',
+    check: () => Game.state.fracture && Game.state.fracture.guardiansDefeated && Game.state.fracture.guardiansDefeated.choir,
+    reward: { dao: 14, shards: 800, permanentBonus: 0.07 },
+    rewardText: '+14 Dao, 800 Stellar Shards & permanent +7% production',
+    dialogue: [
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "I know some of those voices, child. I recognized three of them by cadence alone, and I have not heard those cadences in two hundred years.",
+        "Cultivators who answered the Voice too eagerly, too early — before it, or they, knew how to do it safely. The Choir is what's left when the asking goes wrong.",
+        "I have never told you how close I came to being one of those cadences.",
+        "I think it's time I did.",
+      ] },
+    ],
+  },
+  {
+    id: 'guardian_shadow_intro', category: 'story', after: 'guardian_choir_defeat', order: 29, icon: '🕳️',
+    title: 'Ancient Memory, Made Flesh',
+    desc:  "Reach Zone 20 — Granny Su's past waits at the threshold.",
+    hint:  'Push your highest Zone in the Trials to 20.',
+    check: () => Game.state.combat && Game.state.combat.highestZone >= 20,
+    reward: { dao: 10, shards: 500 },
+    rewardText: '+10 Dao & 500 Stellar Shards',
+    dialogue: [
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "Three hundred years ago I sealed nineteen rifts before I understood what the Voice was actually teaching me. I told you that much already.",
+        "What I didn't tell you: the twentieth rift showed me exactly what I would become if I kept going. Hungrier. Colder. Still calling itself Su Wan, and still wrong to do so.",
+        "I sealed that one too. Bare-handed, no shards, no help. It nearly cost me the name.",
+        "It's waiting for you now, wearing my face. I won't promise you'll walk away from it looking like yourself. Go anyway. I did.",
+      ] },
+    ],
+  },
+  {
+    id: 'guardian_shadow_defeat', category: 'story', after: 'guardian_shadow_intro', order: 30, icon: '🕳️',
+    title: 'Yours, Not Hers',
+    desc:  "Defeat Su Wan's Shadow — and put three centuries of guilt to rest.",
+    hint:  'Clear the Zone 20 boss wave to face the Shadow.',
+    check: () => Game.state.fracture && Game.state.fracture.guardiansDefeated && Game.state.fracture.guardiansDefeated.shadow,
+    reward: { dao: 16, shards: 1000, permanentBonus: 0.08 },
+    rewardText: '+16 Dao, 1,000 Stellar Shards & permanent +8% production',
+    dialogue: [
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "You're still you. I checked the moment you walked back into range, before you'd even said a word.",
+        "I've carried that shadow three hundred years, wondering if I only sealed it or if some part of it was still out there, waiting to be right about me. Watching you take it apart clean — that's the first quiet night's sleep I've had since the Ming courts fell.",
+        "Whatever's past this point, you didn't inherit my fear of it. That's not nothing. That might be everything.",
+        "Kettle's on. Properly, this time. I think we've both earned a real cup.",
+      ] },
+    ],
+  },
+  {
+    id: 'threshold_crossed', category: 'story', after: 'guardian_shadow_defeat', order: 31, icon: '🚪',
+    title: 'The Door, Opened',
+    desc:  'Reach the Great Ascension realm having sealed every Guardian — stand where the Voice always meant to lead you.',
+    hint:  'With all three Guardians defeated, keep climbing — the ending finds you at realm 8 and beyond.',
+    check: () => Game.state.realm >= 8 && Game.state.fracture && Game.state.fracture.guardiansDefeated
+                 && Game.state.fracture.guardiansDefeated.ledger && Game.state.fracture.guardiansDefeated.choir
+                 && Game.state.fracture.guardiansDefeated.shadow,
+    reward: { dao: 25, shards: 1500, permanentBonus: 0.15 },
+    rewardText: '+25 Dao, 1,500 Stellar Shards & permanent +15% production',
+    dialogue: [
+      { speaker: 'void', name: 'Voice from the Fracture', icon: '🔮', lines: [
+        "Three Guardians down. My rehearsals, Jiutian's ledger, and your mentor's oldest fear — all of it, cleared, by one set of hands.",
+        "The door was never locked. It just needed someone who could stand in front of it without flinching first.",
+      ] },
+      { speaker: 'antagonist', name: 'Lu Heng · Jiutian Holdings', icon: '🏢', lines: [
+        "I told you I was rooting for it to stay shut. I want to be clear that I still am.",
+        "But I've re-run the models eleven times, and every version says the same thing: it was always going to open, with you or without you. I'd rather it be you.",
+        "Jiutian's ledgers are yours now, for whatever they're worth. Consider the debt between us settled — this once.",
+      ] },
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "So. The door.",
+        "I don't know what's on the other side any more than you do, and I've had three hundred years longer to wonder about it.",
+        "What I know is this: whatever's through there, it's going to meet a cultivator who chose their own name every step of the way. That's the only kind of hero I've ever trusted.",
+        "Go on, then. I'll keep the kettle on for when — not if — you decide to come back and tell me about it.",
+      ] },
+    ],
+  },
+
   // ── ACHIEVEMENTS ──────────────────────────────────────────────────────────
   {
     id: 'ten_stages', category: 'achievement', icon: '🏆',

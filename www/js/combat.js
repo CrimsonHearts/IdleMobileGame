@@ -6,15 +6,79 @@
  * Combat advances in the main game loop (while the app is open).
  * ========================================================================= */
 
-const MOB_NAMES = [
-  { name: 'Demonic Wolf',   icon: 'ic-mob-wolf' },
-  { name: 'Corpse Ghoul',   icon: 'ic-mob-ghoul' },
-  { name: 'Venom Scorpion', icon: 'ic-mob-scorpion' },
-  { name: 'Blood Bat',      icon: 'ic-mob-wolf' },
+// Zone bands (Round 26): each band of the Trials has its own mob/boss roster
+// so pushing deeper actually looks different, instead of the same 4 mobs / 2
+// bosses cycling forever. Bands are thematically keyed to the Fracture's own
+// zone thresholds (rifts open at 5+, Major at 10+, Grand at 15+ — see
+// fracture.js RIFT_TIERS) so the enemies escalate in lockstep with the plot.
+const MOB_BANDS = [
+  { // Zone 1-4 — Mortal Wilds
+    maxZone: 4,
+    mobs: [
+      { name: 'Demonic Wolf',   icon: 'ic-mob-wolf' },
+      { name: 'Corpse Ghoul',   icon: 'ic-mob-ghoul' },
+      { name: 'Venom Scorpion', icon: 'ic-mob-scorpion' },
+      { name: 'Blood Bat',      icon: 'ic-mob-bat' },
+    ],
+    bosses: [
+      { name: 'Demon General', icon: 'ic-mob-demon' },
+      { name: 'Ghost King',    icon: 'ic-mob-demon' },
+    ],
+  },
+  { // Zone 5-9 — Rift-Touched (Minor Rifts begin opening here)
+    maxZone: 9,
+    mobs: [
+      { name: 'Rift-Touched Hound', icon: 'ic-mob-hound' },
+      { name: 'Fractured Wraith',   icon: 'ic-mob-wraith' },
+      { name: 'Voidling Swarm',     icon: 'ic-mob-voidling' },
+      { name: 'Corrupted Cultivator', icon: 'ic-mob-corrupted' },
+    ],
+    bosses: [
+      { name: 'Rift Warden',     icon: 'ic-mob-warden' },
+      { name: 'Corrupted Elder', icon: 'ic-mob-corrupted' },
+    ],
+  },
+  { // Zone 10-14 — Deep Rift (Major Rifts begin opening here)
+    maxZone: 14,
+    mobs: [
+      { name: 'Hollow Sentinel',     icon: 'ic-mob-sentinel' },
+      { name: 'Cracked Colossus',    icon: 'ic-mob-colossus' },
+      { name: 'Whispering Shade',    icon: 'ic-mob-wraith' },
+      { name: 'Jiutian Enforcer Drone', icon: 'ic-mob-enforcer' },
+    ],
+    bosses: [
+      { name: 'Jiutian Enforcer Captain', icon: 'ic-mob-enforcer' },
+      { name: 'Colossus Prime',           icon: 'ic-mob-colossus' },
+    ],
+  },
+  { // Zone 15+ — Void-Touched (Grand Rifts begin opening here)
+    maxZone: Infinity,
+    mobs: [
+      { name: 'Void Reaver',        icon: 'ic-mob-reaver' },
+      { name: 'Starless Wraith',    icon: 'ic-mob-wraith' },
+      { name: 'Fracture Abomination', icon: 'ic-mob-abomination' },
+      { name: 'Heaven-Eater Wisp',  icon: 'ic-mob-wisp' },
+    ],
+    bosses: [
+      { name: 'Void Sovereign',   icon: 'ic-mob-sovereign' },
+      { name: 'The Unraveling',   icon: 'ic-mob-abomination' },
+    ],
+  },
 ];
-const BOSS_NAMES = [
-  { name: 'Demon General', icon: 'ic-mob-demon' },
-  { name: 'Ghost King',    icon: 'ic-mob-demon' },
+
+function bandForZone(zone) {
+  return MOB_BANDS.find(b => zone <= b.maxZone) || MOB_BANDS[MOB_BANDS.length - 1];
+}
+
+// Rift Guardians (Round 26, Act III): named one-time story bosses. Each
+// overrides the normal boss spawn at its exact zone, on every boss wave,
+// until defeated once — no RNG gate, since this is the vehicle for the
+// game's main quest chain and shouldn't be luck-gated. See quests.js
+// order 25-31 for the dialogue this ties into.
+const GUARDIANS = [
+  { id: 'ledger', zone: 16, name: 'The Ledger',        icon: 'ic-mob-ledger', hpMult: 2.5, atkMult: 1.4 },
+  { id: 'choir',  zone: 18, name: 'The Hollow Choir',   icon: 'ic-mob-choir',  hpMult: 3.0, atkMult: 1.6 },
+  { id: 'shadow', zone: 20, name: "Su Wan's Shadow",    icon: 'ic-mob-shadow', hpMult: 3.5, atkMult: 1.8 },
 ];
 
 const Combat = {
@@ -51,17 +115,32 @@ const Combat = {
   // -- Mob scaling ----------------------------------------------------------
   isBossWave(wave) { return wave % 10 === 0; },
 
+  /** Returns the Guardian def pending at this zone, or null if none / already defeated. */
+  _guardianForZone(zone) {
+    const g = GUARDIANS.find(g => g.zone === zone);
+    if (!g) return null;
+    const defeated = Game.state.fracture && Game.state.fracture.guardiansDefeated;
+    return (defeated && defeated[g.id]) ? null : g;
+  },
+
   spawnMob() {
     const z = Game.state.combat.zone, w = Game.state.combat.wave;
     const boss = this.isBossWave(w);
-    const tier = MOB_NAMES.length;
-    const pick = boss ? BOSS_NAMES[(z - 1) % BOSS_NAMES.length] : MOB_NAMES[(w - 1) % tier];
+    const guardian = boss ? this._guardianForZone(z) : null;
+    let pick;
+    if (guardian) {
+      pick = guardian;
+    } else {
+      const band = bandForZone(z);
+      pick = boss ? band.bosses[(z - 1) % band.bosses.length] : band.mobs[(w - 1) % band.mobs.length];
+    }
     let hp  = 40 * z * Math.pow(1.22, w);
     let atk = 6  * z * (1 + 0.12 * w);
     if (boss) { hp *= 6; atk *= 2.2; }
+    if (guardian) { hp *= guardian.hpMult; atk *= guardian.atkMult; }
     const baseHp = hp; // capture before Trial of Steel inflation so loot is based on base power
     if (window.Challenges && Challenges.trialHard()) hp *= 3;
-    this._mob = { name: pick.name, icon: pick.icon, baseHp, maxHp: hp, hp, atk, boss };
+    this._mob = { name: pick.name, icon: pick.icon, baseHp, maxHp: hp, hp, atk, boss, guardianId: guardian ? guardian.id : null };
     return this._mob;
   },
 
@@ -120,8 +199,21 @@ const Combat = {
     // Artifact drop (zone-scaled). Suppressed log during offline batch sim.
     let art = null;
     if (window.Artifacts) art = Artifacts.rollDrop(c.zone, mob.boss);
+    // Rift Guardian defeated (Round 26, Act III) — flag it permanently so it
+    // never respawns, then let quests.js' normal polling pick up the story
+    // beat (see quests.js order 25-31).
+    if (mob.guardianId && this._s()) {
+      const gs = this._s();
+      if (!gs.guardiansDefeated) gs.guardiansDefeated = {};
+      if (!gs.guardiansDefeated[mob.guardianId]) {
+        gs.guardiansDefeated[mob.guardianId] = true;
+        this._pushLog(`✦✦ ${mob.name} has fallen. The rift stills.`);
+      }
+    }
     this._pushLog(`Defeated ${mob.name} · +${GameNumbers.formatNumber(stones)} Stones${egg ? ' · +1 Beast Egg!' : ''}${art ? ' · ✦ Artifact!' : ''}`);
   },
+
+  _s() { return Game.state.fracture; },
 
   _pushLog(line) {
     this.log.unshift(line);
