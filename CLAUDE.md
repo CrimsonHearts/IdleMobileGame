@@ -59,14 +59,14 @@ Maven access, this whole section is moot — just verify with
 ## Regression testing
 
 This project uses hand-rolled Node smoke tests, not a test framework —
-`smoke5.js` through `smoke21.js` in the repo root (numbered by the feature
+`smoke5.js` through `smoke22.js` in the repo root (numbered by the feature
 round that introduced them; earlier `smoke1–4` were superseded/folded in).
 Each `eval()`s the relevant `www/js/*.js` source directly with minimal stubs.
 
 Run them all before considering any change done:
 
 ```bash
-for t in smoke5 smoke6 smoke7 smoke8 smoke9 smoke10 smoke11 smoke12 smoke13 smoke14 smoke15 smoke16 smoke17 smoke18 smoke19 smoke20 smoke21; do
+for t in smoke5 smoke6 smoke7 smoke8 smoke9 smoke10 smoke11 smoke12 smoke13 smoke14 smoke15 smoke16 smoke17 smoke18 smoke19 smoke20 smoke21 smoke22; do
   node $t.js || echo "FAILED: $t"
 done
 ```

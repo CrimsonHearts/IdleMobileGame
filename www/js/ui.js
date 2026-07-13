@@ -1498,9 +1498,14 @@ const UI = {
     const salvageTierRow = A.rarities.slice(1).map(r =>
       `<button class="buy-amt-btn${salvageTier===r.id?' on':''}" data-salvage-tier="${r.id}">${r.name}</button>`).join('');
 
+    const enhancePreview = window.Enchanting ? Enchanting.autoEnchantPreview() : 0;
+    const enhanceBtn = window.Enchanting
+      ? `<button class="btn-mini gear-auto-enhance" ${enhancePreview>0?'':'disabled'}>✨ Auto-Enhance${enhancePreview>0?' ('+enhancePreview+')':''}</button>`
+      : '';
+
     el.innerHTML = `
       <div class="section-title">⚜️ Artifacts <small>ATK +${GameNumbers.formatNumber(Artifacts.atk())} · HP +${GameNumbers.formatNumber(Artifacts.hp())} · Qi +${(Artifacts.qiPct()*100).toFixed(1)}%</small></div>
-      <div class="gear-actions"><button class="btn-mini gear-auto-equip">⚡ Auto-Equip Best</button></div>
+      <div class="gear-actions"><button class="btn-mini gear-auto-equip">⚡ Auto-Equip Best</button>${enhanceBtn}</div>
       <div class="gear-loadout">${slotsHtml}${lockedHtml}</div>
       <div class="gear-sets">${setHtml}</div>
       <div class="section-title small">Satchel (${inv.length}/${A.invCap})</div>
@@ -1524,6 +1529,12 @@ const UI = {
     if (autoEquipBtn) autoEquipBtn.addEventListener('click', () => {
       const n = Artifacts.autoEquip();
       this.toast(n > 0 ? `⚡ Auto-equipped ${n} upgrade${n===1?'':'s'}!` : 'Already wearing your best gear.');
+      this.renderArtifacts(); this.renderResources();
+    });
+    const autoEnhanceBtn = el.querySelector('.gear-auto-enhance');
+    if (autoEnhanceBtn) autoEnhanceBtn.addEventListener('click', () => {
+      const n = Enchanting.autoEnchant();
+      this.toast(n > 0 ? `✨ Auto-enhanced with ${n} rune roll${n===1?'':'s'}!` : 'Not enough Blood Essence to enhance.');
       this.renderArtifacts(); this.renderResources();
     });
     el.querySelectorAll('[data-salvage-tier]').forEach(b => b.addEventListener('click', () => {

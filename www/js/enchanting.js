@@ -64,8 +64,10 @@ const Enchanting = {
     return { common: 1, rare: 2, epic: 4, legend: 8, mythic: 16 }[rarity] || 1;
   },
 
-  enchantCost(artifact) {
-    const runeCount = (artifact.runes || []).length;
+  /** `runeCountOverride` lets autoEnchantPreview() cost out a hypothetical
+   *  future rune count without mutating the real artifact. */
+  enchantCost(artifact, runeCountOverride) {
+    const runeCount = runeCountOverride !== undefined ? runeCountOverride : (artifact.runes || []).length;
     const discount = window.Challenges ? Challenges.enchantDiscount() : 0;
     return Math.floor(300 * this._rarityMult(artifact.rarity) * Math.pow(2, runeCount) * (1 - discount));
   },
@@ -88,6 +90,55 @@ const Enchanting = {
     if (window.Dailies) Dailies.onEnchant();
     Game.persist();
     return { rune, value };
+  },
+
+  /** Repeatedly enchants whichever EQUIPPED piece is currently cheapest to
+   *  enchant, until Blood Essence runs out (or nothing's equipped). Only
+   *  equipped gear's runes count toward stats — see the file header — so
+   *  auto-enhance never touches the inventory. "Cheapest first" maximizes
+   *  the number of rolls per Blood Essence spent, mirroring the "spend to
+   *  the max" convention already used by Auto-Equip/Brew Max/Use Max.
+   *  Bounded to 1000 rolls/call — costs plateau once a piece hits
+   *  MAX_RUNES (further rolls replace the oldest at the same cost), so an
+   *  unbounded loop against a very large Essence pool could otherwise run
+   *  a very long time for no real gameplay benefit. */
+  autoEnchant() {
+    let count = 0;
+    for (let i = 0; i < 1000; i++) {
+      const equipped = Artifacts.equippedList();
+      if (!equipped.length) break;
+      let cheapest = null, cheapestCost = Infinity;
+      equipped.forEach(a => {
+        const cost = this.enchantCost(a);
+        if (cost < cheapestCost) { cheapestCost = cost; cheapest = a; }
+      });
+      if (!cheapest || Game.state.blood.essence < cheapestCost) break;
+      if (!this.enchant(cheapest.id)) break;
+      count++;
+    }
+    return count;
+  },
+  /** Non-mutating dry run of autoEnchant() — how many rolls the current
+   *  Blood Essence affords right now, for the UI button's live preview. */
+  autoEnchantPreview() {
+    const equipped = Artifacts.equippedList();
+    if (!equipped.length) return 0;
+    let essence = Game.state.blood.essence;
+    const virtualRuneCount = {};
+    equipped.forEach(a => { virtualRuneCount[a.id] = (a.runes || []).length; });
+    let count = 0;
+    for (let i = 0; i < 1000; i++) {
+      let cheapest = null, cheapestCost = Infinity;
+      equipped.forEach(a => {
+        const cost = this.enchantCost(a, virtualRuneCount[a.id]);
+        if (cost < cheapestCost) { cheapestCost = cost; cheapest = a; }
+      });
+      if (!cheapest || essence < cheapestCost) break;
+      essence -= cheapestCost;
+      virtualRuneCount[cheapest.id] = Math.min(MAX_RUNES, virtualRuneCount[cheapest.id] + 1);
+      count++;
+    }
+    return count;
   },
 
   _findArtifact(id) {
