@@ -59,14 +59,14 @@ Maven access, this whole section is moot — just verify with
 ## Regression testing
 
 This project uses hand-rolled Node smoke tests, not a test framework —
-`smoke5.js` through `smoke18.js` in the repo root (numbered by the feature
+`smoke5.js` through `smoke19.js` in the repo root (numbered by the feature
 round that introduced them; earlier `smoke1–4` were superseded/folded in).
 Each `eval()`s the relevant `www/js/*.js` source directly with minimal stubs.
 
 Run them all before considering any change done:
 
 ```bash
-for t in smoke5 smoke6 smoke7 smoke8 smoke9 smoke10 smoke11 smoke12 smoke13 smoke14 smoke15 smoke16 smoke17 smoke18; do
+for t in smoke5 smoke6 smoke7 smoke8 smoke9 smoke10 smoke11 smoke12 smoke13 smoke14 smoke15 smoke16 smoke17 smoke18 smoke19; do
   node $t.js || echo "FAILED: $t"
 done
 ```
@@ -116,3 +116,32 @@ real bugs were caught exactly this way and would NOT have been caught by
 the existing smoke suites: a save-shape edge case that silently wiped the
 player's save on every boot, and a rewarded-ad prompt that kept showing
 after the "Remove Ads" purchase.
+
+### UI/layout bug reports specifically
+
+For "the UI is broken/out of shape/off-screen"-type reports, a single
+screenshot at one viewport size and one game-state isn't enough — two real
+layout bugs were only caught by varying BOTH:
+
+- **Viewport width**: test at **375px** (iPhone SE/mini class — the
+  narrowest common phone width), not the wider ~480px used for general
+  screenshots. A `.subnav`/`.section-title` bug that looked fine at 480px
+  (world sub-nav strip; a `float:right` `<small>` subtitle wrapping and
+  dragging the following `.booster-list` into a squeezed 91px-wide column)
+  was fully visible at 375px.
+- **Numeric scale**: push Qi/money/spirit-stones/etc. into the multi-digit
+  suffix tiers (`1e22`–`1e93`, i.e. `Dc`/`Vg`-class suffixes in
+  `GameNumbers.formatNumber`), not just "a lot" — a resource-strip chip
+  that fits fine at `1.23M` can clip once the value needs a 4-letter
+  suffix and a 3-digit mantissa at once (worst case: near a tier boundary,
+  e.g. `999.99` about to round up). Don't use only round powers of ten
+  (`1e30`) for this — they always produce the *best-case* 1-digit mantissa
+  and hide the worst case; sweep multipliers near `9.999` and `999.999`
+  too, since `toFixed()` rounding across a digit-count boundary is its own
+  source of bugs (`9.999` → `"10.00"`, not `"9.99"`).
+
+A quick programmatic overflow check (`el.getBoundingClientRect().right >
+window.innerWidth`) is a good triage pass, but walk up each flagged
+element's ancestors first — an element legitimately extending past its
+parent inside a `overflow-x:auto` container (e.g. a scrollable sub-nav) is
+not a bug, so a naive check produces false positives there.

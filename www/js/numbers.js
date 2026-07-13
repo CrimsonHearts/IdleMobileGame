@@ -15,6 +15,29 @@ const NUMBER_SUFFIXES = [
 ];
 
 /**
+ * Format a mantissa (1 <= scaled < 1000) at a decimal count that keeps the
+ * whole mantissa+decimals string to ~3 significant digits, and is stable
+ * under rounding: toFixed() can round a mantissa up across a digit-count
+ * boundary (9.999 -> "10.00" at 2 decimals, or 999.5 -> "1000" at 0), which
+ * would otherwise silently produce a too-long or out-of-range string. This
+ * re-checks the digit count of the ROUNDED result and drops a decimal (or
+ * signals a tier bump via `null`) until it's stable.
+ * @returns {string|null} the formatted mantissa, or null if it rounds to
+ *   >=1000 with no decimals left (caller must bump to the next tier).
+ */
+function formatMantissa(scaled, maxDecimals) {
+  let d = maxDecimals;
+  for (let i = 0; i < 4; i++) {
+    const digits = Math.floor(parseFloat(scaled.toFixed(d))).toString().length;
+    const nd = Math.max(0, Math.min(maxDecimals, 3 - digits));
+    if (nd === d) break;
+    d = nd;
+  }
+  const str = scaled.toFixed(d);
+  return parseFloat(str) >= 1000 ? null : str;
+}
+
+/**
  * Format a number for display.
  * @param {number} value
  * @param {number} decimals  How many decimals for the mantissa (default 2).
@@ -36,15 +59,30 @@ function formatNumber(value, decimals = 2) {
   }
 
   // Pick the right suffix tier (1000^tier).
-  const tier = Math.floor(Math.log10(value) / 3);
+  let tier = Math.floor(Math.log10(value) / 3);
 
   if (tier < NUMBER_SUFFIXES.length) {
-    const scaled = value / Math.pow(1000, tier);
-    return (negative ? '-' : '') + scaled.toFixed(decimals) + NUMBER_SUFFIXES[tier];
+    // The compound suffixes from 'Dc' onward run 3-4 characters ("QaDc",
+    // "NoVg") — long enough that even a short 1-digit mantissa at full
+    // decimal precision ("1.32QaDc") can overflow tight UI (the header
+    // strip). Cap decimals a bit further whenever the suffix itself is long.
+    const maxDFor = t => (NUMBER_SUFFIXES[t].length >= 4 ? 0 : decimals);
+    let str = formatMantissa(value / Math.pow(1000, tier), maxDFor(tier));
+    // Rounding pushed the mantissa to "1000" with nothing left to trim —
+    // bump to the next tier and reformat there instead (999.5 -> "1.00" of
+    // the next suffix, not an out-of-range "1000" of this one).
+    if (str === null && tier + 1 < NUMBER_SUFFIXES.length) {
+      tier += 1;
+      str = formatMantissa(value / Math.pow(1000, tier), maxDFor(tier));
+    }
+    if (str !== null) return (negative ? '-' : '') + str + NUMBER_SUFFIXES[tier];
+    // At the very last tier, rounding still has nowhere to go — fall
+    // through to the scientific-notation path below.
   }
 
-  // Beyond our suffix table: fall back to scientific notation.
-  return (negative ? '-' : '') + value.toExponential(decimals);
+  // Beyond our suffix table: fall back to scientific notation, always compact
+  // (an exponent can run to 3 digits, so there's no room for a mantissa decimal).
+  return (negative ? '-' : '') + value.toExponential(0);
 }
 
 /**
