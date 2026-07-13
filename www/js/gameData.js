@@ -956,11 +956,19 @@ const GameData = {
   artifacts: {
     invCap: 40,
     dropChance: 0.05, bossDropChance: 0.5,
+    // The original 4 slots are unlocked from the start. `boots`/`amulet`
+    // (Round 23) carry an `unlockCost` — locked until the player spends
+    // Spirit Stones via Artifacts.unlockSlot(), then behave identically to
+    // the base 4 (equip/auto-equip/loot rolls all treat them the same once
+    // unlocked). First-of-its-kind "spend to raise a capacity" mechanic in
+    // this codebase — pets/techniques/children caps are all flat constants.
     slots: [
       { id: 'weapon',   name: 'Weapon',   icon: '🗡️' },
       { id: 'robe',     name: 'Robe',     icon: '🥋' },
       { id: 'talisman', name: 'Talisman', icon: '📿' },
       { id: 'ring',     name: 'Ring',     icon: '💍' },
+      { id: 'boots',    name: 'Boots',    icon: '👢', unlockCost: 6000 },
+      { id: 'amulet',   name: 'Amulet',   icon: '🔮', unlockCost: 20000 },
     ],
     // Per-slot stat emphasis (atk / hp / qi weighting).
     slotWeights: {
@@ -968,6 +976,8 @@ const GameData = {
       robe:     { atk: 0.1, hp: 1.0, qi: 0.2 },
       talisman: { atk: 0.2, hp: 0.2, qi: 1.0 },
       ring:     { atk: 0.5, hp: 0.5, qi: 0.5 },
+      boots:    { atk: 0.2, hp: 0.9, qi: 0.1 },
+      amulet:   { atk: 0.3, hp: 0.3, qi: 0.6 },
     },
     rarities: [
       { id: 'common', name: 'Common',    color: '#9aa3ad', statMult: 1.0,  weight: 50 },

@@ -96,8 +96,8 @@ const Game = {
       buffs: [],               // [{ buff, mult, endsAt }]
       secretRealm: { lastRunDay: null, highestFloor: 0 },
 
-      // Artifacts / equipment (Round 6)
-      artifacts: { inventory: [], equipped: { weapon: null, robe: null, talisman: null, ring: null } },
+      // Artifacts / equipment (Round 6; boots/amulet + unlockedSlots Round 23)
+      artifacts: { inventory: [], equipped: { weapon: null, robe: null, talisman: null, ring: null, boots: null, amulet: null }, unlockedSlots: [] },
 
       // Ancestral Heirloom (Round 7)
       heirloom: { id: null, stacks: 0 },
@@ -200,7 +200,14 @@ const Game = {
     if (!this.state.pillBag) this.state.pillBag = {};
     if (!this.state.buffs) this.state.buffs = [];
     if (!this.state.secretRealm) this.state.secretRealm = { lastRunDay: null, highestFloor: 0 };
-    if (!this.state.artifacts) this.state.artifacts = { inventory: [], equipped: { weapon: null, robe: null, talisman: null, ring: null } };
+    if (!this.state.artifacts) this.state.artifacts = { inventory: [], equipped: { weapon: null, robe: null, talisman: null, ring: null, boots: null, amulet: null }, unlockedSlots: [] };
+    // Round 23: backfill sub-fields individually — a save that already had
+    // `artifacts` (so the line above didn't fire) predates boots/amulet and
+    // must not crash on the missing equipped.boots/.amulet keys or the
+    // missing unlockedSlots array.
+    if (this.state.artifacts.equipped.boots === undefined) this.state.artifacts.equipped.boots = null;
+    if (this.state.artifacts.equipped.amulet === undefined) this.state.artifacts.equipped.amulet = null;
+    if (!this.state.artifacts.unlockedSlots) this.state.artifacts.unlockedSlots = [];
     if (!this.state.heirloom) this.state.heirloom = { id: null, stacks: 0 };
     if (!this.state.weeklyChallenge) this.state.weeklyChallenge = { weekId: 0, claimed: false };
     if (!this.state.boosters) this.state.boosters = {};

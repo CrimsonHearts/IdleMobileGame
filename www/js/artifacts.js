@@ -1,12 +1,38 @@
 /* ===========================================================================
- * artifacts.js — Equipment & loadout (Round 6 depth).
- * Trials / Secret Realm drop artifacts across 4 slots and 5 rarities. Equipping
+ * artifacts.js — Equipment & loadout (Round 6 depth; Round 23 adds
+ * auto-equip, bulk salvage, and 2 unlockable slots on top of the base 4).
+ * Trials / Secret Realm drop artifacts across slots and 5 rarities. Equipping
  * them adds ATK / HP / Qi, and matching SET pieces grant escalating bonuses —
  * turning combat loot into build decisions instead of flat numbers.
  * ========================================================================= */
 const Artifacts = {
   data: () => GameData.artifacts,
   s() { return Game.state.artifacts; },
+
+  // -- Slots (Round 23: weapon/robe/talisman/ring are free; boots/amulet
+  // must be unlocked with Spirit Stones) ------------------------------------
+  isSlotUnlocked(id) {
+    const def = GameData.artifacts.slots.find(x => x.id === id);
+    if (!def) return false;
+    return !def.unlockCost || this.s().unlockedSlots.includes(id);
+  },
+  /** Slots the player can currently equip into / that loot can roll for. */
+  activeSlots() { return GameData.artifacts.slots.filter(s => this.isSlotUnlocked(s.id)); },
+  /** Slots that exist but are still locked, in table order. */
+  lockedSlots() { return GameData.artifacts.slots.filter(s => s.unlockCost && !this.isSlotUnlocked(s.id)); },
+  canUnlockSlot(id) {
+    const def = GameData.artifacts.slots.find(x => x.id === id);
+    if (!def || !def.unlockCost || this.isSlotUnlocked(id)) return false;
+    return Game.state.spiritStones >= def.unlockCost;
+  },
+  unlockSlot(id) {
+    if (!this.canUnlockSlot(id)) return false;
+    const def = GameData.artifacts.slots.find(x => x.id === id);
+    Game.state.spiritStones -= def.unlockCost;
+    this.s().unlockedSlots.push(id);
+    Game.persist();
+    return true;
+  },
 
   // -- Generation -----------------------------------------------------------
   _rollRarity() {
@@ -16,10 +42,13 @@ const Artifacts = {
     for (const r of rs) { if ((n -= r.weight) <= 0) return r; }
     return rs[0];
   },
-  /** Roll a fresh artifact. `tier` scales raw stats (zone/floor power). */
+  /** Roll a fresh artifact. `tier` scales raw stats (zone/floor power).
+   *  Only rolls for currently-unlocked slots — a locked slot's gear would
+   *  just sit unequippable in the bag, which is confusing, not tempting. */
   roll(tier) {
     const A = GameData.artifacts;
-    const slot = A.slots[Math.floor(Math.random() * A.slots.length)];
+    const pool = this.activeSlots();
+    const slot = pool[Math.floor(Math.random() * pool.length)];
     const rar = this._rollRarity();
     const set = A.sets[Math.floor(Math.random() * A.sets.length)];
     const mag = Math.max(1, tier) * rar.statMult;
@@ -64,6 +93,34 @@ const Artifacts = {
     Game.persist();
     return true;
   },
+  /** Rarity rank (0=common..4=mythic) for the "below X" bulk-salvage cutoff. */
+  _rarityRank(id) { return GameData.artifacts.rarities.findIndex(r => r.id === id); },
+  /** Every INVENTORY (never equipped) item ranked strictly below `belowRarity`. */
+  _bulkCandidates(belowRarity) {
+    const cutoff = this._rarityRank(belowRarity);
+    return this.s().inventory.filter(a => this._rarityRank(a.rarity) < cutoff);
+  },
+  bulkSalvagePreview(belowRarity) {
+    const items = this._bulkCandidates(belowRarity);
+    return { count: items.length, value: items.reduce((sum, a) => sum + this.salvageValue(a), 0) };
+  },
+  /** Sell every inventory item below the given rarity tier in one action. */
+  bulkSalvage(belowRarity) {
+    const s = this.s();
+    const cutoff = this._rarityRank(belowRarity);
+    const keep = [], sold = [];
+    s.inventory.forEach(a => (this._rarityRank(a.rarity) < cutoff ? sold : keep).push(a));
+    if (!sold.length) return { count: 0, value: 0 };
+    let value = 0;
+    sold.forEach(a => {
+      value += this.salvageValue(a);
+      if (window.Enchanting) Enchanting.clearHeirloomArtifact(a.id);
+    });
+    s.inventory = keep;
+    Game.state.spiritStones += value;
+    Game.persist();
+    return { count: sold.length, value };
+  },
   equipped() { return this.s().equipped; },
   equippedList() { return Object.values(this.s().equipped).filter(Boolean); },
 
@@ -89,6 +146,27 @@ const Artifacts = {
     this._trimToCap();
     Game.persist();
     return true;
+  },
+
+  /** For each unlocked slot, equip the highest-`score()` inventory
+   *  candidate if it beats whatever's currently equipped there (or the
+   *  slot is empty). Reuses equip()'s own swap-to-bag logic per slot, so a
+   *  displaced piece is never lost — it just goes back in the satchel. */
+  autoEquip() {
+    const s = this.s();
+    let changed = 0;
+    this.activeSlots().forEach(slotDef => {
+      const slotId = slotDef.id;
+      const currentScore = s.equipped[slotId] ? this.score(s.equipped[slotId]) : -Infinity;
+      let best = null, bestScore = currentScore;
+      s.inventory.forEach(a => {
+        if (a.slot !== slotId) return;
+        const sc = this.score(a);
+        if (sc > bestScore) { best = a; bestScore = sc; }
+      });
+      if (best && this.equip(best.id)) changed++;
+    });
+    return changed;
   },
 
   // -- Aggregate bonuses (read by Game/Combat) -----------------------------

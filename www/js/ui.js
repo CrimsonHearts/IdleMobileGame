@@ -1451,7 +1451,7 @@ const UI = {
         ? `<button class="btn-mini ghost" data-clear-heirloom>⚜ Clear</button>`
         : `<button class="btn-mini ghost" data-set-heirloom="${a.id}">⚜ Set Heirloom</button>`;
     };
-    const slotsHtml = A.slots.map(s => {
+    const slotsHtml = Artifacts.activeSlots().map(s => {
       const a = eq[s.id];
       if (!a) return `<div class="gear-slot empty"><span class="gear-slot-ico">${s.icon}</span>
         <span class="gear-slot-main"><b>${s.name}</b><span class="muted">— empty —</span></span></div>`;
@@ -1462,6 +1462,17 @@ const UI = {
           <span class="muted">${statLine(a)} · ${setName(a.set)} set</span>
           ${runeHtml(a)}</span>
         <span class="gear-item-btns">${enchantBtn(a)} ${heirloomBtn(a)} <button class="btn-mini" data-unequip="${s.id}">Remove</button></span></div>`;
+    }).join('');
+
+    // Round 23: additional slots beyond the base 4, locked behind a
+    // one-time Spirit Stone unlock.
+    const lockedHtml = Artifacts.lockedSlots().map(s => {
+      const canUnlock = Artifacts.canUnlockSlot(s.id);
+      return `<div class="gear-slot locked">
+        <span class="gear-slot-ico">${s.icon}</span>
+        <span class="gear-slot-main"><b>${s.name}</b><span class="muted">Locked slot</span></span>
+        <button class="btn-mini" data-unlock-slot="${s.id}" ${canUnlock?'':'disabled'}>🔓 Unlock 💠${GameNumbers.formatNumber(s.unlockCost)}</button>
+      </div>`;
     }).join('');
 
     const counts = Artifacts.setCounts();
@@ -1480,16 +1491,51 @@ const UI = {
         </span></div>`;
     }).join('') : '<div class="hint">No artifacts yet. Win Trials & Secret Realm fights — bosses almost always drop gear.</div>';
 
+    // Bulk salvage: sell every bagged item ranked below a chosen rarity in
+    // one action, mirroring the Spirit Market's "Sell Surplus" pattern.
+    const salvageTier = this.gearSalvageTier || 'rare';
+    const salvagePreview = Artifacts.bulkSalvagePreview(salvageTier);
+    const salvageTierRow = A.rarities.slice(1).map(r =>
+      `<button class="buy-amt-btn${salvageTier===r.id?' on':''}" data-salvage-tier="${r.id}">${r.name}</button>`).join('');
+
     el.innerHTML = `
       <div class="section-title">⚜️ Artifacts <small>ATK +${GameNumbers.formatNumber(Artifacts.atk())} · HP +${GameNumbers.formatNumber(Artifacts.hp())} · Qi +${(Artifacts.qiPct()*100).toFixed(1)}%</small></div>
-      <div class="gear-loadout">${slotsHtml}</div>
+      <div class="gear-actions"><button class="btn-mini gear-auto-equip">⚡ Auto-Equip Best</button></div>
+      <div class="gear-loadout">${slotsHtml}${lockedHtml}</div>
       <div class="gear-sets">${setHtml}</div>
       <div class="section-title small">Satchel (${inv.length}/${A.invCap})</div>
+      <div class="hint">Sell everything below a rarity tier in one go:</div>
+      <div class="buy-amt-row">${salvageTierRow}</div>
+      <button class="btn-mini gear-bulk-salvage" ${salvagePreview.count>0?'':'disabled'}>♻ Salvage ${salvagePreview.count} item${salvagePreview.count===1?'':'s'} for 💠${GameNumbers.formatNumber(salvagePreview.value)}</button>
       <div class="gear-inv">${invHtml}</div>`;
 
     el.querySelectorAll('[data-equip]').forEach(b => b.addEventListener('click', () => { Artifacts.equip(b.dataset.equip); this.renderArtifacts(); this.renderResources(); }));
     el.querySelectorAll('[data-unequip]').forEach(b => b.addEventListener('click', () => { Artifacts.unequip(b.dataset.unequip); this.renderArtifacts(); this.renderResources(); }));
     el.querySelectorAll('[data-salvage]').forEach(b => b.addEventListener('click', () => { Artifacts.salvage(b.dataset.salvage); this.renderArtifacts(); this.renderResources(); }));
+    el.querySelectorAll('[data-unlock-slot]').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.unlockSlot;
+      if (Artifacts.unlockSlot(id)) {
+        const s = GameData.artifacts.slots.find(x => x.id === id);
+        this.toast(`🔓 ${s.name} slot unlocked!`);
+        this.renderArtifacts(); this.renderResources();
+      }
+    }));
+    const autoEquipBtn = el.querySelector('.gear-auto-equip');
+    if (autoEquipBtn) autoEquipBtn.addEventListener('click', () => {
+      const n = Artifacts.autoEquip();
+      this.toast(n > 0 ? `⚡ Auto-equipped ${n} upgrade${n===1?'':'s'}!` : 'Already wearing your best gear.');
+      this.renderArtifacts(); this.renderResources();
+    });
+    el.querySelectorAll('[data-salvage-tier]').forEach(b => b.addEventListener('click', () => {
+      this.gearSalvageTier = b.dataset.salvageTier;
+      this.renderArtifacts();
+    }));
+    const bulkBtn = el.querySelector('.gear-bulk-salvage');
+    if (bulkBtn) bulkBtn.addEventListener('click', () => {
+      const res = Artifacts.bulkSalvage(this.gearSalvageTier || 'rare');
+      if (res.count > 0) this.toast(`♻ Salvaged ${res.count} item${res.count===1?'':'s'} for 💠${GameNumbers.formatNumber(res.value)}`);
+      this.renderArtifacts(); this.renderResources();
+    });
     if (window.Enchanting) {
       el.querySelectorAll('[data-enchant]').forEach(b => b.addEventListener('click', () => {
         const res = Enchanting.enchant(b.dataset.enchant);
