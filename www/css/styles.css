@@ -1007,8 +1007,7 @@ small { font-weight:400; }
   border-radius:999px; padding:1px 7px; margin-left:4px; }
 .pill-desc { font-size:11.5px; color:var(--muted); line-height:1.4; }
 .pill-actions { display:flex; flex-direction:column; gap:5px; flex-shrink:0; }
-.pill-action-row { display:flex; gap:5px; }
-.pill-actions .btn-mini { padding:6px 8px; font-size:10.5px; min-width:0; flex:1; white-space:nowrap; }
+.pill-actions .btn-mini { padding:7px 10px; font-size:11px; white-space:nowrap; }
 .pill-use { background:linear-gradient(135deg,var(--jade),var(--jade-d)) !important; color:#fff !important;
   border-color:transparent !important; }
 .pill-use:disabled { opacity:.4; background:var(--surface-2) !important; color:var(--muted) !important; }

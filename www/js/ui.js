@@ -5,7 +5,7 @@
 
 const UI = {
   el: {},          // cached DOM refs
-  buyAmount: 1,    // 1 | 10 | 'max'
+  buyAmount: 1,    // 1 | 5 | 'max'
   _builtShop: false,
   _breakthroughCount: 0,   // show interstitial every 3rd breakthrough
   _stageAidActive: false,  // 30% stage requirement reduction from ad
@@ -768,15 +768,26 @@ const UI = {
     if (!el) return;
     const stones = Game.state.spiritStones;
     const buffs = Game.activeBuffs();
+    const amt = this.pillBuyAmt || 1;
 
     let html = `<div class="section-title">⚗️ Pill Alchemy <small>💠 ${GameNumbers.formatNumber(stones)}</small></div>`;
     html += `<div id="alchemy-buffs" class="alchemy-buffs">${this._buffsHtml(buffs)}</div>`;
     html += `<div class="hint">Brew pills with 💠 Spirit Stones (earned in Trials & the Secret Realm), then consume them for powerful buffs. Using more of the same pill extends its timer; a different pill of the same kind stacks its multiplier on top.</div>`;
+    html += `<div class="buy-amt-row">
+      ${[1,5,'max'].map(n => `<button class="buy-amt-btn${amt===n?' on':''}" data-amt="${n}">${n==='max'?'MAX':'×'+n}</button>`).join('')}
+    </div>`;
     html += `<div class="pill-list">`;
     GameData.pills.forEach(p => {
       const owned = Game.pillCount(p.id);
-      const canBrew = stones >= p.cost;
       const maxBrew = Game.maxAffordablePills(p.id);
+      // Brew: like the Market's Buy — a fixed tier (×1/×5) always requests
+      // that exact count and disables if unaffordable; MAX brews as many
+      // as currently affordable.
+      const brewCount = amt === 'max' ? maxBrew : amt;
+      const canBrew = brewCount > 0 && stones >= p.cost * brewCount;
+      // Use: like the Market's Sell — a fixed tier clamps down to however
+      // many you actually own rather than disabling outright.
+      const useCount = amt === 'max' ? owned : Math.min(amt, owned);
       html += `
         <div class="pill-row">
           <span class="pill-ico">${p.icon}</span>
@@ -785,23 +796,21 @@ const UI = {
             <span class="pill-desc">${p.desc}</span>
           </span>
           <span class="pill-actions">
-            <span class="pill-action-row">
-              <button class="btn-mini pill-brew" data-pill="${p.id}" data-amt="1" ${canBrew?'':'disabled'}>Brew 💠${GameNumbers.formatNumber(p.cost)}</button>
-              <button class="btn-mini pill-brew" data-pill="${p.id}" data-amt="max" ${maxBrew>0?'':'disabled'}>Max ×${maxBrew}</button>
-            </span>
-            <span class="pill-action-row">
-              <button class="btn-mini pill-use" data-pill="${p.id}" data-amt="1" ${owned>0?'':'disabled'}>Use</button>
-              <button class="btn-mini pill-use" data-pill="${p.id}" data-amt="max" ${owned>0?'':'disabled'}>Use ×${owned}</button>
-            </span>
+            <button class="btn-mini pill-brew" data-pill="${p.id}" ${canBrew?'':'disabled'}>Brew${brewCount>1?' ×'+brewCount:''} 💠${GameNumbers.formatNumber(p.cost*Math.max(1,brewCount))}</button>
+            <button class="btn-mini pill-use" data-pill="${p.id}" ${useCount>0?'':'disabled'}>Use${useCount>1?' ×'+useCount:''}</button>
           </span>
         </div>`;
     });
     html += `</div>`;
     el.innerHTML = html;
 
+    el.querySelectorAll('.buy-amt-row .buy-amt-btn').forEach(b => b.addEventListener('click', () => {
+      this.pillBuyAmt = b.dataset.amt === 'max' ? 'max' : parseInt(b.dataset.amt, 10);
+      this.renderAlchemy();
+    }));
     el.querySelectorAll('.pill-brew[data-pill]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.pill;
-      const count = b.dataset.amt === 'max' ? Game.maxAffordablePills(id) : 1;
+      const count = (this.pillBuyAmt||1) === 'max' ? Game.maxAffordablePills(id) : (this.pillBuyAmt||1);
       if (count > 0 && Game.craftPill(id, count)) {
         const p = Game.pillDef(id);
         this.toast(`⚗️ Brewed ${count > 1 ? count + '× ' : ''}${p.name}`);
@@ -810,7 +819,8 @@ const UI = {
     }));
     el.querySelectorAll('.pill-use[data-pill]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.pill;
-      const count = b.dataset.amt === 'max' ? Game.pillCount(id) : 1;
+      const owned = Game.pillCount(id);
+      const count = (this.pillBuyAmt||1) === 'max' ? owned : Math.min(this.pillBuyAmt||1, owned);
       if (count < 1) return;
       const res = Game.usePill(id, count);
       if (res) {
@@ -1356,7 +1366,7 @@ const UI = {
     let html = `<div class="section-title">🏪 Spirit Market <small>¥${GameNumbers.formatNumber(money)}</small></div>
       <div class="hint">Prices drift every minute — buy low. A scaling sink for your career earnings.</div>
       <div class="buy-amt-row">
-        ${[1,10,100,'max'].map(n => `<button class="buy-amt-btn${(this.marketBuyAmt||1)===n?' on':''}" data-amt="${n}">${n==='max'?'Max':'×'+n}</button>`).join('')}
+        ${[1,5,'max'].map(n => `<button class="buy-amt-btn${(this.marketBuyAmt||1)===n?' on':''}" data-amt="${n}">${n==='max'?'MAX':'×'+n}</button>`).join('')}
       </div>
       <div class="mk-list">`;
     GameData.market.goods.forEach(g => {
