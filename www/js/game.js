@@ -131,6 +131,12 @@ const Game = {
 
       totalTaps: 0,                  // lifetime meditate taps (stats)
 
+      // Chronicle (Round 25): a persisted, readable feed of everything that
+      // has happened — every toast and story-dialogue line, newest first.
+      // Capped at EVENT_LOG_CAP (see UI._logEvent) so the save can't grow
+      // unbounded over a long playthrough.
+      eventLog: [],
+
       // Anti-cheat audit fields:
       maxSeenTime: TimeService.now(), // highest wall-clock ever observed
       cheatFlags: 0,                  // count of suspicious backward jumps
@@ -243,6 +249,7 @@ const Game = {
     if (window.Market) Market.init();
     if (!this.state.onboarding) this.state.onboarding = { ready: false, unlocked: {}, seen: {}, steps: {}, hints: {}, skipped: false };
     if (this.state.totalTaps === undefined) this.state.totalTaps = 0;
+    if (!Array.isArray(this.state.eventLog)) this.state.eventLog = [];
     // Numeric null-guards: old saves could store null instead of 0.
     if (this.state.qi == null || isNaN(this.state.qi)) this.state.qi = 0;
     if (this.state.lifetimeQi == null || isNaN(this.state.lifetimeQi)) this.state.lifetimeQi = 0;

@@ -141,6 +141,10 @@ const UI = {
     const dailyBtn = document.getElementById('daily-btn');
     if (dailyBtn) dailyBtn.addEventListener('click', () => this.showDaily());
 
+    // Chronicle (event log) button.
+    const chronicleBtn = document.getElementById('chronicle-btn');
+    if (chronicleBtn) chronicleBtn.addEventListener('click', () => this.showEventLog());
+
     // Avatar → Cultivation Record
     if (this.el.avatar) this.el.avatar.addEventListener('click', () => this.showStats());
 
@@ -2614,6 +2618,7 @@ const UI = {
     if (!queue || !queue.length) { this._dialogueShowing = false; return; }
     this._dialogueShowing = true;
     const entry = queue.shift();
+    this._logEvent(`${entry.icon || ''} ${entry.name}: ${entry.lines.join(' ')}`.trim());
     const tagClass = entry.speaker === 'antagonist' ? 'story-antagonist'
                     : entry.speaker === 'void'       ? 'story-void'
                     : 'story-mentor';
@@ -2857,8 +2862,53 @@ const UI = {
   },
 
   toast(msg) {
+    this._logEvent(msg);
     this._toastQueue = (this._toastQueue || []).concat(msg);
     if (!this._toastShowing) this._advanceToast();
+  },
+
+  // -- Chronicle (Round 25): a persisted, readable log of everything that
+  // has happened. Hooked into the two central notification chokepoints
+  // (toast() and _advanceDialogue()) rather than each of the ~69 individual
+  // call sites, so every existing and future toast/dialogue is captured
+  // automatically with no per-call-site changes needed. -------------------
+  EVENT_LOG_CAP: 300,
+  _logEvent(text) {
+    if (!Game.state || !text) return;
+    if (!Array.isArray(Game.state.eventLog)) Game.state.eventLog = [];
+    Game.state.eventLog.unshift({ text, at: TimeService.now() });
+    // unshift puts the newest entry at index 0, so truncating the array's
+    // length keeps the CAP most-recent entries and drops the oldest ones.
+    if (Game.state.eventLog.length > this.EVENT_LOG_CAP) Game.state.eventLog.length = this.EVENT_LOG_CAP;
+  },
+  /** Coarse "N ago" formatting for the Chronicle list. */
+  _relTime(at) {
+    const diffSec = Math.max(0, Math.floor((TimeService.now() - at) / 1000));
+    if (diffSec < 60) return 'just now';
+    const m = Math.floor(diffSec / 60);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    return `${d}d ago`;
+  },
+  /** The Chronicle: every logged event, newest first, in a scrollable modal. */
+  showEventLog() {
+    const overlay = this._openModal();
+    if (!overlay) return;
+    const log = Game.state.eventLog || [];
+    const rows = log.length
+      ? log.map(e => `<div class="log-entry"><span class="log-entry-text">${e.text}</span><span class="log-entry-time">${this._relTime(e.at)}</span></div>`).join('')
+      : '<div class="hint">Nothing has happened yet — your story starts now.</div>';
+    overlay.innerHTML = `
+      <div class="modal" style="text-align:left">
+        <h2 style="text-align:center;margin-bottom:2px">📖 Chronicle</h2>
+        <p class="hint" style="text-align:center;margin-top:0">Everything that's happened, newest first.</p>
+        <div class="log-list">${rows}</div>
+        <button class="modal-close">Close</button>
+      </div>`;
+    overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
   },
 
   _advanceToast() {
