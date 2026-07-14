@@ -923,7 +923,24 @@ a cross-tab reward-pending dot on the Cultivate icon; shop purchase flow no
 longer closes before the async purchase resolves) + a second painted-art
 pipeline (`tools/gen-guardians.mjs`, ComfyUI/Leonardo — see §17 Art Pipeline)
 for the 5 Rift Guardian portraits, mirroring the existing character-portrait
-system (missing art falls back to the emoji icon, no crash either way).
+system (missing art falls back to the emoji icon, no crash either way)
+· R30 fixed the generator list's row heights varying with content length
+(now fixed 2-line clamps on both name and stats), and added `color-scheme:
+light` to stop Android WebView's Force Dark from mangling avatar images
+· R31 added **Auto-Runner** (`autorunner.js`) — an opt-in toggle on the
+Cultivate tab that automates the core grind: greedy marginal-ROI generator
+buying (ranks every affordable generator by production-gained-per-Qi-spent,
+milestone-crossing-aware, not just "cheapest first"), one-time upgrade
+purchases, minor stage advances, and major realm breakthroughs. Scoped to
+stop there deliberately — artifacts/techniques/pills/market/sect all
+involve real choices and stay manual. Calls the underlying `Game.*` methods
+directly rather than the UI's manual-flow wrappers, specifically to skip
+the confirmation modal AND the paid interstitial ad `doBreakthrough()`
+fires every 3rd manual breakthrough. Note: a realm breakthrough wipes both
+Qi and all owned generators (same as manual play), and generators are the
+only source of passive income — Auto-Runner doesn't auto-tap, so it will
+correctly sit idle post-breakthrough until the player taps a few times to
+reseed Qi, same bootstrap step manual play already requires.
 
 ---
 

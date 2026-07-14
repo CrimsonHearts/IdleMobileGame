@@ -62,6 +62,9 @@ const Game = {
       packProductionBonus: 0,  // permanent production % from spirit-root packs
       breakthroughConditionsHit: [], // ids of hidden conditions triggered
 
+      // Auto-Runner (Round 30): hands-off core-grind automation — see autorunner.js.
+      autoRunner: { enabled: false },
+
       // Meridian tree (Round 2): id -> true for each opened node.
       meridians: {},
 
@@ -186,6 +189,8 @@ const Game = {
     if (!this.state.milestonesUnlocked) this.state.milestonesUnlocked = [];
     if (this.state.packProductionBonus === undefined) this.state.packProductionBonus = 0;
     if (!this.state.breakthroughConditionsHit) this.state.breakthroughConditionsHit = [];
+    if (!this.state.autoRunner) this.state.autoRunner = { enabled: false };
+    if (this.state.autoRunner.enabled === undefined) this.state.autoRunner.enabled = false;
     if (!this.state.meridians) this.state.meridians = {};
     if (this.state.heavenlyMerit === undefined) this.state.heavenlyMerit = 0;
     if (!this.state.heavenlyPerks) this.state.heavenlyPerks = {};
@@ -1187,6 +1192,11 @@ const Game = {
     if (dtSec > 5) dtSec = 5;
 
     this._addQi(this.qiPerSecond() * dtSec);
+
+    // Auto-Runner (Round 30): hands-off core-grind automation, right after
+    // this tick's Qi lands so it's spending freshly-earned income, same as
+    // a player would.
+    if (window.AutoRunner) AutoRunner.tick();
 
     // Life-sim systems advance while the app is open.
     if (window.Life && this.state.life) Life.tick(dtSec);

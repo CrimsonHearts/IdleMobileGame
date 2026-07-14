@@ -48,6 +48,7 @@ const UI = {
       focusCombo: $('focus-combo'),
       focusComboFill: $('focus-combo-fill'),
       focusComboLabel: $('focus-combo-label'),
+      autoRunnerToggle: $('autorunner-toggle'),
     };
     this.activeTab = 'cultivate';
 
@@ -128,6 +129,13 @@ const UI = {
     // Minor + major breakthroughs.
     this.el.advanceBtn.addEventListener('click', () => this.doAdvanceStage());
     this.el.breakBtn.addEventListener('click', () => this.doBreakthrough());
+
+    // Auto-Runner toggle (Round 30).
+    if (this.el.autoRunnerToggle) {
+      this.el.autoRunnerToggle.addEventListener('click', () => {
+        if (window.AutoRunner) { AutoRunner.toggle(); this.renderAutoRunner(); }
+      });
+    }
 
     // Shop button in topbar.
     const shopBtn = document.getElementById('shop-btn');
@@ -319,12 +327,22 @@ const UI = {
     this.renderShop();
     this.renderUpgrades();
     this.renderRealm();
+    this.renderAutoRunner();
     if (this.activeTab === 'study') Life.renderStudy(this.el.studyPanel);
     else if (this.activeTab === 'work') Life.renderWork(this.el.workPanel);
     else if (this.activeTab === 'life') {
       if (this.lifeSub === 'lineage') this.renderLineage();
       else Family.render(this.el.lifePanel);
     }
+  },
+
+  /** Syncs the Auto-Runner toggle's visual on/off state with Game.state. */
+  renderAutoRunner() {
+    const btn = this.el.autoRunnerToggle;
+    if (!btn || !window.AutoRunner) return;
+    const on = AutoRunner.enabled();
+    btn.classList.toggle('on', on);
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
   },
 
   renderResources() {
