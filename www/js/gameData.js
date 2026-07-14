@@ -168,6 +168,11 @@ const GameData = {
   // docs/CHARACTER-ART.md). If a file is missing, the vector emblem is used.
   portraitDir: 'assets/portraits/',
 
+  // Painted Rift Guardian art (Round 29) drops in here as <guardianId>.jpg
+  // (see tools/gen-guardians.mjs). If a file is missing, the emoji icon
+  // already used for every other Trials mob is shown instead.
+  guardianPortraitDir: 'assets/guardians/',
+
   /**
    * Shared pool + weight-key resolution for a roll mode. rollSpiritualRoot()
    * and rollOdds() both read from this, so the odds ever shown to the

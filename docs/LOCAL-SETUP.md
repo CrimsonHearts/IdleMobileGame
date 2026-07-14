@@ -61,6 +61,11 @@ fallback until the files exist.
 Knobs: `--ckpt="Model.safetensors"`, `--steps=40 --cfg=6.5`, `--only=female-chaos`.
 Full art guide + prompts: **docs/CHARACTER-ART.md** · backend details: **tools/README.md**.
 
+The same ComfyUI/Leonardo setup also generates the 5 Rift Guardian boss
+portraits (Round 29) — `node tools/gen-guardians.mjs`, saves to
+`www/assets/guardians/`. See **docs/CHARACTER-ART.md**'s "Rift Guardian art"
+section.
+
 ---
 
 ## 3. Build native mobile apps (still local)

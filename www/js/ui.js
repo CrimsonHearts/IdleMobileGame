@@ -228,7 +228,7 @@ const UI = {
         </span>
         <span class="upg-cost" id="upg-cost-${u.id}">${GameNumbers.formatNumber(u.cost)} ${cur}</span>`;
       row.addEventListener('click', () => {
-        if (Game.buyUpgrade(u.id)) { this.renderAll(); }
+        if (Game.buyUpgrade(u.id)) { this.renderAll(); this.toast(`${u.icon} ${u.name} learned!`); }
       });
       this.el.upgrades.appendChild(row);
     });
@@ -723,6 +723,19 @@ const UI = {
   updateDailyBadge() {
     const badge = document.getElementById('daily-badge');
     if (badge) badge.style.display = Game.dailyAvailable() ? '' : 'none';
+    this._updateNavBadge();
+  },
+
+  /** Cross-tab reward indicator (Round 29) — the quest/daily FAB badges only
+   * exist inside the Cultivate tab, so a reward completed on another tab had
+   * no visible signal anywhere. Mirrors both into a dot on the bottom nav's
+   * Cultivate icon, which is visible regardless of which tab is active. */
+  _updateNavBadge() {
+    const dot = document.getElementById('nav-badge-cultivate');
+    if (!dot) return;
+    const questsPending = window.Quests ? Quests.unclaimed().length > 0 : false;
+    const dailyPending = Game.dailyAvailable();
+    dot.style.display = (questsPending || dailyPending) ? '' : 'none';
   },
 
   showDaily() {
@@ -1409,12 +1422,22 @@ const UI = {
       this.renderMarket();
     }));
     el.querySelectorAll('[data-buy]').forEach(b => b.addEventListener('click', () => {
-      if (Market.buy(b.dataset.buy, qtyFor(b.dataset.buy))) { this.renderMarket(); this.renderResources(); this.toast('🏪 Purchase complete.'); }
+      const good = GameData.market.goods.find(x => x.id === b.dataset.buy);
+      const qty = qtyFor(b.dataset.buy);
+      if (Market.buy(b.dataset.buy, qty)) {
+        this.renderMarket(); this.renderResources();
+        this.toast(`🏪 Bought ${qty>1?'×'+qty+' ':''}${good ? good.name : ''}`);
+      }
     }));
     el.querySelectorAll('[data-sell]').forEach(b => b.addEventListener('click', () => {
-      const have = Game.state[GameData.market.sellable.find(x=>x.id===b.dataset.sell).from] || 0;
+      const d = GameData.market.sellable.find(x=>x.id===b.dataset.sell);
+      const have = Game.state[d.from] || 0;
       const q = (this.marketBuyAmt||1)==='max' ? have : Math.min(this.marketBuyAmt||1, have);
-      if (Market.sell(b.dataset.sell, q)) { this.renderMarket(); this.renderResources(); }
+      const proceeds = Market.sellPrice(b.dataset.sell) * q;
+      if (Market.sell(b.dataset.sell, q)) {
+        this.renderMarket(); this.renderResources();
+        this.toast(`💰 Sold ${q>1?'×'+q+' ':''}${d.name} for ¥${GameNumbers.formatNumber(proceeds)}`);
+      }
     }));
   },
 
@@ -1523,9 +1546,28 @@ const UI = {
       <button class="btn-mini gear-bulk-salvage" ${salvagePreview.count>0?'':'disabled'}>♻ Salvage ${salvagePreview.count} item${salvagePreview.count===1?'':'s'} for 💠${GameNumbers.formatNumber(salvagePreview.value)}</button>
       <div class="gear-inv">${invHtml}</div>`;
 
-    el.querySelectorAll('[data-equip]').forEach(b => b.addEventListener('click', () => { Artifacts.equip(b.dataset.equip); this.renderArtifacts(); this.renderResources(); }));
-    el.querySelectorAll('[data-unequip]').forEach(b => b.addEventListener('click', () => { Artifacts.unequip(b.dataset.unequip); this.renderArtifacts(); this.renderResources(); }));
-    el.querySelectorAll('[data-salvage]').forEach(b => b.addEventListener('click', () => { Artifacts.salvage(b.dataset.salvage); this.renderArtifacts(); this.renderResources(); }));
+    el.querySelectorAll('[data-equip]').forEach(b => b.addEventListener('click', () => {
+      const a = Artifacts.s().inventory.find(x => x.id === b.dataset.equip);
+      if (Artifacts.equip(b.dataset.equip) && a) {
+        this.toast(`⚔️ Equipped ${rar(a.rarity).name} ${A.slots.find(s=>s.id===a.slot).name}`);
+      }
+      this.renderArtifacts(); this.renderResources();
+    }));
+    el.querySelectorAll('[data-unequip]').forEach(b => b.addEventListener('click', () => {
+      const a = Artifacts.s().equipped[b.dataset.unequip];
+      if (Artifacts.unequip(b.dataset.unequip) && a) {
+        this.toast(`Removed ${rar(a.rarity).name} ${A.slots.find(s=>s.id===a.slot).name}`);
+      }
+      this.renderArtifacts(); this.renderResources();
+    }));
+    el.querySelectorAll('[data-salvage]').forEach(b => b.addEventListener('click', () => {
+      const a = Artifacts.s().inventory.find(x => x.id === b.dataset.salvage);
+      const value = a ? Artifacts.salvageValue(a) : 0;
+      if (Artifacts.salvage(b.dataset.salvage)) {
+        this.toast(`♻ Salvaged for 💠${GameNumbers.formatNumber(value)}`);
+      }
+      this.renderArtifacts(); this.renderResources();
+    }));
     el.querySelectorAll('[data-unlock-slot]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.unlockSlot;
       if (Artifacts.unlockSlot(id)) {
@@ -1575,6 +1617,13 @@ const UI = {
       }));
     }
   },
+
+  // Round 29: guardianId -> true (painted art loaded) | false (missing,
+  // fall back to emoji) | undefined (not tried yet). renderTrialsLive()
+  // runs on every combat tick, so this cache stops a Guardian with no art
+  // file (the common case until tools/gen-guardians.mjs has been run)
+  // from re-issuing a 404 network request every single tick forever.
+  _guardianPortraitCache: {},
 
   /** Emoji fallback for beast/mob sprite ids. */
   _beastEmoji(id) {
@@ -1660,6 +1709,11 @@ const UI = {
     const pHpMax = Combat.playerHpMax(), pHp = Math.max(0, c.playerHp);
     const mHpPct = Math.max(0, (mob.hp / mob.maxHp) * 100);
     const pHpPct = Math.max(0, (pHp / pHpMax) * 100);
+    // Painted Guardian art (Round 29, tools/gen-guardians.mjs) — attempted
+    // once per guardian (see _guardianPortraitCache above), emoji otherwise.
+    const enemyIco = (mob.guardianId && this._guardianPortraitCache[mob.guardianId] !== false)
+      ? `<img class="fighter-portrait-img" src="${Game.guardianPortraitSrc(mob.guardianId)}" data-guardian="${mob.guardianId}">`
+      : this._mobEmoji(mob.icon);
     stage.innerHTML = `
       <div class="fighter player">
         <div class="fighter-ico">🧘</div>
@@ -1669,11 +1723,20 @@ const UI = {
       </div>
       <div class="vs">⚔</div>
       <div class="fighter enemy ${mob.boss?'boss':''} ${mob.guardianId?'guardian':''}">
-        <div class="fighter-ico">${this._mobEmoji(mob.icon)}</div>
+        <div class="fighter-ico">${enemyIco}</div>
         <div class="fighter-name">${mob.name}${mob.guardianId?' 🌀':(mob.boss?' 👑':'')}</div>
         <div class="hp-bar"><div class="hp-fill enemy" style="width:${mHpPct}%"></div></div>
         <div class="fighter-stat">HP ${GameNumbers.formatNumber(Math.max(0,mob.hp))} · ATK ${GameNumbers.formatNumber(mob.atk)}</div>
       </div>`;
+    const portraitImg = stage.querySelector('.fighter-portrait-img');
+    if (portraitImg) {
+      portraitImg.onload = () => { this._guardianPortraitCache[portraitImg.dataset.guardian] = true; };
+      portraitImg.onerror = () => {
+        this._guardianPortraitCache[portraitImg.dataset.guardian] = false;
+        const holder = portraitImg.parentElement;
+        if (holder) holder.textContent = this._mobEmoji(mob.icon);
+      };
+    }
     const stones = document.getElementById('cb-stones');
     if (stones) stones.textContent = GameNumbers.formatNumber(Game.state.spiritStones);
     const eggs = document.getElementById('cb-eggs');
@@ -1818,8 +1881,17 @@ const UI = {
     });
     el.querySelectorAll('button[data-act]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.id;
-      if (b.dataset.act === 'toggle') Pets.toggleActive(id);
-      else if (b.dataset.act === 'lvl') Pets.levelUp(id);
+      const p = Pets.get(id);
+      if (b.dataset.act === 'toggle') {
+        const wasActive = Pets.isActive(id);
+        Pets.toggleActive(id);
+        if (Pets.isActive(id) !== wasActive) {
+          this.toast(Pets.isActive(id) ? `${this._beastEmoji(id)} ${p.name} deployed` : `${p.name} recalled`);
+        }
+      }
+      else if (b.dataset.act === 'lvl') {
+        if (Pets.levelUp(id)) this.toast(`${this._beastEmoji(id)} ${p.name} → Lv ${Pets.levelOf(id)}`);
+      }
       else if (b.dataset.act === 'evolve') {
         if (Pets.evolve(id)) {
           const p = Pets.get(id);
@@ -1889,8 +1961,16 @@ const UI = {
 
     el.querySelectorAll('button[data-act]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.id;
-      if (b.dataset.act === 'learn') Techniques.learn(id);
-      else if (b.dataset.act === 'toggle') Techniques.toggleActive(id);
+      const t = Techniques.get(id);
+      if (b.dataset.act === 'learn') {
+        if (Techniques.learn(id)) this.toast(`📜 ${t.name} learned — Rank ${Techniques.rankOf(id)}`);
+      } else if (b.dataset.act === 'toggle') {
+        const wasActive = Techniques.isActive(id);
+        Techniques.toggleActive(id);
+        if (Techniques.isActive(id) !== wasActive) {
+          this.toast(Techniques.isActive(id) ? `★ ${t.name} equipped` : `${t.name} unequipped`);
+        }
+      }
       this.renderTechniques(); this.renderResources();
     }));
     if (scroller) scroller.scrollTop = scrollTop;
@@ -2493,8 +2573,13 @@ const UI = {
     overlay.querySelectorAll('[data-product]').forEach(btn => {
       if (btn.disabled) return;
       btn.addEventListener('click', async () => {
+        // Wait for the purchase flow to resolve before closing — closing
+        // first made the shop visually vanish an instant before the (test)
+        // confirm dialog even appeared, and a decline gave zero feedback
+        // (Monetization.purchase() only toasts on success/native-refusal).
+        const bought = await Monetization.purchase(btn.dataset.product);
         overlay.remove();
-        await Monetization.purchase(btn.dataset.product);
+        if (!bought) this.toast('Purchase cancelled.');
       });
     });
     overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
@@ -2600,8 +2685,10 @@ const UI = {
 
       overlay.querySelectorAll('.quest-claim-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+          const q = Quests.defs.find(x => x.id === btn.dataset.qid);
           if (Quests.claim(btn.dataset.qid)) {
             UI.renderAll(); UI.updateQuestBadge(); renderContent();
+            UI.toast(`🎁 ${q ? q.title : 'Quest'} claimed!`);
           }
         });
       });
@@ -2675,14 +2762,16 @@ const UI = {
   /** Update the red badge on the quest button. */
   updateQuestBadge() {
     const badge = document.getElementById('quest-badge');
-    if (!badge || !window.Quests) return;
-    const count = Quests.unclaimed().length;
-    if (count > 0) {
-      badge.textContent = count;
-      badge.style.display = '';
-    } else {
-      badge.style.display = 'none';
+    if (badge && window.Quests) {
+      const count = Quests.unclaimed().length;
+      if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = '';
+      } else {
+        badge.style.display = 'none';
+      }
     }
+    this._updateNavBadge();
   },
 
   // -- Hidden mechanic popups -----------------------------------------------
@@ -3161,9 +3250,11 @@ const UI = {
     el.innerHTML = html;
     el.querySelectorAll('.claim-ach').forEach(btn => {
       btn.addEventListener('click', () => {
+        const def = Achievements.defs.find(d => d.id === btn.dataset.id);
         if (Achievements.claim(btn.dataset.id)) {
           this.renderAchievements();
           this.renderResources();
+          this.toast(`🏆 ${def ? def.name : 'Achievement'} claimed!`);
         }
       });
     });

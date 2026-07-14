@@ -100,13 +100,21 @@ small { font-weight:400; }
 #bottom-nav { display:flex; background:rgba(255,255,255,.92); border-top:1px solid var(--line);
   backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
   padding-bottom:env(safe-area-inset-bottom); flex-shrink:0; position:relative; z-index:30; }
-.nav-btn { flex:1; padding:10px 2px 8px; border:none; background:none; cursor:pointer;
-  font-family:inherit; display:flex; flex-direction:column; align-items:center;
+.nav-btn { flex:1; padding:8px 2px 6px; border:none; background:none; cursor:pointer;
+  font-family:inherit; display:flex; flex-direction:column; align-items:center; gap:2px;
   transition:all .15s; position:relative; min-height:54px; }
-.nav-btn .nav-ico { font-size:24px; line-height:1; filter:grayscale(1) opacity(.28); transition:all .15s; }
+.nav-btn .nav-ico { font-size:21px; line-height:1; filter:grayscale(1) opacity(.28); transition:all .15s; }
 .nav-btn.active .nav-ico { filter:none; opacity:1; transform:translateY(-1px); }
-.nav-btn.active::after { content:''; position:absolute; bottom:7px; left:50%; transform:translateX(-50%);
-  width:20px; height:3px; border-radius:2px; background:#3aaa6a; }
+.nav-btn .nav-label { font-size:9.5px; font-weight:600; color:var(--muted); line-height:1; }
+.nav-btn.active .nav-label { color:var(--jade-d); }
+.nav-btn.active::after { content:''; position:absolute; bottom:2px; left:50%; transform:translateX(-50%);
+  width:16px; height:3px; border-radius:2px; background:#3aaa6a; }
+/* Cross-tab reward indicator (Round 29) — quest/daily badges live inside the
+   Cultivate tab's own FAB buttons and disappear on every other tab, so a
+   reward completed while on World/Life/Study/Work gave no visible signal
+   anywhere else. This dot on the nav icon itself is visible from any tab. */
+.nav-dot { position:absolute; top:4px; right:calc(50% - 18px); width:9px; height:9px;
+  border-radius:50%; background:var(--rose); border:1.5px solid var(--surface); }
 
 /* -- Cards & generic components ------------------------------------------ */
 .card { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px;
@@ -845,6 +853,13 @@ small { font-weight:400; }
    immediately recognises this isn't a normal zone boss. */
 .fighter.enemy.guardian .fighter-ico { font-size:58px; animation:guardianPulse 1.4s ease-in-out infinite;
   filter:drop-shadow(0 0 10px rgba(167,120,255,.85)); }
+/* Painted Rift Guardian art (Round 29) — sized relative to the containing
+   .fighter-ico's font-size (1em == that size), so it automatically matches
+   the emoji glyph's footprint at every state (normal/boss/guardian) without
+   a separate rule per state. Same circular top-cropped framing as character
+   portraits elsewhere in the game. */
+.fighter-portrait-img { width:1.15em; height:1.15em; border-radius:50%;
+  object-fit:cover; object-position:center top; display:block; margin:0 auto; }
 @keyframes guardianPulse { 0%,100%{transform:scale(1); filter:drop-shadow(0 0 10px rgba(167,120,255,.85));}
   50%{transform:scale(1.14); filter:drop-shadow(0 0 18px rgba(167,120,255,1));} }
 .fighter.enemy.guardian .fighter-name { color:#c9a8ff; }

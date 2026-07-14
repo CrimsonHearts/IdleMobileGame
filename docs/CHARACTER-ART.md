@@ -85,3 +85,23 @@ Save as `male-<root>.jpg`.
 2. Copy into `www/assets/portraits/`.
 3. Reload — the avatar, Meditate button and creation screen now show the
    painted lead matching that character's Spiritual Root. No code changes needed.
+
+---
+
+## Rift Guardian art (Round 29)
+
+The same pipeline also covers the 5 named Rift Guardian bosses (Trials/Act
+III-IV — Ledger, Hollow Choir, Su Wan's Shadow, Cartographer, First Voice),
+which otherwise only show a plain emoji icon in combat:
+
+```bash
+node tools/gen-guardians.mjs --list     # see your ComfyUI models
+node tools/gen-guardians.mjs            # generate all 5
+node tools/gen-guardians.mjs --only=shadow,firstvoice
+```
+
+Saves to `www/assets/guardians/<guardianId>.jpg` — see that folder's
+`README.md` for the exact filenames and `tools/gen-guardians.mjs` for the
+per-Guardian prompts (boss/antagonist framing instead of the character-lead
+framing above, matching each Guardian's established lore). Same two backends,
+same fallback behavior: missing art shows the existing emoji, no crash.

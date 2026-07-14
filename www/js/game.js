@@ -405,6 +405,11 @@ const Game = {
     return GameData.portraitDir + (gender || this.state.gender) + '-' + (rootKey || (this.state.spiritualRoot && this.state.spiritualRoot.key)) + '.jpg';
   },
 
+  /** Painted Rift Guardian art path (falls back to the mob's emoji icon). */
+  guardianPortraitSrc(guardianId) {
+    return GameData.guardianPortraitDir + guardianId + '.jpg';
+  },
+
   // -------------------------------------------------------------------------
   // Meridian tree (Round 2)
   // -------------------------------------------------------------------------

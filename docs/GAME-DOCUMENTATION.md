@@ -915,7 +915,15 @@ Guardians, 5th zone band) + 3 new Heavenly Perks (2 Guardian-gated, 1 that
 raises the per-life reincarnation rate itself) · R28 full-gameplay review:
 fixed an Act IV Guardian soft-lock (zone/realm progress could desync),
 a stuck-true dailies.weekClaimed migration gap, a missing anti-cheat
-maxSeenTime backfill, and a Market Qi Infusion flat-bonus scaling exploit.
+maxSeenTime backfill, and a Market Qi Infusion flat-bonus scaling exploit
+· R29 UX polish (consistent toast feedback on ~10 previously-silent
+claim/equip/salvage/learn/sell actions across Quests, Achievements,
+Artifacts, Techniques, Beasts, Market, upgrades; text-labeled bottom nav;
+a cross-tab reward-pending dot on the Cultivate icon; shop purchase flow no
+longer closes before the async purchase resolves) + a second painted-art
+pipeline (`tools/gen-guardians.mjs`, ComfyUI/Leonardo — see §17 Art Pipeline)
+for the 5 Rift Guardian portraits, mirroring the existing character-portrait
+system (missing art falls back to the emoji icon, no crash either way).
 
 ---
 
@@ -947,6 +955,12 @@ Local **ComfyUI** at `http://127.0.0.1:8188` with **GuoFeng4 XL**
   832×1216, people-free landscapes → `www/assets/realms/realm-<0..9>.jpg`.
   `--only=N` re-rolls a single realm.
 - **App icon** — `python3 tools/gen-icon.py` (Pillow) → `www/assets/icon-*.png`.
+- **Rift Guardian portraits** (Round 29) — `node tools/gen-guardians.mjs`
+  Same LoRAs as character portraits but boss/dark-fantasy framed prompts
+  (one per Guardian, keyed to their established lore) →
+  `www/assets/guardians/<guardianId>.jpg`. Also supports the Leonardo.Ai
+  cloud backend (`--backend=leonardo`, `LEONARDO_API_KEY`) as a no-GPU
+  alternative to local ComfyUI.
 
 > Missing art falls back gracefully (vector emblems / gradient backdrop), so the
 > game is fully playable without running the generators.

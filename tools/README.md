@@ -4,6 +4,11 @@ Generates painted xianxia portraits for every gender × Spiritual Root and saves
 them to `www/assets/portraits/<gender>-<root>.jpg` (10 images). The game loads
 them automatically; vector art is the fallback until they exist.
 
+> Also see **`gen-guardians.mjs`** (Round 29) — same backends/setup below,
+> generates the 5 Rift Guardian boss portraits into `www/assets/guardians/`
+> instead. `node tools/gen-guardians.mjs --list` / `--only=shadow`. Falls
+> back to the existing combat emoji icon until art exists, same as portraits.
+
 No API keys live in the repo — they're read from your environment.
 For the overall local workflow (running the game, Docker), see
 **[../docs/LOCAL-SETUP.md](../docs/LOCAL-SETUP.md)**.
