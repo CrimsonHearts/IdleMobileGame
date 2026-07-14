@@ -7,13 +7,19 @@
   --bg-1:#eef2f7; --bg-2:#e6ebf2;
   --surface:#ffffff; --surface-2:#f5f7fa;
   --text:#1e2730; --muted:#74808c; --faint:#aab2bd;
-  --line:#e7ecf2;
+  --line:#e9edf1;
   --jade:#16b67a; --jade-d:#0e9a64; --jade-soft:#e6f7ef;
   --gold:#c79a3b; --gold-d:#a87f28; --gold-soft:#faf3e0;
   --cyan:#15b3c9; --rose:#e8588f;
   --accent:var(--jade-d); --text-soft:var(--muted);
   --shadow:0 6px 20px rgba(22,34,48,0.08);
-  --shadow-sm:0 2px 8px rgba(22,34,48,0.06);
+  /* Round 28 "Quiet Jade" minimalist pass: in-flow rows/cards no longer cast
+     a shadow (that was the single biggest source of visual noise — nearly
+     every list row across every tab had its own border+shadow "box").
+     --shadow itself is left alone for genuine overlay elevation (toast,
+     story-toast, modal sheet) where a shadow signals "floating above the
+     page," not "this is a list item." */
+  --shadow-sm:none;
 }
 
 * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
@@ -31,39 +37,34 @@ small { font-weight:400; }
 #app { max-width:480px; margin:0 auto; height:100%; display:flex; flex-direction:column;
   background:linear-gradient(180deg,#f6f8fc,#eef2f7); }
 
-/* -- Top bar: H1 Parchment ------------------------------------------------ */
+/* -- Top bar: quiet, single hairline instead of gold parchment ----------- */
 #topbar {
-  background:#f8f1e2; border-bottom:2px solid #c8982a;
+  background:var(--surface); border-bottom:1px solid var(--line);
   padding:calc(env(safe-area-inset-top) + 10px) 12px 8px;
   position:relative; z-index:30; flex-shrink:0;
 }
-#topbar::after {
-  content:''; position:absolute; top:100%; left:0; right:0; height:14px;
-  background:linear-gradient(180deg,rgba(200,152,42,.14),transparent);
-  pointer-events:none; z-index:1;
-}
 .tb-row1 { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
 .avatar { width:40px; height:40px; border-radius:50%; flex-shrink:0;
-  background:#ecdcac; border:2px solid #c8982a;
+  background:var(--surface-2); border:1px solid var(--line);
   object-fit:cover; object-position:top center; }
 .topbar-id { flex:1; min-width:0; }
 .char-name-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-#char-name { font-size:14px; font-weight:700; color:#1e1206; }
-.root-chip { font-size:10px; font-weight:600; color:#7a5818; background:rgba(200,152,42,.18);
+#char-name { font-size:14px; font-weight:700; color:var(--text); }
+.root-chip { font-size:10px; font-weight:600; color:var(--muted); background:var(--surface-2);
   padding:2px 7px; border-radius:999px; }
-.realm-line { font-size:10.5px; color:#9a7030; margin-top:2px; }
-.age-badge { background:#2a1a06; color:#c8982a; font-size:9px; border-radius:5px;
-  padding:4px 8px; letter-spacing:.04em; white-space:nowrap; flex-shrink:0; }
-.age-badge b { color:#f0c060; }
-.tb-res { display:flex; gap:0; background:rgba(0,0,0,.06); border-radius:8px; overflow:hidden; }
+.realm-line { font-size:10.5px; color:var(--muted); margin-top:2px; }
+.age-badge { background:var(--surface-2); color:var(--muted); font-size:9px; border-radius:5px;
+  padding:4px 8px; letter-spacing:.04em; white-space:nowrap; flex-shrink:0; border:1px solid var(--line); }
+.age-badge b { color:var(--text); }
+.tb-res { display:flex; gap:0; background:var(--surface-2); border-radius:8px; overflow:hidden; }
 .res-chip { flex:1; padding:4px 6px; display:flex; align-items:center; gap:4px; min-width:0;
-  border-right:1px solid rgba(200,152,42,.18); }
+  border-right:1px solid var(--line); }
 .res-chip:last-child { border-right:none; }
 .res-ico { font-size:12px; flex-shrink:0; }
 .res-vals { flex:1; min-width:0; overflow:hidden; }
-.res-vals b { font-size:12px; font-weight:700; color:#1e1206; display:block;
+.res-vals b { font-size:12px; font-weight:700; color:var(--text); display:block;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.res-vals small { display:block; font-size:9px; color:#9a7030;
+.res-vals small { display:block; font-size:9px; color:var(--muted);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* -- Content + tabs ------------------------------------------------------- */
@@ -96,10 +97,9 @@ small { font-weight:400; }
 .badge { font-size:10px; font-weight:700; color:#fff; background:var(--jade); padding:2px 7px; border-radius:999px; vertical-align:middle; }
 
 /* -- Bottom navigation: N3 Frosted icon-only ------------------------------ */
-#bottom-nav { display:flex; background:rgba(248,245,238,.92); border-top:1px solid rgba(200,152,42,.28);
+#bottom-nav { display:flex; background:rgba(255,255,255,.92); border-top:1px solid var(--line);
   backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
-  padding-bottom:env(safe-area-inset-bottom); flex-shrink:0; position:relative; z-index:30;
-  box-shadow:0 -1px 0 rgba(200,152,42,.1); }
+  padding-bottom:env(safe-area-inset-bottom); flex-shrink:0; position:relative; z-index:30; }
 .nav-btn { flex:1; padding:10px 2px 8px; border:none; background:none; cursor:pointer;
   font-family:inherit; display:flex; flex-direction:column; align-items:center;
   transition:all .15s; position:relative; min-height:54px; }
@@ -245,7 +245,7 @@ small { font-weight:400; }
 .gen-name { font-size:15px; font-weight:700; color:var(--text); }
 .gen-sub { font-size:11.5px; color:var(--muted); line-height:1.4; }
 .gen-buy { text-align:right; flex-shrink:0; }
-.gen-cost { font-size:14px; font-weight:700; color:var(--gold-d); display:block; }
+.gen-cost { font-size:14px; font-weight:700; color:var(--jade-d); display:block; }
 .gen-owned { font-size:11px; color:var(--muted); }
 
 .upg-icon { font-size:28px; width:40px; text-align:center; flex-shrink:0; }
@@ -365,16 +365,11 @@ small { font-weight:400; }
   font-family:inherit; font-size:15px; font-weight:800; letter-spacing:.02em;
   display:flex; align-items:center; justify-content:center; gap:8px;
   color:#3a2c05; background:linear-gradient(135deg,#ffe07a,#e7a820);
-  box-shadow:0 4px 16px rgba(199,154,59,0.45); animation:claimGlow 1.6s ease-in-out infinite;
 }
 .quest-claim-all:active { transform:scale(.98); }
 .claim-all-count { background:rgba(0,0,0,.18); color:#fff; border-radius:999px;
   min-width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center;
   font-size:12px; padding:0 6px; }
-@keyframes claimGlow {
-  0%,100% { box-shadow:0 4px 16px rgba(199,154,59,0.4); }
-  50%     { box-shadow:0 4px 22px rgba(231,168,32,0.7); }
-}
 
 /* Scroll region so header + claim-all stay pinned */
 .quest-scroll { overflow-y:auto; margin:6px -4px 0; padding:0 4px; }
@@ -399,7 +394,6 @@ small { font-weight:400; }
   box-shadow:var(--shadow-sm); transition:border-color .2s, background .2s; }
 .quest-row.done {
   border-color:#e7b94e; background:linear-gradient(180deg,#fffaf0,var(--surface));
-  box-shadow:0 3px 12px rgba(199,154,59,0.18);
 }
 .quest-row.claimed { opacity:.55; box-shadow:none; }
 .quest-ico { font-size:24px; flex-shrink:0; width:34px; height:34px; display:flex; align-items:center;
@@ -414,7 +408,7 @@ small { font-weight:400; }
 .quest-reward.muted { color:var(--faint); font-weight:600; }
 .quest-claim-btn { flex-shrink:0; align-self:center; padding:11px 18px; border-radius:12px; border:none;
   background:linear-gradient(135deg,#ffe07a,#e7a820); color:#3a2c05; font-family:inherit;
-  font-size:13px; font-weight:800; cursor:pointer; box-shadow:0 3px 10px rgba(199,154,59,0.4);
+  font-size:13px; font-weight:800; cursor:pointer;
   min-height:44px; }
 .quest-claim-btn:active { transform:scale(.96); }
 
@@ -815,17 +809,20 @@ small { font-weight:400; }
 /* =========================================================================
    WORLD HUB — sub-nav + Trials / Beasts / Sect
    ========================================================================= */
-.subnav { display:flex; gap:6px; margin-bottom:14px; background:var(--surface-2);
-  padding:5px; border-radius:14px; border:1px solid var(--line);
+.subnav { display:flex; gap:16px; margin-bottom:14px; background:transparent;
+  padding:0; border-radius:0; border:none; border-bottom:1px solid var(--line);
   overflow-x:auto; scrollbar-width:none; }
 .subnav::-webkit-scrollbar { display:none; }
 /* flex-grow fills the row evenly when few buttons fit (Life: 2, Arts: 6);
    min-width:max-content stops shrinkage once they don't (World: 11), so the
-   row scrolls instead of clipping/cropping button text. */
-.subnav-btn { flex:1 1 auto; min-width:max-content; padding:9px 12px; border:none; border-radius:10px; cursor:pointer;
+   row scrolls instead of clipping/cropping button text. Underline-tab style
+   (Round 28 "Quiet Jade") instead of a filled pill — one hairline divider
+   for the whole strip instead of a bordered/shadowed pill per screen. */
+.subnav-btn { flex:1 1 auto; min-width:max-content; padding:9px 1px; border:none; border-bottom:2px solid transparent;
+  border-radius:0; cursor:pointer; margin-bottom:-1px;
   background:transparent; color:var(--muted); font-family:inherit; font-size:13px; font-weight:700;
   white-space:nowrap; transition:all .15s; }
-.subnav-btn.active { background:var(--surface); color:var(--jade-d); box-shadow:var(--shadow-sm); }
+.subnav-btn.active { background:transparent; color:var(--jade-d); border-bottom-color:var(--jade-d); box-shadow:none; }
 .subpanel { display:none; }
 .subpanel.active { display:block; animation:tabIn .22s cubic-bezier(.22,.68,0,1.2); }
 
