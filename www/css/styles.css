@@ -4,6 +4,11 @@
  * ========================================================================= */
 
 :root {
+  /* Declared alongside the <meta name="color-scheme"> tag in index.html —
+     this UI is light-only, so tell the platform not to auto-dark-mode it
+     (Android WebView's Force Dark can otherwise invert/darken images into
+     unrecognizable solid blocks on a device with system dark mode on). */
+  color-scheme: light;
   --bg-1:#eef2f7; --bg-2:#e6ebf2;
   --surface:#ffffff; --surface-2:#f5f7fa;
   --text:#1e2730; --muted:#74808c; --faint:#aab2bd;
@@ -251,8 +256,22 @@ small { font-weight:400; }
   border-radius:10px; background:var(--jade-soft); border:1px solid #d8efe4; }
 .gen-icon-svg { width:22px; height:22px; color:var(--jade-d); }
 .gen-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
-.gen-name { font-size:15px; font-weight:700; color:var(--text); }
-.gen-sub { font-size:11.5px; color:var(--muted); line-height:1.4; }
+/* Same reasoning as .gen-sub below: some generator names are much longer
+   than others ("Hydroponic Spirit Garden" vs "Meditation App") and wrap to
+   a 2nd line only for the long ones — clamp+reserve both ways so every
+   row's title block is the same height regardless of name length. */
+.gen-name { font-size:15px; font-weight:700; color:var(--text); line-height:1.25;
+  min-height:2.5em; max-height:2.5em; overflow:hidden; display:-webkit-box;
+  -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+/* Clamped to EXACTLY 2 lines (min-height reserves the space so short text
+   doesn't shrink the row; the line-clamp caps long text so it can't grow
+   past 2 lines either). Without both, row height depends on how long THIS
+   generator's formatted numbers happen to be (more owned/production
+   digits, an extra "· x N" synergy segment) — some rows stayed 1 line,
+   others wrapped to 2 or even 3, so the list read as jagged, misaligned
+   blocks of different sizes as the player bought unevenly across generators. */
+.gen-sub { font-size:11.5px; color:var(--muted); line-height:1.4; min-height:2.8em;
+  max-height:2.8em; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 .gen-buy { text-align:right; flex-shrink:0; }
 .gen-cost { font-size:14px; font-weight:700; color:var(--jade-d); display:block; }
 .gen-owned { font-size:11px; color:var(--muted); }
