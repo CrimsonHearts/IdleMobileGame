@@ -131,7 +131,7 @@ loaded systems — must load last.
 | `gameData.js` | ★ Most balance & content (theme-specific numbers, names, flavor text) |
 | `game.js` | Core engine: state shape, full multiplier stack, tick loop, prestige |
 | `ui.js` | Renders game state to DOM, tab routing, modals, toasts/dialogue |
-| `quests.js` | Story/achievement/hidden quest definitions + tracking (40 quests) |
+| `quests.js` | Story/achievement/hidden quest definitions + tracking (45 quests) |
 | `numbers.js` | Big-number formatting ("1234567" → "1.23M") |
 | `time.js` | Trusted-time + anti-cheat clock service |
 | `storage.js` | `localStorage` save/load/migration |
@@ -427,11 +427,21 @@ stacks forever). Reincarnating is also the trigger for Enchanting's
 Ancestral Heirloom system to gain a stack (see §10).
 
 ### Heavenly Perks (spend Merit, persist across all lives)
-6 leveled perks (`GameData.heavenlyPerks`): Soul Memory (+25%/lvl Qi, max
+9 leveled perks (`GameData.heavenlyPerks`): Soul Memory (+25%/lvl Qi, max
 10), Heaven's Insight (+20%/lvl Dao gain, max 8), Immortal Body (+30%/lvl
 combat, max 8), Eternal Foundation (+5 starting stages/lvl, max 5), Karmic
 Wealth (+1,000 starting Spirit Stones/lvl, max 5), Swift Samsara (+20%/lvl
-Merit gain, max 5).
+Merit gain, max 5). Round 27 added three more, aimed at keeping the sink
+meaningful past the original 6's ~20-30-life cap: Samsara Mastery (+1%/lvl
+to the per-life production RATE itself — `Game.reincarnationMult()` reads
+`GameData.reincarnationBonusPer + perkBonus('lifeBonusPer')`, so it
+compounds with reincarnation count instead of being a flat bonus, max 10,
+no gate), Void Attunement (+20%/lvl combat, max 10, gated behind sealing
+Su Wan's Shadow) and Void Harvest (+35%/lvl Merit gain, max 6, gated behind
+sealing The First Voice). A perk's optional `reqGuardian` field ties it to
+`Game.state.fracture.guardiansDefeated[id]`; `Game.perkUnlocked()` /
+`canBuyHeavenlyPerk()` check it and the Heaven tab renders a locked perk
+with a 🔒 badge and no buy button until its Guardian falls — see §10 Trials.
 
 ---
 
@@ -453,26 +463,36 @@ resets to Wave 1 of the current zone with a full heal — no permanent loss.
 Unlocks at **Qi Condensation** (`Game.combatUnlocked()`, realm ≥1 or
 stagesCleared ≥2).
 
-**Zone-banded rosters** — four bands, each with its own 4 mobs + 2 bosses,
-keyed to the Fracture's own rift-tier zone thresholds so combat visibly
-escalates in step with the story:
+**Zone-banded rosters** — five bands (Round 27 added the 5th; Void-Touched
+used to run to `Infinity`, meaning zone 21+ was pure repetition with no new
+named content — it's now capped at 25 and handed off to a genuinely new
+band), each with its own 4 mobs + 2 bosses, keyed to the Fracture's own
+rift-tier zone thresholds so combat visibly escalates in step with the story:
 
 | Band | Zones | Theme | Example mobs | Bosses |
 |---|---|---|---|---|
 | Mortal Wilds | 1–4 | — | Demonic Wolf, Corpse Ghoul | Demon General, Ghost King |
 | Rift-Touched | 5–9 | Minor Rifts begin | Rift-Touched Hound, Voidling Swarm | Rift Warden, Corrupted Elder |
 | Deep Rift | 10–14 | Major Rifts begin | Hollow Sentinel, Jiutian Enforcer Drone | Jiutian Enforcer Captain, Colossus Prime |
-| Void-Touched | 15+ | Grand Rifts begin | Void Reaver, Fracture Abomination | Void Sovereign, The Unraveling |
+| Void-Touched | 15–25 | Grand Rifts begin | Void Reaver, Fracture Abomination | Void Sovereign, The Unraveling |
+| Uncounted Reaches | 26+ | Round 27, Act IV | Cartographer's Echo, Threshold Remnant | Boundless Surveyor, The Uncounted |
 
-**Rift Guardians** — three named, one-time story bosses that override the
+**Rift Guardians** — five named, one-time story bosses that override the
 normal boss spawn at their exact zone (no RNG gate) until defeated once,
-tying combat directly into the Act III quest chain (§12):
+tying combat directly into the Act III/IV quest chains (§12). The two Round
+27 additions carry an extra `after` gate (a prerequisite quest id, checked
+in `Combat._guardianForZone()`) on top of the zone check — they can't be
+encountered before Act III's finale (`threshold_crossed`) actually closes,
+and First Voice can't be encountered before Cartographer's own defeat quest
+completes:
 
-| Guardian | Zone | Identity |
-|---|---|---|
-| The Ledger 📋 | 16 | A Jiutian Holdings audit-construct |
-| The Hollow Choir 🎭 | 18 | Failed early attempts by "the Voice" to speak |
-| Su Wan's Shadow 🕳️ | 20 | A corrupted echo of the mentor's own 300-year-old near-miss |
+| Guardian | Zone | Gate | Identity |
+|---|---|---|---|
+| The Ledger 📋 | 16 | zone only | A Jiutian Holdings audit-construct |
+| The Hollow Choir 🎭 | 18 | zone only | Failed early attempts by "the Voice" to speak |
+| Su Wan's Shadow 🕳️ | 20 | zone only | A corrupted echo of the mentor's own 300-year-old near-miss |
+| The Cartographer 🗺️ | 24 | zone + `threshold_crossed` | Something that was surveying the Fracture before Jiutian existed |
+| The First Voice 🔮 | 28 | zone + `guardian_cartographer_defeat` | The entity that taught "the Voice" (the game's `void` narrator) to speak |
 
 ### Artifacts / Gear — `artifacts.js`
 **6 equipment slots**: `weapon`/`robe`/`talisman`/`ring` are free from the
@@ -658,7 +678,7 @@ hidden bonuses (e.g., Prodigy breakthrough at age ≤ 25).
 ## 12. Quests & Hidden Mechanics
 
 ### Quests — `quests.js`
-**40 quests total**: **31 story** (ordered, chained), **5 achievement**
+**45 quests total**: **36 story** (ordered, chained), **5 achievement**
 (standalone milestones), **4 hidden** (`desc: '???'` until discovered).
 Completion is checked continuously; rewards (Qi/Dao/¥/Charm/Shards/
 permanent %) are **claimed manually** from the Quest Log (📜), which shows a
@@ -684,6 +704,15 @@ almost entirely through this quest chain:
   (§10), plus a finale ("The Door, Opened") gated on realm ≥8 and all three
   Guardians defeated, closing with a three-way dialogue from all three
   recurring characters.
+- **Act IV: Beyond the Door (5 quests, Round 27)** — picks up exactly where
+  Act III's finale left off (gated on `threshold_crossed`), continuing the
+  same delivered-through-combat pattern for the two Round 27 Guardians (§10):
+  an intro/defeat pair each for The Cartographer and The First Voice, then a
+  closing quest ("Past Every Door There Is") once both are sealed. The First
+  Voice reveals that "the Voice from the Fracture" — the recurring `void`
+  narrator from Acts I-III — was itself taught by an older entity, giving
+  that character a real origin instead of remaining a permanently mysterious
+  guide.
 
 **Dialogue delivery**: story quests can carry a `dialogue` array of
 speaker-attributed lines. On completion, `UI.onQuestCompleted()` routes
@@ -869,7 +898,9 @@ market · R9 boosters · R11 achievements/dailies/lifetime counters · R12 sect
 guild · R13 Fracture Act I · R14 Fracture Act II · R15 family depth · R17
 Academy/Career electives · R18 per-job progress restructure · R23 artifact
 boots/amulet slots + auto-equip/salvage · R25 Chronicle event log · R26
-Fracture Act III (Rift Guardians) + combat zone bands.
+Fracture Act III (Rift Guardians) + combat zone bands · R27 Act IV (2 more
+Guardians, 5th zone band) + 3 new Heavenly Perks (2 Guardian-gated, 1 that
+raises the per-life reincarnation rate itself).
 
 ---
 
@@ -946,11 +977,12 @@ logic.
 Content counts: **15 generators** · 15 passive techniques (Arts tab) · 5
 combat Techniques (max 3 equipped) · 10 realms · 5 roots · 5 spirit-root
 packs · 17 stage milestones · 4 breakthrough conditions · 4 foundation
-tiers · 3 meridian paths / 15 nodes · 6 heavenly perks · 7 daily rewards ·
-5 pills · 8 beasts · 5 sects (30 Sect Guild research nodes) · 4 Fracture
-Resonance paths / 12 nodes · 4 Shard Investments · 5 courses · 4 elective
-paths / 12 nodes · 5 jobs · 6 equipment slots · 5 artifact rarities · 4
-artifact sets · 5 rune types · **40 quests** (31 story / 5 achievement / 4
+tiers · 3 meridian paths / 15 nodes · 9 heavenly perks (2 Guardian-gated) ·
+7 daily rewards · 5 pills · 8 beasts · 5 sects (30 Sect Guild research
+nodes) · 4 Fracture Resonance paths / 12 nodes · 4 Shard Investments · 5
+courses · 4 elective paths / 12 nodes · 5 jobs · 6 equipment slots · 5
+artifact rarities · 4 artifact sets · 5 rune types · 5 zone bands · 5 Rift
+Guardians · **45 quests** (36 story / 5 achievement / 4
 hidden) · 31 achievements · 10 karma life events · 8 weekly-challenge
 templates · 4 boosters.
 

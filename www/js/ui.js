@@ -634,19 +634,20 @@ const UI = {
     const canRe = Game.canReincarnate();
     const pending = Game.pendingMerit();
     const peak = GameData.realms[GameData.reincarnationRealmReq];
+    const perLifeRate = Game.reincarnationBonusPer();
 
     let html = `
       <div class="section-title">☁️ Heavenly Dao</div>
       <div class="card reincarnate-card">
         <div class="reincarnate-top">
           <div class="merit-display"><span class="merit-num">🌟 ${GameNumbers.formatNumber(merit)}</span><span class="merit-label">Heavenly Merit</span></div>
-          <div class="lives-display"><span class="lives-num">${lives}</span><span class="merit-label">Past Lives · +${(lives*GameData.reincarnationBonusPer*100).toFixed(0)}% Qi</span></div>
+          <div class="lives-display"><span class="lives-num">${lives}</span><span class="merit-label">Past Lives · +${(lives*perLifeRate*100).toFixed(0)}% Qi</span></div>
         </div>
         ${canRe ? `
           <div class="hint" style="text-align:center;margin:10px 0">Reincarnating resets your cultivation (realm, Dao, generators, meridians) but you keep beasts, sect, family — and gain permanent power.</div>
           <button class="btn-primary reincarnate-btn" id="reincarnate-btn">🌀 Reincarnate · +${GameNumbers.formatNumber(pending)} Merit</button>
         ` : `
-          <div class="locked-inline">Reach <b>${peak.name}</b> to reincarnate. Each life beyond grants Heavenly Merit and a permanent +${(GameData.reincarnationBonusPer*100).toFixed(0)}% production.</div>
+          <div class="locked-inline">Reach <b>${peak.name}</b> to reincarnate. Each life beyond grants Heavenly Merit and a permanent +${(perLifeRate*100).toFixed(0)}% production.</div>
         `}
       </div>
 
@@ -657,17 +658,21 @@ const UI = {
       const lvl = Game.perkLevel(p.id);
       const maxed = lvl >= p.maxLevel;
       const cost = Game.heavenlyPerkCost(p.id);
+      const unlocked = Game.perkUnlocked(p.id);
       const affordable = Game.canBuyHeavenlyPerk(p.id);
+      const guardianName = (p.reqGuardian && window.Combat) ? (Combat.guardianDef(p.reqGuardian) || {}).name : null;
       html += `
-        <div class="perk-row ${maxed?'maxed':''}">
-          <span class="perk-ico">${p.icon}</span>
+        <div class="perk-row ${maxed?'maxed':''} ${unlocked?'':'locked'}">
+          <span class="perk-ico">${unlocked ? p.icon : '🔒'}</span>
           <span class="perk-info">
-            <span class="perk-name">${p.name} <span class="perk-lvl">Lv ${lvl}/${p.maxLevel}</span></span>
-            <span class="perk-desc">${p.desc}</span>
+            <span class="perk-name">${p.name} ${unlocked ? `<span class="perk-lvl">Lv ${lvl}/${p.maxLevel}</span>` : ''}</span>
+            <span class="perk-desc">${unlocked ? p.desc : `Seal ${guardianName || 'the required Rift Guardian'} in the Trials to unlock this perk.`}</span>
           </span>
-          <button class="btn-mini perk-buy" data-perk="${p.id}" ${affordable?'':'disabled'}>
-            ${maxed ? 'MAX' : `🌟 ${GameNumbers.formatNumber(cost)}`}
-          </button>
+          ${unlocked ? `
+            <button class="btn-mini perk-buy" data-perk="${p.id}" ${affordable?'':'disabled'}>
+              ${maxed ? 'MAX' : `🌟 ${GameNumbers.formatNumber(cost)}`}
+            </button>
+          ` : `<span class="perk-locked-badge">🔒 Locked</span>`}
         </div>`;
     });
     html += `</div>`;
@@ -1586,6 +1591,10 @@ const UI = {
       'ic-mob-sovereign':'🌌',
       // Round 26 Rift Guardians
       'ic-mob-ledger':'📋', 'ic-mob-choir':'🎭', 'ic-mob-shadow':'🕳️',
+      // Round 27 zone band + Rift Guardians (Act IV)
+      'ic-mob-echo':'📡', 'ic-mob-remnant':'🧩', 'ic-mob-cartograph':'🗺️',
+      'ic-mob-surveyor':'📐', 'ic-mob-uncounted':'♾️',
+      'ic-mob-cartographer':'🗺️', 'ic-mob-firstvoice':'🔮',
     })[icon] || '👾';
   },
 

@@ -51,8 +51,8 @@ const MOB_BANDS = [
       { name: 'Colossus Prime',           icon: 'ic-mob-colossus' },
     ],
   },
-  { // Zone 15+ — Void-Touched (Grand Rifts begin opening here)
-    maxZone: Infinity,
+  { // Zone 15-25 — Void-Touched (Grand Rifts begin opening here)
+    maxZone: 25,
     mobs: [
       { name: 'Void Reaver',        icon: 'ic-mob-reaver' },
       { name: 'Starless Wraith',    icon: 'ic-mob-wraith' },
@@ -64,21 +64,39 @@ const MOB_BANDS = [
       { name: 'The Unraveling',   icon: 'ic-mob-abomination' },
     ],
   },
+  { // Zone 26+ — The Uncounted Reaches (Round 27, Act IV: past the Door)
+    maxZone: Infinity,
+    mobs: [
+      { name: "Cartographer's Echo", icon: 'ic-mob-echo' },
+      { name: 'Unmapped Wraith',     icon: 'ic-mob-wraith' },
+      { name: 'Threshold Remnant',   icon: 'ic-mob-remnant' },
+      { name: 'Silent Cartograph',   icon: 'ic-mob-cartograph' },
+    ],
+    bosses: [
+      { name: 'Boundless Surveyor', icon: 'ic-mob-surveyor' },
+      { name: 'The Uncounted',      icon: 'ic-mob-uncounted' },
+    ],
+  },
 ];
 
 function bandForZone(zone) {
   return MOB_BANDS.find(b => zone <= b.maxZone) || MOB_BANDS[MOB_BANDS.length - 1];
 }
 
-// Rift Guardians (Round 26, Act III): named one-time story bosses. Each
-// overrides the normal boss spawn at its exact zone, on every boss wave,
-// until defeated once — no RNG gate, since this is the vehicle for the
-// game's main quest chain and shouldn't be luck-gated. See quests.js
-// order 25-31 for the dialogue this ties into.
+// Rift Guardians (Round 26, Act III; extended Round 27, Act IV): named
+// one-time story bosses. Each overrides the normal boss spawn at its exact
+// zone, on every boss wave, until defeated once — no RNG gate, since this is
+// the vehicle for the game's main quest chain and shouldn't be luck-gated.
+// See quests.js order 25-31 (Act III) and 32-36 (Act IV) for the dialogue
+// this ties into. `after`, when set, withholds the Guardian's spawn until
+// the named quest id has been completed — Act IV's Guardians live beyond
+// the Act III finale ("threshold_crossed"), narratively and mechanically.
 const GUARDIANS = [
   { id: 'ledger', zone: 16, name: 'The Ledger',        icon: 'ic-mob-ledger', hpMult: 2.5, atkMult: 1.4 },
   { id: 'choir',  zone: 18, name: 'The Hollow Choir',   icon: 'ic-mob-choir',  hpMult: 3.0, atkMult: 1.6 },
   { id: 'shadow', zone: 20, name: "Su Wan's Shadow",    icon: 'ic-mob-shadow', hpMult: 3.5, atkMult: 1.8 },
+  { id: 'cartographer', zone: 24, name: 'The Cartographer', icon: 'ic-mob-cartographer', hpMult: 4.2, atkMult: 2.0, after: 'threshold_crossed' },
+  { id: 'firstvoice',   zone: 28, name: 'The First Voice',  icon: 'ic-mob-firstvoice',   hpMult: 4.8, atkMult: 2.2, after: 'guardian_cartographer_defeat' },
 ];
 
 const Combat = {
@@ -115,13 +133,21 @@ const Combat = {
   // -- Mob scaling ----------------------------------------------------------
   isBossWave(wave) { return wave % 10 === 0; },
 
-  /** Returns the Guardian def pending at this zone, or null if none / already defeated. */
+  /** Returns the Guardian def pending at this zone, or null if none / already
+   * defeated / still story-gated behind an earlier quest. */
   _guardianForZone(zone) {
     const g = GUARDIANS.find(g => g.zone === zone);
     if (!g) return null;
+    if (g.after) {
+      const completed = Game.state.quests && Game.state.quests.completed;
+      if (!completed || !completed[g.after]) return null;
+    }
     const defeated = Game.state.fracture && Game.state.fracture.guardiansDefeated;
     return (defeated && defeated[g.id]) ? null : g;
   },
+
+  /** Static Guardian def lookup by id (name/icon), for UI use outside combat. */
+  guardianDef(id) { return GUARDIANS.find(g => g.id === id) || null; },
 
   spawnMob() {
     const z = Game.state.combat.zone, w = Game.state.combat.wave;

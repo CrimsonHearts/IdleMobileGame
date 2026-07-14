@@ -537,6 +537,105 @@ const QUEST_DEFS = [
     ],
   },
 
+  // ── ACT IV: BEYOND THE DOOR (Round 27) ──────────────────────────────────
+  // The Act III finale left the door open rather than closed — these five
+  // pick up exactly there. Zone 21-25 stay the "Void-Touched" band (no new
+  // named content); the story resumes at Zone 24, past that band, in the
+  // Uncounted Reaches (see combat.js MOB_BANDS tier 5). Both new Guardians
+  // are gated behind `threshold_crossed` (see combat.js GUARDIANS `after`),
+  // so nothing here can be encountered before Act III actually closes.
+  {
+    id: 'guardian_cartographer_intro', category: 'story', after: 'threshold_crossed', order: 32, icon: '🗺️',
+    title: 'What Jiutian Never Mapped',
+    desc:  'Reach Zone 24 — something was cataloging the Fracture long before Jiutian had a name for it.',
+    hint:  'Push your highest Zone in the Trials to 24.',
+    check: () => Game.state.combat && Game.state.combat.highestZone >= 24,
+    reward: { dao: 18, shards: 1200 },
+    rewardText: '+18 Dao & 1,200 Stellar Shards',
+    dialogue: [
+      { speaker: 'antagonist', name: 'Lu Heng · Jiutian Holdings', icon: '🏢', lines: [
+        "I'll be honest with you, since honesty is cheap now that you've already won. Jiutian didn't discover the Fracture. We found something that had already been surveying it for longer than our company has existed.",
+        "We called it the Cartographer once we realized what the coordinate patterns meant. It isn't hostile, as far as I can tell. It also isn't friendly. It just measures.",
+        "I don't know who it reports to. That question has kept me up more nights than the Ledger ever did.",
+        "Go find out. I'd genuinely like to know too.",
+      ] },
+    ],
+  },
+  {
+    id: 'guardian_cartographer_defeat', category: 'story', after: 'guardian_cartographer_intro', order: 33, icon: '🗺️',
+    title: 'The Shape of the Unmapped',
+    desc:  'Defeat The Cartographer — and see what it was really surveying.',
+    hint:  'Clear the Zone 24 boss wave to face The Cartographer.',
+    check: () => Game.state.fracture && Game.state.fracture.guardiansDefeated && Game.state.fracture.guardiansDefeated.cartographer,
+    reward: { dao: 20, shards: 1500, permanentBonus: 0.09 },
+    rewardText: '+20 Dao, 1,500 Stellar Shards & permanent +9% production',
+    dialogue: [
+      { speaker: 'void', name: 'Voice from the Fracture', icon: '🔮', lines: [
+        "I felt every line it had drawn unravel at once. That's — disorienting, when the lines included some of mine.",
+        "It was mapping the Fracture the way you'd map a wound: dispassionately, thoroughly, to someone else's specification. Not Jiutian's. Not mine.",
+        "I have spent our whole acquaintance letting you believe I was the oldest thing in this conversation. I would like to revise that, before you find out the harder way.",
+      ] },
+    ],
+  },
+  {
+    id: 'guardian_firstvoice_intro', category: 'story', after: 'guardian_cartographer_defeat', order: 34, icon: '🔮',
+    title: 'The Voice Before the Voice',
+    desc:  'Reach Zone 28 — the thing your guide has been quietly avoiding is waiting.',
+    hint:  'Push your highest Zone in the Trials to 28.',
+    check: () => Game.state.combat && Game.state.combat.highestZone >= 28,
+    reward: { dao: 22, shards: 1800 },
+    rewardText: '+22 Dao & 1,800 Stellar Shards',
+    dialogue: [
+      { speaker: 'void', name: 'Voice from the Fracture', icon: '🔮', lines: [
+        "You've earned the rest of it, so: I was not the first thing to speak from in here. I was taught to, by something that had been speaking a very long time before I existed to listen.",
+        "I called it teacher, once. I don't know what it calls itself now, or whether 'itself' still means anything to it.",
+        "Everything I've told you — about the Choir, about the rehearsals, about learning to speak with one voice — I learned by watching it fail to.",
+        "I would not ask this of you if I trusted myself to do it. I don't. Go meet my teacher.",
+      ] },
+    ],
+  },
+  {
+    id: 'guardian_firstvoice_defeat', category: 'story', after: 'guardian_firstvoice_intro', order: 35, icon: '🔮',
+    title: "Its Student, Not Its Echo",
+    desc:  'Defeat The First Voice — and give your guide back its own name.',
+    hint:  'Clear the Zone 28 boss wave to face The First Voice.',
+    check: () => Game.state.fracture && Game.state.fracture.guardiansDefeated && Game.state.fracture.guardiansDefeated.firstvoice,
+    reward: { dao: 26, shards: 2200, permanentBonus: 0.10 },
+    rewardText: '+26 Dao, 2,200 Stellar Shards & permanent +10% production',
+    dialogue: [
+      { speaker: 'void', name: 'Voice from the Fracture', icon: '🔮', lines: [
+        "It's quiet now, in a part of me I didn't know could go quiet. I think I've been bracing against that noise since before you and I ever spoke.",
+        "I am not it. I was never only its echo, whatever I feared. I am what it taught, plus everything I chose to become after.",
+        "You keep doing that — walking into the thing I've spent lifetimes avoiding, and walking back out having simply solved it.",
+        "I don't have a lesson to hand you this time. Just: thank you. That doesn't happen to voices like mine very often.",
+      ] },
+    ],
+  },
+  {
+    id: 'act4_beyond_the_door', category: 'story', after: 'guardian_firstvoice_defeat', order: 36, icon: '🌌',
+    title: 'Past Every Door There Is',
+    desc:  'With the Cartographer and the First Voice both sealed, the Uncounted Reaches lie open — and, for the first time, uncharted by anyone but you.',
+    hint:  'Both new Guardians must fall. The Reaches beyond stay open for as many lives as you care to spend exploring them.',
+    check: () => Game.state.fracture && Game.state.fracture.guardiansDefeated
+                 && Game.state.fracture.guardiansDefeated.cartographer && Game.state.fracture.guardiansDefeated.firstvoice,
+    reward: { dao: 30, shards: 2500, permanentBonus: 0.12 },
+    rewardText: '+30 Dao, 2,500 Stellar Shards & permanent +12% production',
+    dialogue: [
+      { speaker: 'antagonist', name: 'Lu Heng · Jiutian Holdings', icon: '🏢', lines: [
+        "The Cartographer's data just went blank on our end. Every screen. I'm choosing to read that as your doing and not a worse explanation.",
+        "Jiutian will keep charging in behind you, cataloging whatever you leave standing. That's what we're for. It was never going to be what you're for.",
+      ] },
+      { speaker: 'void', name: 'Voice from the Fracture', icon: '🔮', lines: [
+        "No teacher looking over my shoulder anymore. No ledger, no choir, no shadow, no map I didn't draw myself.",
+        "Whatever's past this point is genuinely unwritten — by me or anyone before me. I find that I'm not afraid of that, for the first time I can remember existing.",
+      ] },
+      { speaker: 'mentor', name: 'Granny Su', icon: '🍵', lines: [
+        "Three hundred years, and I never once got this far. I'm not sure the tea's strong enough for how proud that makes me.",
+        "Go on, then, into whatever's uncounted. Some stories don't have a last page. I think this is turning out to be one of the good ones.",
+      ] },
+    ],
+  },
+
   // ── ACHIEVEMENTS ──────────────────────────────────────────────────────────
   {
     id: 'ten_stages', category: 'achievement', icon: '🏆',

@@ -456,6 +456,7 @@ const Game = {
   canBuyHeavenlyPerk(id) {
     const p = this.perkDef(id);
     if (!p || this.perkLevel(id) >= p.maxLevel) return false;
+    if (!this.perkUnlocked(id)) return false;
     return this.state.heavenlyMerit >= this.heavenlyPerkCost(id);
   },
   buyHeavenlyPerk(id) {
@@ -466,12 +467,26 @@ const Game = {
     return true;
   },
 
-  /** +X global production from all past lives. */
-  reincarnationMult() { return 1 + (this.state.reincarnations || 0) * GameData.reincarnationBonusPer; },
+  /** +X global production from all past lives. Samsara Mastery (Round 27)
+   * raises the per-life RATE itself via lifeBonusPer, so it compounds with
+   * every life instead of being a one-off flat bonus. */
+  reincarnationMult() {
+    const perLife = GameData.reincarnationBonusPer + this.perkBonus('lifeBonusPer');
+    return 1 + (this.state.reincarnations || 0) * perLife;
+  },
+  /** Current per-life production rate (for UI display). */
+  reincarnationBonusPer() { return GameData.reincarnationBonusPer + this.perkBonus('lifeBonusPer'); },
 
   canReincarnate() { return this.state.realm >= GameData.reincarnationRealmReq; },
   pendingMerit() {
     return Math.floor(GameData.heavenlyMeritFor(this.state) * (1 + this.perkBonus('merit')));
+  },
+  /** Whether a perk gated behind a Rift Guardian (Round 27) is unlocked yet. */
+  perkUnlocked(id) {
+    const p = this.perkDef(id);
+    if (!p || !p.reqGuardian) return true;
+    const defeated = this.state.fracture && this.state.fracture.guardiansDefeated;
+    return !!(defeated && defeated[p.reqGuardian]);
   },
 
   reincarnate() {

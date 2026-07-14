@@ -989,6 +989,8 @@ small { font-weight:400; }
 .perk-row { display:flex; align-items:center; gap:12px; padding:12px; border:1px solid var(--line);
   border-radius:14px; background:var(--surface); box-shadow:var(--shadow-sm); }
 .perk-row.maxed { border-color:#e6d6f7; background:#fbf7ff; }
+.perk-row.locked { opacity:.6; border-style:dashed; }
+.perk-row.locked .perk-ico { background:var(--surface-2); }
 .perk-ico { font-size:24px; width:34px; height:34px; display:flex; align-items:center; justify-content:center;
   background:#f3ecfb; border-radius:10px; flex-shrink:0; }
 .perk-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
@@ -996,6 +998,7 @@ small { font-weight:400; }
 .perk-lvl  { font-size:11px; font-weight:700; color:#8a5fd0; margin-left:4px; }
 .perk-desc { font-size:11.5px; color:var(--muted); line-height:1.4; }
 .perk-buy { flex-shrink:0; min-height:40px; }
+.perk-locked-badge { flex-shrink:0; font-size:11px; font-weight:700; color:var(--muted); white-space:nowrap; }
 
 /* Daily reward calendar */
 .daily-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:14px 0; }

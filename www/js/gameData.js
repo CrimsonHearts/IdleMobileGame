@@ -521,7 +521,16 @@ const GameData = {
 
   /* Permanent perks bought with Heavenly Merit. Each is leveled.
    * effect keys: qi, daoGain, combat, merit (fractions, summed × level);
-   *              startStages / startStones (per-life head-start, × level). */
+   *              startStages / startStones (per-life head-start, × level);
+   *              lifeBonusPer (Round 27 — adds directly to the per-life %
+   *              stacking rate read by Game.reincarnationMult(), so it
+   *              compounds with every future life instead of being a flat
+   *              bonus itself).
+   * reqGuardian (Round 27, optional): the perk is purchasable-but-hidden
+   * behind a locked state until Game.state.fracture.guardiansDefeated[id]
+   * is true — see Game.canBuyHeavenlyPerk()/perkUnlocked(). Ties late-game
+   * Trials progress directly to late-game reincarnation depth, instead of
+   * the two systems running in parallel with no interaction. */
   heavenlyPerks: [
     { id:'soul_memory',        name:'Soul Memory',        icon:'🧠', baseCost:5,  costGrowth:1.9, maxLevel:10, effect:'qi',         per:0.25, desc:'+25% Qi production.' },
     { id:'heaven_insight',     name:"Heaven's Insight",   icon:'☯', baseCost:12, costGrowth:1.9, maxLevel:8,  effect:'daoGain',     per:0.20, desc:'+20% Dao from Tribulation.' },
@@ -529,6 +538,9 @@ const GameData = {
     { id:'eternal_foundation', name:'Eternal Foundation', icon:'🏛', baseCost:10, costGrowth:2.2, maxLevel:5,  effect:'startStages', per:5,    desc:'Begin each new life with +5 stages already cleared.' },
     { id:'karmic_wealth',      name:'Karmic Wealth',      icon:'💰', baseCost:8,  costGrowth:2.0, maxLevel:5,  effect:'startStones', per:1000, desc:'Begin each new life with +1,000 Spirit Stones.' },
     { id:'swift_samsara',      name:'Swift Samsara',      icon:'🌀', baseCost:20, costGrowth:2.5, maxLevel:5,  effect:'merit',       per:0.20, desc:'+20% Heavenly Merit from reincarnation.' },
+    { id:'samsara_mastery',    name:'Samsara Mastery',    icon:'♾️', baseCost:250,  costGrowth:2.4, maxLevel:10, effect:'lifeBonusPer', per:0.01, desc:'+1% to the per-life production bonus itself — every past life, present and future, hits harder.' },
+    { id:'void_attunement',    name:'Void Attunement',    icon:'🌀', baseCost:500,  costGrowth:1.9, maxLevel:10, effect:'combat',       per:0.20, desc:'+20% combat power. Unlocked by sealing all three Rift Guardians.', reqGuardian:'shadow' },
+    { id:'void_harvest',       name:'Void Harvest',       icon:'🗺️', baseCost:1200, costGrowth:2.1, maxLevel:6,  effect:'merit',        per:0.35, desc:'+35% Heavenly Merit from reincarnation. Unlocked by sealing the First Voice.', reqGuardian:'firstvoice' },
   ],
 
   /* -- Daily login rewards (7-day streak cycle) ---------------------------- */
