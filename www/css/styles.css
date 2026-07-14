@@ -233,7 +233,8 @@ small { font-weight:400; }
 #cultivate-list { padding:8px 14px 18px; }
 .cultivate-header { display:flex; align-items:center; justify-content:space-between; padding:6px 0 8px; gap:8px; }
 .cul-title { font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.03em; white-space:nowrap; }
-.synergy-banner { flex:1; font-size:10px; color:var(--jade-d); text-align:center; }
+.synergy-banner { flex:1; font-size:10px; color:var(--jade-d); text-align:center;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
 
 .buy-amount-row { display:flex; align-items:center; gap:5px; }
 .buy-amount-btn { padding:5px 10px; border-radius:999px; border:1px solid var(--line); background:var(--surface);
@@ -923,13 +924,16 @@ small { font-weight:400; }
 .roster-row:last-child { border-bottom:none; }
 
 /* =========================================================================
-   ROUND 2 — Synergy banner, crit taps, Meridian tree
+   ROUND 2 — Crit taps, Meridian tree
    ========================================================================= */
-.synergy-banner {
-  font-size:12px; color:var(--jade-d); background:var(--jade-soft);
-  border:1px solid #d8efe4; border-radius:12px; padding:8px 12px; margin:0 2px 10px;
-}
-.synergy-banner b { color:var(--jade-d); }
+/* Round 30: the boxed/padded .synergy-banner rule that used to live here
+   was a leftover from before the banner moved inline into .cultivate-header
+   (line ~236) alongside the "Grounds" title and buy-amount buttons. Two
+   rules for the same class both applied (same specificity, this one later
+   in the file so it won) — the box's padding/border/background stretched
+   the compact flex:1 slot into a 101×130px wrapped blob squeezed between
+   its neighbors instead of a slim one-line note. Removed; the single
+   remaining rule at line ~236 is the only intended styling now. */
 
 /* Critical meditate tap */
 .float-text.crit {

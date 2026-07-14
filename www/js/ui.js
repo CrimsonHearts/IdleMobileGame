@@ -403,7 +403,13 @@ const UI = {
       const total = GameData.generators.length;
       if (mastered > 0) {
         banner.style.display = '';
-        banner.innerHTML = `🔗 <b>Spirit Synergy</b> · ${mastered}/${total} grounds mastered (${GameData.synergyThreshold}+) · <b>+${(mastered*GameData.synergyBonusPer*100).toFixed(0)}%</b> global Qi`;
+        // Round 30: kept to one line — this sits in a narrow flex:1 slot
+        // between the "Grounds" title and the buy-amount buttons, and the
+        // old full sentence ("Spirit Synergy · N/M grounds mastered (25+) ·
+        // +X% global Qi") wrapped 3+ lines there, stretching the whole row.
+        // Full detail moves to the title tooltip (long-press/hover).
+        banner.title = `Spirit Synergy: ${mastered}/${total} grounds mastered at ${GameData.synergyThreshold}+ owned each, +${GameData.synergyBonusPer*100}% global Qi per mastered ground.`;
+        banner.innerHTML = `🔗 ${mastered}/${total} · <b>+${(mastered*GameData.synergyBonusPer*100).toFixed(0)}%</b>`;
       } else {
         banner.style.display = 'none';
       }
