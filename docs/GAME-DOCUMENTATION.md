@@ -479,20 +479,30 @@ rift-tier zone thresholds so combat visibly escalates in step with the story:
 
 **Rift Guardians** — five named, one-time story bosses that override the
 normal boss spawn at their exact zone (no RNG gate) until defeated once,
-tying combat directly into the Act III/IV quest chains (§12). The two Round
-27 additions carry an extra `after` gate (a prerequisite quest id, checked
-in `Combat._guardianForZone()`) on top of the zone check — they can't be
-encountered before Act III's finale (`threshold_crossed`) actually closes,
-and First Voice can't be encountered before Cartographer's own defeat quest
-completes:
+tying combat directly into the Act III/IV quest chains (§12). Gating is by
+**zone number only**, deliberately, for all five — Round 27 originally also
+gated the two Act IV additions behind an `after: <quest id>` completion
+check in `Combat._guardianForZone()`, but realm (which that quest required)
+and Trials zone are independent progression axes (realm resets on
+`reincarnate()`, zone does not), so a player could outrun the quest gate,
+fight a generic boss instead of the Guardian at zones 24/28, and
+permanently miss the Act IV quest chain with zero in-game signal. Round 28
+removed that gate so all five Guardians share the same proven,
+structurally-unskippable zone-only mechanic (you cannot reach zone N+1
+without clearing zone N's boss wave, which — while the Guardian is
+undefeated — always IS the Guardian). The quest dialogue below keeps its
+own independent `after` chain regardless, so the story still plays out in
+order; it just cascades in once its own prerequisites (e.g. realm ≥ 8 for
+`threshold_crossed`) catch up, even if the Guardian was already defeated in
+combat first:
 
-| Guardian | Zone | Gate | Identity |
-|---|---|---|---|
-| The Ledger 📋 | 16 | zone only | A Jiutian Holdings audit-construct |
-| The Hollow Choir 🎭 | 18 | zone only | Failed early attempts by "the Voice" to speak |
-| Su Wan's Shadow 🕳️ | 20 | zone only | A corrupted echo of the mentor's own 300-year-old near-miss |
-| The Cartographer 🗺️ | 24 | zone + `threshold_crossed` | Something that was surveying the Fracture before Jiutian existed |
-| The First Voice 🔮 | 28 | zone + `guardian_cartographer_defeat` | The entity that taught "the Voice" (the game's `void` narrator) to speak |
+| Guardian | Zone | Identity |
+|---|---|---|
+| The Ledger 📋 | 16 | A Jiutian Holdings audit-construct |
+| The Hollow Choir 🎭 | 18 | Failed early attempts by "the Voice" to speak |
+| Su Wan's Shadow 🕳️ | 20 | A corrupted echo of the mentor's own 300-year-old near-miss |
+| The Cartographer 🗺️ | 24 | Something that was surveying the Fracture before Jiutian existed |
+| The First Voice 🔮 | 28 | The entity that taught "the Voice" (the game's `void` narrator) to speak |
 
 ### Artifacts / Gear — `artifacts.js`
 **6 equipment slots**: `weapon`/`robe`/`talisman`/`ring` are free from the
@@ -705,7 +715,9 @@ almost entirely through this quest chain:
   Guardians defeated, closing with a three-way dialogue from all three
   recurring characters.
 - **Act IV: Beyond the Door (5 quests, Round 27)** — picks up exactly where
-  Act III's finale left off (gated on `threshold_crossed`), continuing the
+  Act III's finale left off; the DIALOGUE is gated on `threshold_crossed`
+  completing, though the Guardian fights themselves are not (see §10 — the
+  two are intentionally decoupled since Round 28). Continues the
   same delivered-through-combat pattern for the two Round 27 Guardians (§10):
   an intro/defeat pair each for The Cartographer and The First Voice, then a
   closing quest ("Past Every Door There Is") once both are sealed. The First
@@ -900,7 +912,10 @@ Academy/Career electives · R18 per-job progress restructure · R23 artifact
 boots/amulet slots + auto-equip/salvage · R25 Chronicle event log · R26
 Fracture Act III (Rift Guardians) + combat zone bands · R27 Act IV (2 more
 Guardians, 5th zone band) + 3 new Heavenly Perks (2 Guardian-gated, 1 that
-raises the per-life reincarnation rate itself).
+raises the per-life reincarnation rate itself) · R28 full-gameplay review:
+fixed an Act IV Guardian soft-lock (zone/realm progress could desync),
+a stuck-true dailies.weekClaimed migration gap, a missing anti-cheat
+maxSeenTime backfill, and a Market Qi Infusion flat-bonus scaling exploit.
 
 ---
 

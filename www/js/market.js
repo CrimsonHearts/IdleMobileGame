@@ -68,7 +68,7 @@ const Market = {
     if (g.give.stones) Game.state.spiritStones += g.give.stones * qty;
     if (g.give.eggs)   Game.state.beastEggs   += g.give.eggs   * qty;
     if (g.give.pill)   Game.state.breakthroughPills = (Game.state.breakthroughPills || 0) + g.give.pill * qty;
-    if (g.give.qiHours) Game._addQi(Game.qiPerSecond() * 3600 * g.give.qiHours * qty + 50);
+    if (g.give.qiHours) Game._addQi((Game.qiPerSecond() * 3600 * g.give.qiHours + 50) * qty);
     Game.persist();
     return true;
   },

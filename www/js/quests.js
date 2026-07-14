@@ -540,10 +540,18 @@ const QUEST_DEFS = [
   // ── ACT IV: BEYOND THE DOOR (Round 27) ──────────────────────────────────
   // The Act III finale left the door open rather than closed — these five
   // pick up exactly there. Zone 21-25 stay the "Void-Touched" band (no new
-  // named content); the story resumes at Zone 24, past that band, in the
-  // Uncounted Reaches (see combat.js MOB_BANDS tier 5). Both new Guardians
-  // are gated behind `threshold_crossed` (see combat.js GUARDIANS `after`),
-  // so nothing here can be encountered before Act III actually closes.
+  // named content); the Uncounted Reaches band itself doesn't start until
+  // zone 26 (combat.js MOB_BANDS tier 5), though both new Guardians (zone
+  // 24/28) are reachable slightly before it. Combat-side, the two new
+  // Guardians are gated by zone number ONLY (same unskippable mechanic as
+  // Act III's three — see combat.js GUARDIANS), not by quest completion, so
+  // a player can mechanically fight/defeat them before finishing Act III's
+  // finale if their Trials zone has outrun their realm (realm resets on
+  // reincarnate(), zone doesn't — an earlier `after`-gated version of this
+  // could softlock on that mismatch). The dialogue below keeps its own
+  // `after: threshold_crossed` chain regardless, so the STORY still plays
+  // out in order — it just may cascade in a batch once realm catches up,
+  // rather than the instant the Guardian falls.
   {
     id: 'guardian_cartographer_intro', category: 'story', after: 'threshold_crossed', order: 32, icon: '🗺️',
     title: 'What Jiutian Never Mapped',

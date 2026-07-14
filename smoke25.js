@@ -84,42 +84,40 @@ console.log('Testing Round 27 Beyond the Door: 5th zone band, Act IV Guardians, 
   }
   console.log('    Band 5 boss roster is distinct from band 4 ✓');
 
-  // TEST 3 — Cartographer is withheld until threshold_crossed is completed,
-  // even at zone 24 on a boss wave.
-  console.log('\n  Test 3: Act IV Guardians are gated by quest completion, not just zone');
+  // TEST 3 — Cartographer spawns purely from reaching zone 24 on a boss
+  // wave, with ZERO quest-completion prerequisite. An earlier version of
+  // this feature gated the Act IV Guardians behind `after: <quest id>` in
+  // addition to zone, but realm (which threshold_crossed required) and
+  // Trials zone are independent progression axes (realm resets on
+  // reincarnate(), zone does not) — a player could outrun the quest gate,
+  // silently fight a generic boss at zone 24 instead of the Guardian, and
+  // permanently miss the Act IV quest chain with no in-game signal anything
+  // was skipped. Fixed to match the proven zone-only mechanic Act III's
+  // three Guardians already used (unskippable by construction, since
+  // clearing a zone's boss wave is what advances the zone in the first
+  // place — see TEST 6 below for the actual unskippability proof).
+  console.log('\n  Test 3: Cartographer spawns from zone 24 alone, no quest prerequisite');
   {
     freshCombatState();
     Game.state.combat.zone = 24; Game.state.combat.wave = 10;
-    const early = Combat.spawnMob();
-    assert(!early.guardianId, 'Cartographer does not spawn before threshold_crossed is completed');
-    // Zone 24 is still inside band 4 (Void-Touched, capped at zone 25) — the
-    // fallback boss is band 4's, not band 5's (band 5 only starts at zone 26).
-    assert(['Void Sovereign', 'The Unraveling'].includes(early.name), `falls back to band-4 boss (got '${early.name}')`);
-
-    Game.state.quests.completed.threshold_crossed = true;
-    Combat._mob = null;
-    const gated = Combat.spawnMob();
-    assert(gated.guardianId === 'cartographer', `Cartographer spawns once threshold_crossed is complete (got '${gated.guardianId}')`);
-    assert(gated.name === 'The Cartographer', `mob name is 'The Cartographer' (got '${gated.name}')`);
+    const mob = Combat.spawnMob();
+    assert(mob.guardianId === 'cartographer', `Cartographer spawns at zone 24 with no quests completed at all (got '${mob.guardianId}')`);
+    assert(mob.name === 'The Cartographer', `mob name is 'The Cartographer' (got '${mob.name}')`);
   }
-  console.log('    Guardian `after` gate withholds spawn until its prerequisite quest completes ✓');
+  console.log('    Guardian spawn depends on zone number only, never on quest state ✓');
 
-  // TEST 4 — First Voice is further gated behind the Cartographer's OWN
-  // defeat quest, chaining the two new Guardians in story order.
-  console.log('\n  Test 4: First Voice additionally gated behind Cartographer\'s defeat quest');
+  // TEST 4 — First Voice likewise spawns purely from zone 28, independent
+  // of the Cartographer's OWN defeat quest (only the Cartographer's
+  // in-combat DEFEAT FLAG, not any quest, could ever matter here — and even
+  // that's a different guardian's flag, so it's irrelevant to First Voice).
+  console.log('\n  Test 4: First Voice spawns from zone 28 alone, no quest prerequisite');
   {
     freshCombatState();
-    Game.state.quests.completed.threshold_crossed = true;
     Game.state.combat.zone = 28; Game.state.combat.wave = 10;
-    const early = Combat.spawnMob();
-    assert(!early.guardianId, 'First Voice withheld — guardian_cartographer_defeat not yet completed');
-
-    Game.state.quests.completed.guardian_cartographer_defeat = true;
-    Combat._mob = null;
-    const gated = Combat.spawnMob();
-    assert(gated.guardianId === 'firstvoice', `First Voice spawns once its prerequisite completes (got '${gated.guardianId}')`);
+    const mob = Combat.spawnMob();
+    assert(mob.guardianId === 'firstvoice', `First Voice spawns at zone 28 with no quests completed at all (got '${mob.guardianId}')`);
   }
-  console.log('    First Voice respects its own, later, quest gate ✓');
+  console.log('    First Voice spawn also depends on zone number only ✓');
 
   // TEST 5 — guardianDef() lookup helper (used by ui.js for locked-perk hints).
   console.log('\n  Test 5: Combat.guardianDef() lookup');
@@ -147,6 +145,27 @@ console.log('Testing Round 27 Beyond the Door: 5th zone band, Act IV Guardians, 
     assert(!cart2.guardianId, 'cartographer does not respawn once defeated');
   }
   console.log('    Act IV Guardian defeats are independent, one-time flags ✓');
+
+  // TEST 6b — Proves the actual safety claim behind removing the quest
+  // gate: an undefeated Guardian overrides EVERY boss wave at its zone, with
+  // no way to draw a generic boss instead — so a player literally cannot
+  // clear that zone (and thus cannot advance past it, since clearing the
+  // zone's boss wave is the only thing that ever advances the zone) without
+  // fighting the Guardian at least once. Checked across several consecutive
+  // boss-wave "attempts" (spawnMob() called fresh each time, as if a defeat
+  // sent the player back to wave 1 and they climbed to another boss wave).
+  console.log('\n  Test 6b: an undefeated Guardian is unskippable — every boss wave at its zone IS the Guardian');
+  {
+    freshCombatState();
+    Game.state.combat.zone = 24;
+    for (const wave of [10, 20, 30]) {
+      Game.state.combat.wave = wave;
+      Combat._mob = null;
+      const mob = Combat.spawnMob();
+      assert(mob.guardianId === 'cartographer', `wave ${wave} boss at zone 24 is still the Cartographer while undefeated (got '${mob.guardianId}')`);
+    }
+  }
+  console.log('    No generic-boss substitute exists while the Guardian is alive — zone 24/28 cannot be cleared around it ✓');
 
   // TEST 7 — Act IV quest chain: gating, ordering, dialogue shape.
   console.log('\n  Test 7: Act IV quest chain (quests.js order 32-36)');
@@ -200,8 +219,37 @@ console.log('Testing Round 27 Beyond the Door: 5th zone band, Act IV Guardians, 
     assert(finale.dialogue.length === 3, `Act IV finale carries all 3 speakers (got ${finale.dialogue.length})`);
     assert(finale.dialogue.map(d => d.speaker).join(',') === 'antagonist,void,mentor', 'Act IV finale speaker order is Lu Heng, then Voice, then Granny Su');
     assert(finale.reward.permanentBonus === 0.12, 'Act IV finale grants the documented permanent production bonus');
+
+    // 7d — the actual Round 28 fix, end to end: the Guardian can be
+    // defeated in COMBAT before its quest's own `after` prerequisite
+    // (threshold_crossed, which needs realm >= 8) has completed — combat no
+    // longer cares. The dialogue quest must simply wait and cascade in once
+    // threshold_crossed eventually completes, rather than being permanently
+    // missable the way the old `after`-gated-in-combat.js version could be.
+    Game.state = {
+      realm: 7, // one short of threshold_crossed's own realm requirement
+      combat: { zone: 1, wave: 1, highestZone: 24 }, // already reached zone 24
+      fracture: { guardiansDefeated: { ledger: true, choir: true, shadow: true, cartographer: true } }, // defeated in combat already
+      quests: Quests.fresh(),
+    };
+    // Seed threshold_crossed's own `after` chain as already complete (Act I-III
+    // dialogue) so only its check()'s realm>=8 requirement is left pending —
+    // isolates the one condition this sub-test cares about.
+    ['fracture_act2_end','guardian_ledger_intro','guardian_ledger_defeat',
+     'guardian_choir_intro','guardian_choir_defeat','guardian_shadow_intro','guardian_shadow_defeat']
+      .forEach(id => { Game.state.quests.completed[id] = true; });
+    done = Quests.checkAll();
+    assert(!done.some(q => q.id === 'guardian_cartographer_intro'), 'dialogue withheld — threshold_crossed has not completed yet (realm 7)');
+    assert(!done.some(q => q.id === 'guardian_cartographer_defeat'), 'defeat dialogue also withheld — it chains behind the intro quest');
+
+    Game.state.realm = 8; // threshold_crossed's own conditions are now met
+    done = Quests.checkAll();
+    assert(done.some(q => q.id === 'threshold_crossed'), 'threshold_crossed itself fires now that realm 8 is reached');
+    assert(done.some(q => q.id === 'guardian_cartographer_intro'), 'cartographer intro cascades in immediately after, in the same checkAll()');
+    assert(done.some(q => q.id === 'guardian_cartographer_defeat'), 'defeat dialogue cascades too — the Guardian was already dead, nothing was lost');
   }
   console.log('    Act IV quest chain gates and orders correctly, dialogue intact ✓');
+  console.log('    Combat-side defeat ahead of the quest gate is never lost — dialogue just cascades in once the gate catches up ✓');
 }
 
 // ════════════════════════════════════════════════════════════════════════

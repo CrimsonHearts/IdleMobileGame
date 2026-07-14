@@ -191,6 +191,13 @@ const Game = {
     if (!this.state.heavenlyPerks) this.state.heavenlyPerks = {};
     if (this.state.reincarnations === undefined) this.state.reincarnations = 0;
     if (this.state.breakthroughPills === undefined) this.state.breakthroughPills = 0;
+    // Anti-cheat high-water mark: every site that's supposed to raise it uses
+    // a strict `>` comparison against the field itself (tick()/persist()),
+    // and `x > undefined` is always false — so a save missing this field
+    // (pre-anti-cheat, or hand-edited) could never set it, silently
+    // defeating the "sticky" clock-rollback guard applyOffline() relies on.
+    if (this.state.maxSeenTime === undefined) this.state.maxSeenTime = TimeService.now();
+    if (this.state.cheatFlags  === undefined) this.state.cheatFlags  = 0;
     if (this.state.generation === undefined) this.state.generation = 1;
     if (this.state.legacyBonus === undefined) this.state.legacyBonus = 0;
     if (!Array.isArray(this.state.lineage)) this.state.lineage = [];
@@ -241,6 +248,15 @@ const Game = {
     if (!this.state.dailies) this.state.dailies = { day: null, missions: [], allComplete: false, sealClaimed: false, sealEndsAt: 0, streak: 0, weekReady: false, weekClaimed: false };
     if (this.state.dailies.weekReady  === undefined) this.state.dailies.weekReady  = false;
     if (this.state.dailies.weekClaimed=== undefined) this.state.dailies.weekClaimed= false;
+    // R28 migration: under the current code weekClaimed is only ever set true
+    // then immediately false again within the SAME claimWeekReward() call
+    // (see dailies.js) — it should never be observably true in a persisted
+    // save. A save from before that reset was added (the original bug: it
+    // set weekClaimed=true and never reset it) can still carry a stuck
+    // `true`, which permanently blocks the 7-day chest with no in-game way
+    // to recover (weekReady can never be re-armed while weekClaimed is
+    // true, and claiming requires weekReady). Safe to force-clear.
+    if (this.state.dailies.weekClaimed === true) this.state.dailies.weekClaimed = false;
     // R10 migration: clear orphaned heirloom id from saves where the artifact was salvaged
     if (this.state.heirloom && this.state.heirloom.id) {
       const s = this.state.artifacts;
@@ -973,6 +989,7 @@ const Game = {
     if (!life || life.money < price) return false;
     life.money -= price;
     this.state.breakthroughPills = (this.state.breakthroughPills || 0) + 1;
+    this.persist();
     return true;
   },
 
