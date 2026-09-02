@@ -70,6 +70,25 @@ const SUBJECT = { female: 'beautiful young immortal woman, ',
                   male: "handsome young male cultivator, men's hanfu, hair in a topknot with a jade crown, refined heroic face, " };
 const promptFor = (g, r) => SUBJECT[g] + ELEMENTS[r][g] + ', ' + STYLE;
 
+/* ── EXTRA PORTRAITS (Round 32) ───────────────────────────────────────────
+ * The 10 gender × root portraits above are the DEFAULTS a new character can
+ * roll. Since the player can now pick any portrait in Settings > Appearance,
+ * the art is no longer capped at those 10 — add freeform entries here and
+ * they generate alongside the rest.
+ *
+ * TO ADD ONE:
+ *   1. Add `'<file-stem>': 'your prompt here',` below.
+ *   2. Run `node tools/gen-portraits.mjs --only=<file-stem>`.
+ *   3. Add a matching line to GameData.portraitCatalog in www/js/gameData.js
+ *      so the picker offers it: { id, file:'<file-stem>.jpg', name, gender, root }
+ *      (gender/root may be null for art not tied to a spirit root).
+ * Keep the shared STYLE block on the end so new art matches the existing set.
+ */
+const EXTRA_PORTRAITS = {
+  // 'female-frost': 'immortal woman in pale frost-white robes, snow and ice crystals, frozen lake, aurora light',
+  // 'male-thunder': 'male cultivator wreathed in crackling golden lightning, storm clouds, thunder god aura',
+};
+
 // -- ComfyUI ----------------------------------------------------------------
 async function comfyInfo() {
   const r = await fetch(COMFY + '/object_info/CheckpointLoaderSimple');
@@ -196,12 +215,20 @@ if (BACKEND === 'comfy') {
 const jobs = [];
 for (const g of GENDER) for (const r of roots) {
   const name = `${g}-${r}`;
-  if (!ONLY || ONLY.includes(name)) jobs.push({ name, gender: g, root: r });
+  if (!ONLY || ONLY.includes(name)) jobs.push({ name, prompt: promptFor(g, r) });
 }
+// Freeform extras (Round 32) — only when explicitly requested via --only,
+// or when generating everything with no gender filter.
+const wantAllExtras = !ONLY && !args.gender;
+for (const [name, body] of Object.entries(EXTRA_PORTRAITS)) {
+  if (wantAllExtras || (ONLY && ONLY.includes(name))) jobs.push({ name, prompt: `${body}, ${STYLE}` });
+}
+const unknownOnly = (ONLY || []).filter(n => !jobs.some(j => j.name === n));
+if (unknownOnly.length) console.log(`(ignoring unknown --only names: ${unknownOnly.join(', ')})`);
 console.log(`Backend: ${BACKEND} · ${jobs.length} portrait(s) → ${OUT_DIR}\n`);
 
 for (const job of jobs) {
-  const prompt = promptFor(job.gender, job.root);
+  const prompt = job.prompt;
   process.stdout.write(`• ${job.name} … `);
   try {
     const buf = BACKEND === 'comfy' ? await genComfy(prompt, ckpt) : await genLeonardo(prompt);

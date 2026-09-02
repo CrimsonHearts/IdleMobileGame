@@ -168,10 +168,45 @@ const GameData = {
   // docs/CHARACTER-ART.md). If a file is missing, the vector emblem is used.
   portraitDir: 'assets/portraits/',
 
+  /* Portrait catalogue (Round 32) — every portrait the Settings > Appearance
+   * picker can offer. Previously a portrait was DERIVED from gender × root
+   * with no way to choose, which capped the art at exactly 10 and meant new
+   * files could never be surfaced.
+   *
+   * ── TO ADD A NEW PORTRAIT LATER ────────────────────────────────────────
+   *   1. Generate/drop the image into www/assets/portraits/<file>
+   *      (see tools/gen-portraits.mjs — its EXTRA_PORTRAITS map takes
+   *       arbitrary named prompts, it is no longer limited to gender×root).
+   *   2. Add one line here: { id, file, name, gender, root }.
+   * `gender`/`root` are only used to pick the DEFAULT for a new character;
+   * the player can choose any portrait in the list regardless of either.
+   * Set them to null for art that isn't tied to a spirit root at all.
+   * The picker hides entries whose file 404s, so a half-finished catalogue
+   * never shows broken images.
+   */
+  portraitCatalog: [
+    { id: 'female-mortal', file: 'female-mortal.jpg', name: 'Azure',    gender: 'female', root: 'mortal' },
+    { id: 'female-true',   file: 'female-true.jpg',   name: 'Verdant',  gender: 'female', root: 'true'   },
+    { id: 'female-heaven', file: 'female-heaven.jpg', name: 'Lunar',    gender: 'female', root: 'heaven' },
+    { id: 'female-saint',  file: 'female-saint.jpg',  name: 'Radiant',  gender: 'female', root: 'saint'  },
+    { id: 'female-chaos',  file: 'female-chaos.jpg',  name: 'Phoenix',  gender: 'female', root: 'chaos'  },
+    { id: 'male-mortal',   file: 'male-mortal.jpg',   name: 'Azure',    gender: 'male',   root: 'mortal' },
+    { id: 'male-true',     file: 'male-true.jpg',     name: 'Verdant',  gender: 'male',   root: 'true'   },
+    { id: 'male-heaven',   file: 'male-heaven.jpg',   name: 'Lunar',    gender: 'male',   root: 'heaven' },
+    { id: 'male-saint',    file: 'male-saint.jpg',    name: 'Radiant',  gender: 'male',   root: 'saint'  },
+    { id: 'male-chaos',    file: 'male-chaos.jpg',    name: 'Phoenix',  gender: 'male',   root: 'chaos'  },
+  ],
+
   // Painted Rift Guardian art (Round 29) drops in here as <guardianId>.jpg
   // (see tools/gen-guardians.mjs). If a file is missing, the emoji icon
   // already used for every other Trials mob is shown instead.
   guardianPortraitDir: 'assets/guardians/',
+
+  // Painted regular mob/boss art (Round 32) drops in here as <name>.jpg,
+  // where <name> is the mob's icon key minus its "ic-mob-" prefix (so
+  // 'ic-mob-wolf' -> assets/mobs/wolf.jpg). See tools/gen-mobs.mjs. Same
+  // deal: missing file just falls back to the emoji.
+  mobArtDir: 'assets/mobs/',
 
   /**
    * Shared pool + weight-key resolution for a roll mode. rollSpiritualRoot()

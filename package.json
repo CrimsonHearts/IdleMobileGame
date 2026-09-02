@@ -9,6 +9,8 @@
     "docker": "docker compose up",
     "gen:portraits": "node tools/gen-portraits.mjs",
     "gen:guardians": "node tools/gen-guardians.mjs",
+    "gen:mobs": "node tools/gen-mobs.mjs",
+    "gen:art": "node tools/gen-portraits.mjs && node tools/gen-guardians.mjs && node tools/gen-mobs.mjs",
     "cap:init": "npx --yes @capacitor/cli init \"Path to Immortality\" com.crimsonhearts.xianxiaidle --web-dir=www",
     "cap:add:android": "npm i @capacitor/core @capacitor/android && npx cap add android",
     "cap:add:ios": "npm i @capacitor/core @capacitor/ios && npx cap add ios",

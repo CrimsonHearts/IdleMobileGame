@@ -61,6 +61,27 @@ small { font-weight:400; }
 .age-badge { background:var(--surface-2); color:var(--muted); font-size:9px; border-radius:5px;
   padding:4px 8px; letter-spacing:.04em; white-space:nowrap; flex-shrink:0; border:1px solid var(--line); }
 .age-badge b { color:var(--text); }
+/* Settings entry point (Round 32) */
+.topbar-icon-btn { flex-shrink:0; width:30px; height:30px; padding:0; border-radius:50%;
+  border:1px solid var(--line); background:var(--surface-2); color:var(--muted);
+  font-size:15px; line-height:1; cursor:pointer; transition:background .15s, color .15s; }
+.topbar-icon-btn:active { background:var(--line); color:var(--text); }
+
+/* -- Settings > Appearance: portrait picker (Round 32) -------------------- */
+.settings-section { margin-bottom:6px; }
+.settings-section-label { font-size:11px; font-weight:800; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.09em; margin:14px 0 8px; }
+.portrait-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:9px; }
+.portrait-choice { position:relative; padding:0; border:2px solid var(--line); border-radius:12px;
+  background:var(--surface-2); cursor:pointer; overflow:hidden; aspect-ratio:3/4; }
+.portrait-choice img { width:100%; height:100%; object-fit:cover; object-position:center top; display:block; }
+.portrait-choice .pc-name { position:absolute; left:0; right:0; bottom:0; padding:3px 4px;
+  font-size:9.5px; font-weight:700; color:#fff; background:linear-gradient(transparent, rgba(0,0,0,.75));
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.portrait-choice.on { border-color:var(--jade); box-shadow:0 0 0 2px rgba(22,182,122,.25); }
+.portrait-choice.auto { display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:4px; color:var(--muted); font-size:10px; font-weight:700; text-align:center; padding:6px; }
+.portrait-choice.auto .pc-auto-ico { font-size:20px; }
 .tb-res { display:flex; gap:0; background:var(--surface-2); border-radius:8px; overflow:hidden; }
 .res-chip { flex:1; padding:4px 6px; display:flex; align-items:center; gap:4px; min-width:0;
   border-right:1px solid var(--line); }
@@ -1412,11 +1433,16 @@ small { font-weight:400; }
 .beast-stars { font-size:12px; color:#e7c878; letter-spacing:2px; margin:2px 0; }
 .evolve-btn { background:linear-gradient(135deg,#2a1a40,#1a2a20) !important;
   border-color:#8b5ae8 !important; color:#c4a0ff !important; }
+/* Round 32: this banner paints its own DARK gradient, but its body text was
+   inheriting the app's default near-black --text and its title used the
+   dark --gold-d, leaving both nearly invisible against it. Set light
+   on-dark colours explicitly rather than inheriting the light-theme ones. */
 .challenge-banner { display:flex; align-items:center; flex-wrap:wrap; gap:8px;
   background:linear-gradient(135deg,#1a0d2e,#2e1a0d);
-  border:1px solid var(--line); border-radius:16px; padding:12px 14px; margin-bottom:10px; }
+  border:1px solid var(--line); border-radius:16px; padding:12px 14px; margin-bottom:10px;
+  color:#e8dcc8; font-size:12.5px; line-height:1.45; }
 .challenge-icon { font-size:22px; }
-.challenge-title { font-weight:800; color:var(--gold-d); }
+.challenge-title { font-weight:800; color:#f0c866; }
 .challenge-claim-btn { margin-left:auto; }
 
 /* -- Round 9: Cultivation Boosters ------------------------------------------ */

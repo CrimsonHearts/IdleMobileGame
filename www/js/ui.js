@@ -153,6 +153,10 @@ const UI = {
     const chronicleBtn = document.getElementById('chronicle-btn');
     if (chronicleBtn) chronicleBtn.addEventListener('click', () => this.showEventLog());
 
+    // Settings (Round 32).
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) settingsBtn.addEventListener('click', () => this.showSettings());
+
     // Avatar → Cultivation Record
     if (this.el.avatar) this.el.avatar.addEventListener('click', () => this.showStats());
 
@@ -187,7 +191,11 @@ const UI = {
 
   applyGenderEmblem() {
     const fallback = Game.genderInfo().emblem;
-    const painted = Game.portraitSrc(Game.state.gender, Game.state.spiritualRoot && Game.state.spiritualRoot.key);
+    // No-arg on purpose (Round 32): this is the live avatar/Meditate art, so
+    // it must honour the player's chosen portrait. Passing gender/root
+    // explicitly forces the DERIVED default — that's only correct for the
+    // character-creation preview, which needs to show the root being rolled.
+    const painted = Game.portraitSrc();
     [this.el.tapEmblem, this.el.avatar].forEach(img => this.setPortrait(img, painted, fallback));
   },
 
@@ -1642,12 +1650,37 @@ const UI = {
     }
   },
 
-  // Round 29: guardianId -> true (painted art loaded) | false (missing,
-  // fall back to emoji) | undefined (not tried yet). renderTrialsLive()
-  // runs on every combat tick, so this cache stops a Guardian with no art
-  // file (the common case until tools/gen-guardians.mjs has been run)
-  // from re-issuing a 404 network request every single tick forever.
-  _guardianPortraitCache: {},
+  // Round 32: art-path -> true (painted art loaded) | false (missing, use
+  // the emoji fallback) | undefined (not tried yet). renderTrialsLive()
+  // runs on every combat tick, so this cache is what stops a fighter with
+  // no art file (the common case until the tools/gen-*.mjs generators have
+  // been run) from re-issuing a 404 network request every single tick.
+  // Keyed by src rather than by guardian id so player portraits, Guardian
+  // art and per-mob art all share one code path.
+  _fighterArtCache: {},
+
+  /** Painted fighter art if it's available (or untried), else the emoji.
+   *  Pairs with _wireFighterArtFallback() to swap in the emoji on a 404. */
+  _fighterArtHtml(src, fallbackEmoji) {
+    if (!src || this._fighterArtCache[src] === false) return fallbackEmoji;
+    const esc = String(fallbackEmoji).replace(/"/g, '&quot;');
+    return `<img class="fighter-portrait-img" src="${src}" data-art-src="${src}" data-fallback="${esc}" alt="">`;
+  },
+
+  /** Marks art present/missing on load/error, swapping in the emoji when a
+   *  file isn't there yet so a missing generator run never breaks combat. */
+  _wireFighterArtFallback(root) {
+    if (!root) return;
+    root.querySelectorAll('.fighter-portrait-img').forEach(img => {
+      const src = img.dataset.artSrc;
+      img.onload = () => { this._fighterArtCache[src] = true; };
+      img.onerror = () => {
+        this._fighterArtCache[src] = false;
+        const holder = img.parentElement;
+        if (holder) holder.textContent = img.dataset.fallback || '';
+      };
+    });
+  },
 
   /** Emoji fallback for beast/mob sprite ids. */
   _beastEmoji(id) {
@@ -1733,14 +1766,19 @@ const UI = {
     const pHpMax = Combat.playerHpMax(), pHp = Math.max(0, c.playerHp);
     const mHpPct = Math.max(0, (mob.hp / mob.maxHp) * 100);
     const pHpPct = Math.max(0, (pHp / pHpMax) * 100);
-    // Painted Guardian art (Round 29, tools/gen-guardians.mjs) — attempted
-    // once per guardian (see _guardianPortraitCache above), emoji otherwise.
-    const enemyIco = (mob.guardianId && this._guardianPortraitCache[mob.guardianId] !== false)
-      ? `<img class="fighter-portrait-img" src="${Game.guardianPortraitSrc(mob.guardianId)}" data-guardian="${mob.guardianId}">`
-      : this._mobEmoji(mob.icon);
+    // Painted fighter art (Round 32). The player reuses the SAME portrait
+    // already shown in the topbar/Meditate button — previously this was a
+    // hardcoded 🧘 emoji, so the most-viewed combat screen showed a generic
+    // yellow glyph for a character the rest of the app renders as painted
+    // art. Enemies prefer Guardian art, then per-mob art, then the emoji.
+    const enemyArt = mob.guardianId
+      ? Game.guardianPortraitSrc(mob.guardianId)
+      : Game.mobArtSrc(mob.icon);
+    const playerIco = this._fighterArtHtml(Game.portraitSrc(), '🧘');
+    const enemyIco  = this._fighterArtHtml(enemyArt, this._mobEmoji(mob.icon));
     stage.innerHTML = `
       <div class="fighter player">
-        <div class="fighter-ico">🧘</div>
+        <div class="fighter-ico">${playerIco}</div>
         <div class="fighter-name">${Game.state.name}</div>
         <div class="hp-bar"><div class="hp-fill player" style="width:${pHpPct}%"></div></div>
         <div class="fighter-stat">HP ${GameNumbers.formatNumber(pHp)} · ATK ${GameNumbers.formatNumber(Combat.playerAtk())}</div>
@@ -1752,15 +1790,7 @@ const UI = {
         <div class="hp-bar"><div class="hp-fill enemy" style="width:${mHpPct}%"></div></div>
         <div class="fighter-stat">HP ${GameNumbers.formatNumber(Math.max(0,mob.hp))} · ATK ${GameNumbers.formatNumber(mob.atk)}</div>
       </div>`;
-    const portraitImg = stage.querySelector('.fighter-portrait-img');
-    if (portraitImg) {
-      portraitImg.onload = () => { this._guardianPortraitCache[portraitImg.dataset.guardian] = true; };
-      portraitImg.onerror = () => {
-        this._guardianPortraitCache[portraitImg.dataset.guardian] = false;
-        const holder = portraitImg.parentElement;
-        if (holder) holder.textContent = this._mobEmoji(mob.icon);
-      };
-    }
+    this._wireFighterArtFallback(stage);
     const stones = document.getElementById('cb-stones');
     if (stones) stones.textContent = GameNumbers.formatNumber(Game.state.spiritStones);
     const eggs = document.getElementById('cb-eggs');
@@ -3022,6 +3052,71 @@ const UI = {
     const d = Math.floor(h / 24);
     return `${d}d ago`;
   },
+  /** Settings (Round 32). Currently Appearance-only; the section structure
+   *  is here so future options (theme, density, audio) slot in without a
+   *  rewrite. Portrait choices come from GameData.portraitCatalog, so
+   *  adding art later is a data change, not a UI change. */
+  showSettings() {
+    const overlay = this._openModal();
+    if (!overlay) return;
+
+    const render = () => {
+      const chosenId = Game.state.chosenPortraitId;
+      const cards = GameData.portraitCatalog.map(p => `
+        <button class="portrait-choice${chosenId === p.id ? ' on' : ''}" data-portrait="${p.id}" title="${p.name}">
+          <img src="${GameData.portraitDir}${p.file}" alt="${p.name}" data-pc-img="${p.id}">
+          <span class="pc-name">${p.name}${p.gender ? ' · ' + (p.gender === 'female' ? '♀' : '♂') : ''}</span>
+        </button>`).join('');
+
+      overlay.innerHTML = `
+        <div class="modal" style="text-align:left">
+          <h2 style="text-align:center;margin-bottom:2px">⚙ Settings</h2>
+          <p class="hint" style="text-align:center;margin-bottom:6px">Make it yours.</p>
+
+          <div class="settings-section">
+            <div class="settings-section-label">Appearance · Portrait</div>
+            <div class="hint" style="margin-bottom:8px">Used for your avatar, the Meditate button and your fighter in Trials.</div>
+            <div class="portrait-grid">
+              <button class="portrait-choice auto${!chosenId ? ' on' : ''}" data-portrait="auto" title="Match my Spiritual Root">
+                <span class="pc-auto-ico">✨</span>
+                <span>Auto<br>(my root)</span>
+              </button>
+              ${cards}
+            </div>
+          </div>
+
+          <button class="modal-close" style="margin-top:16px">Done</button>
+        </div>`;
+
+      // Hide catalogue entries whose art isn't present yet, so a partially
+      // generated set never shows broken images in the picker.
+      overlay.querySelectorAll('[data-pc-img]').forEach(img => {
+        img.onerror = () => {
+          const card = img.closest('.portrait-choice');
+          if (card) card.remove();
+        };
+      });
+
+      overlay.querySelectorAll('[data-portrait]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.portrait;
+          if (Game.setChosenPortrait(id === 'auto' ? null : id)) {
+            this.applyGenderEmblem();
+            this.renderAll();
+            if (this.worldSub === 'trials') this.renderTrialsLive();
+            const entry = Game.chosenPortrait();
+            this.toast(entry ? `🖼 Portrait set to ${entry.name}` : '🖼 Portrait follows your Spiritual Root');
+            render();
+          }
+        });
+      });
+      overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+    };
+
+    render();
+    document.body.appendChild(overlay);
+  },
+
   /** The Chronicle: every logged event, newest first, in a scrollable modal. */
   showEventLog() {
     const overlay = this._openModal();

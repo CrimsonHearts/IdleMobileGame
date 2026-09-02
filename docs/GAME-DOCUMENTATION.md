@@ -941,6 +941,23 @@ Qi and all owned generators (same as manual play), and generators are the
 only source of passive income — Auto-Runner doesn't auto-tap, so it will
 correctly sit idle post-breakthrough until the player taps a few times to
 reseed Qi, same bootstrap step manual play already requires.
+· R32 combat/art pass + customization: the player's Trials fighter now
+renders the SAME painted portrait as the topbar (it was a hardcoded 🧘
+emoji, the game's worst visual inconsistency — a painted avatar and a
+generic glyph for the same character on the same screen); a generalized
+`UI._fighterArtHtml()` / `_wireFighterArtFallback()` pair now serves player
+portraits, Guardian art and per-mob art through one src-keyed cache, so a
+missing file falls back to the emoji and is only requested once rather than
+every combat tick. Added `tools/gen-mobs.mjs` (22 regular mobs, square
+768×768 since they render at 46–58px, style LoRA only — the character LoRA
+pulls every subject toward a human figure). Added **Settings** (topbar ⚙)
+with an Appearance > Portrait picker backed by the new
+`GameData.portraitCatalog`: a player may pick ANY portrait regardless of
+their rolled gender/root, `Game.state.chosenPortraitId` overrides the
+derived default, and adding art later is a data change (one catalogue line
++ one `EXTRA_PORTRAITS` prompt in `gen-portraits.mjs`), not a UI change.
+Also fixed the Trial challenge banner, which painted its own dark gradient
+but inherited the light theme's near-black text, leaving it unreadable.
 
 ---
 
@@ -972,6 +989,12 @@ Local **ComfyUI** at `http://127.0.0.1:8188` with **GuoFeng4 XL**
   832×1216, people-free landscapes → `www/assets/realms/realm-<0..9>.jpg`.
   `--only=N` re-rolls a single realm.
 - **App icon** — `python3 tools/gen-icon.py` (Pillow) → `www/assets/icon-*.png`.
+- **Trials mob art** (Round 32) — `node tools/gen-mobs.mjs`
+  22 regular mobs/bosses → `www/assets/mobs/<key>.jpg`, where `<key>` is the
+  combat.js icon id minus `ic-mob-`. Square **768×768** (they render at
+  46–58px behind a circular crop, so portrait resolution is wasted) and
+  **style LoRA only** — the character LoRA drags every subject toward a
+  human figure, which is wrong for beasts and constructs.
 - **Rift Guardian portraits** (Round 29) — `node tools/gen-guardians.mjs`
   Same LoRAs as character portraits but boss/dark-fantasy framed prompts
   (one per Guardian, keyed to their established lore) →

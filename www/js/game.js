@@ -65,6 +65,10 @@ const Game = {
       // Auto-Runner (Round 30): hands-off core-grind automation — see autorunner.js.
       autoRunner: { enabled: false },
 
+      // Chosen portrait id from GameData.portraitCatalog (Round 32).
+      // null = auto (derive from gender × spirit root, as before).
+      chosenPortraitId: null,
+
       // Meridian tree (Round 2): id -> true for each opened node.
       meridians: {},
 
@@ -191,6 +195,7 @@ const Game = {
     if (!this.state.breakthroughConditionsHit) this.state.breakthroughConditionsHit = [];
     if (!this.state.autoRunner) this.state.autoRunner = { enabled: false };
     if (this.state.autoRunner.enabled === undefined) this.state.autoRunner.enabled = false;
+    if (this.state.chosenPortraitId === undefined) this.state.chosenPortraitId = null;
     if (!this.state.meridians) this.state.meridians = {};
     if (this.state.heavenlyMerit === undefined) this.state.heavenlyMerit = 0;
     if (!this.state.heavenlyPerks) this.state.heavenlyPerks = {};
@@ -405,14 +410,50 @@ const Game = {
     return true;
   },
 
-  /** Painted portrait path for a character (falls back to the vector emblem). */
+  /** Painted portrait path for a character (falls back to the vector emblem).
+   *  With no args this honours the player's chosen portrait (Settings >
+   *  Appearance, Round 32); passing gender/rootKey explicitly still returns
+   *  the derived default, which is what character creation previews use. */
   portraitSrc(gender, rootKey) {
+    if (!gender && !rootKey) {
+      const chosen = this.chosenPortrait();
+      if (chosen) return GameData.portraitDir + chosen.file;
+    }
     return GameData.portraitDir + (gender || this.state.gender) + '-' + (rootKey || (this.state.spiritualRoot && this.state.spiritualRoot.key)) + '.jpg';
+  },
+
+  /** The catalogue entry the player explicitly picked, or null for "auto"
+   *  (derive from gender × spirit root, the original behaviour). */
+  chosenPortrait() {
+    const id = this.state.chosenPortraitId;
+    if (!id) return null;
+    return GameData.portraitCatalog.find(p => p.id === id) || null;
+  },
+
+  /** Choose a portrait by catalogue id, or null/'auto' to go back to the
+   *  gender × root default. Returns false for an unknown id. */
+  setChosenPortrait(id) {
+    if (!id || id === 'auto') {
+      this.state.chosenPortraitId = null;
+      this.persist();
+      return true;
+    }
+    if (!GameData.portraitCatalog.some(p => p.id === id)) return false;
+    this.state.chosenPortraitId = id;
+    this.persist();
+    return true;
   },
 
   /** Painted Rift Guardian art path (falls back to the mob's emoji icon). */
   guardianPortraitSrc(guardianId) {
     return GameData.guardianPortraitDir + guardianId + '.jpg';
+  },
+
+  /** Painted art path for a regular mob, keyed off its icon id
+   *  ('ic-mob-wolf' -> 'assets/mobs/wolf.jpg'). Falls back to the emoji. */
+  mobArtSrc(iconId) {
+    if (!iconId) return null;
+    return GameData.mobArtDir + String(iconId).replace(/^ic-mob-/, '') + '.jpg';
   },
 
   // -------------------------------------------------------------------------
