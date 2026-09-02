@@ -58,7 +58,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
  *
  * Keep STYLE short — CLIP truncates prompt + style at 77 tokens together
  * (see the same note in gen-mobs.mjs). */
-const STYLE = 'bold flat vector emblem, ornate heraldic crest, game boss icon, ' +
+/* NOTE: an earlier revision used "ornate heraldic crest" here to make
+ * Guardians feel a tier above the mobs. It backfired — "crest" dominated
+ * the subject and three of the five came out as generic shields/medallions
+ * that had lost their identity entirely (the audit-golem became a plain
+ * gold coin). "ornate" and "gilded" give the step-up in richness without
+ * overriding WHAT the thing is, which matters more for five named story
+ * bosses than for anonymous mobs. */
+const STYLE = 'bold flat vector emblem, game boss icon, ornate gilded detail, ' +
   'high contrast, thick clean shapes, centered, crisp silhouette, ' +
   'glowing accents, mid-tone background';
 const NEG = 'photorealistic, painterly, blurry, soft focus, realistic texture, text, ' +
