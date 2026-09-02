@@ -52,17 +52,28 @@ const LORAS = [
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // -- Prompts ----------------------------------------------------------------
-// Centered single subject on a plain dark backdrop: the combat stage crops
-// these to a circle, so anything in the corners is thrown away.
-const STYLE = 'Chinese xianxia dark fantasy creature art, semi-realistic painted CG, ' +
-  'single centered subject filling the frame, head and shoulders, strong bright rim lighting, ' +
-  'high contrast, subject clearly separated from a soft muted background, ' +
-  'glowing spirit particles, vivid saturated colours, menacing, highly detailed, masterpiece';
-const NEG = 'text, watermark, signature, logo, lowres, blurry, jpeg artifacts, ' +
-  'multiple subjects, full body crowd scene, cute, chibi, modern clothes, nsfw, ' +
-  'deformed, extra limbs, bad anatomy, cluttered background, border, frame, ' +
-  'very dark, black on black, low contrast, underexposed, silhouette, tiny subject, ' +
-  'distant subject, empty space';
+/* STYLE IS DELIBERATELY "EMBLEM", NOT "PAINTING" — this was measured, not
+ * guessed. Painted semi-realistic creature art (the style used for the
+ * character portraits) was generated first and compared against this at the
+ * ACTUAL 46-58px these render at: the painted versions collapse into an
+ * unreadable dark blob once downscaled, because fine fur//texture detail and
+ * dark-on-dark values carry no information at that size. A bold flat emblem
+ * with a limited palette, thick shapes and a mid-tone background stays
+ * instantly readable. It also matches the game's existing hand-drawn SVG
+ * generator icons better than photorealism would.
+ *
+ * If you ever render these LARGE (a bestiary screen, a boss splash),
+ * regenerate with a painted style instead — this trade-off is specifically
+ * for icon-size display. */
+const STYLE = 'bold flat vector emblem, simple graphic game icon, heraldic crest, ' +
+  'high contrast, limited palette, thick clean shapes, minimal detail, centered, ' +
+  'crisp readable silhouette, glowing accents, mid-tone neutral background, ' +
+  'Chinese xianxia dark fantasy';
+const NEG = 'photorealistic, photograph, painterly, soft focus, blurry, gradient mush, ' +
+  'realistic fur detail, text, watermark, signature, logo, lowres, jpeg artifacts, ' +
+  'low contrast, dark on dark, underexposed, cluttered, busy background, ' +
+  'tiny subject, distant subject, empty space, multiple subjects, cute, chibi, ' +
+  'nsfw, deformed, extra limbs, bad anatomy, border, frame';
 
 /* Keys match combat.js icon ids minus "ic-mob-". Prompts follow each mob's
  * name and its zone band's flavour (early beasts -> demonic corruption ->
