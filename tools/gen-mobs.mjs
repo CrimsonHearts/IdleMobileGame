@@ -65,15 +65,16 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
  * If you ever render these LARGE (a bestiary screen, a boss splash),
  * regenerate with a painted style instead — this trade-off is specifically
  * for icon-size display. */
-const STYLE = 'bold flat vector emblem, simple graphic game icon, heraldic crest, ' +
-  'high contrast, limited palette, thick clean shapes, minimal detail, centered, ' +
-  'crisp readable silhouette, glowing accents, mid-tone neutral background, ' +
-  'Chinese xianxia dark fantasy';
-const NEG = 'photorealistic, photograph, painterly, soft focus, blurry, gradient mush, ' +
-  'realistic fur detail, text, watermark, signature, logo, lowres, jpeg artifacts, ' +
-  'low contrast, dark on dark, underexposed, cluttered, busy background, ' +
-  'tiny subject, distant subject, empty space, multiple subjects, cute, chibi, ' +
-  'nsfw, deformed, extra limbs, bad anatomy, border, frame';
+/* KEEP THESE SHORT. CLIP truncates at 77 tokens and the SUBJECT is
+ * prepended, so an over-long style block silently eats the subject's own
+ * descriptive tail — the first emblem run logged exactly that ("the
+ * following part of your input was truncated"), dropping the trailing
+ * style words. Subject (~25 tokens) + STYLE must stay under the limit. */
+const STYLE = 'bold flat vector emblem, game icon, high contrast, thick clean shapes, ' +
+  'centered, crisp silhouette, mid-tone background';
+const NEG = 'photorealistic, painterly, blurry, soft focus, realistic texture, text, ' +
+  'watermark, low contrast, dark on dark, cluttered, tiny subject, empty space, ' +
+  'multiple subjects, cute, deformed, bad anatomy, border, frame';
 
 /* Keys match combat.js icon ids minus "ic-mob-". Prompts follow each mob's
  * name and its zone band's flavour (early beasts -> demonic corruption ->
