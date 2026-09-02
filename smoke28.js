@@ -37,6 +37,16 @@ console.log('\n  Test 1: portraitCatalog integrity');
     assert(p.id && p.file && p.name, `entry ${p.id} has id/file/name`);
     assert(/\.(jpg|jpeg|png|webp)$/i.test(p.file), `entry ${p.id} points at an image file`);
   });
+  // Settings groups the picker by gender, so every entry's gender must be
+  // a known key or null ("Other") — a typo like 'Female' would silently
+  // drop that portrait out of every group in the UI.
+  const validGenders = Object.keys(GameData.genders);
+  cat.forEach(p => {
+    assert(p.gender === null || p.gender === undefined || validGenders.includes(p.gender),
+      `entry ${p.id} has a groupable gender (got ${JSON.stringify(p.gender)})`);
+    assert(p.root === null || p.root === undefined || GameData.spiritualRoots.some(r => r.key === p.root),
+      `entry ${p.id} has a known root (got ${JSON.stringify(p.root)})`);
+  });
   // Every gender × root combo must still have a default, or new characters
   // would boot with a broken portrait.
   const genders = Object.keys(GameData.genders);

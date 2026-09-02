@@ -3062,11 +3062,24 @@ const UI = {
 
     const render = () => {
       const chosenId = Game.state.chosenPortraitId;
-      const cards = GameData.portraitCatalog.map(p => `
+      const card = p => `
         <button class="portrait-choice${chosenId === p.id ? ' on' : ''}" data-portrait="${p.id}" title="${p.name}">
           <img src="${GameData.portraitDir}${p.file}" alt="${p.name}" data-pc-img="${p.id}">
-          <span class="pc-name">${p.name}${p.gender ? ' · ' + (p.gender === 'female' ? '♀' : '♂') : ''}</span>
-        </button>`).join('');
+          <span class="pc-name">${p.name}</span>
+        </button>`;
+
+      // Split by gender (Round 32b). Groups are built from the catalogue's
+      // own `gender` field rather than a hardcoded list, so portraits added
+      // later land in the right group automatically — and anything with
+      // gender:null (art not tied to a gender) still gets a home under
+      // "Other" instead of silently vanishing from the picker.
+      const byGender = g => GameData.portraitCatalog.filter(p => p.gender === g);
+      const group = (label, entries) => entries.length ? `
+        <div class="portrait-group">
+          <div class="portrait-group-label">${label} <span class="pg-count">${entries.length}</span></div>
+          <div class="portrait-grid">${entries.map(card).join('')}</div>
+        </div>` : '';
+      const ungendered = GameData.portraitCatalog.filter(p => p.gender !== 'female' && p.gender !== 'male');
 
       overlay.innerHTML = `
         <div class="modal" style="text-align:left">
@@ -3081,19 +3094,25 @@ const UI = {
                 <span class="pc-auto-ico">✨</span>
                 <span>Auto<br>(my root)</span>
               </button>
-              ${cards}
             </div>
+            ${group('♀ Female', byGender('female'))}
+            ${group('♂ Male', byGender('male'))}
+            ${group('Other', ungendered)}
           </div>
 
           <button class="modal-close" style="margin-top:16px">Done</button>
         </div>`;
 
       // Hide catalogue entries whose art isn't present yet, so a partially
-      // generated set never shows broken images in the picker.
+      // generated set never shows broken images in the picker. If that
+      // empties a whole gender group, drop its heading too rather than
+      // leaving a labelled blank row.
       overlay.querySelectorAll('[data-pc-img]').forEach(img => {
         img.onerror = () => {
-          const card = img.closest('.portrait-choice');
-          if (card) card.remove();
+          const choice = img.closest('.portrait-choice');
+          const grp = img.closest('.portrait-group');
+          if (choice) choice.remove();
+          if (grp && !grp.querySelector('.portrait-choice')) grp.remove();
         };
       });
 
