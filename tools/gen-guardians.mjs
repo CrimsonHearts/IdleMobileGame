@@ -47,47 +47,56 @@ const LORAS = [
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // -- Prompts ------------------------------------------------------------
-// Same painted-CG house style as gen-portraits.mjs, but boss/antagonist
-// framing (menacing, dramatic) instead of the character-lead framing —
-// these are the game's story bosses, not player-facing spirit roots.
-const STYLE = 'semi-realistic anime CG painting, Chinese xianxia guofeng dark fantasy boss art, ' +
-  'dramatic ominous lighting, intricate detail, glowing spirit particles, ' +
-  'imposing menacing presence, highly detailed, masterpiece, best quality, 8k';
-const NEG = 'text, watermark, signature, logo, lowres, blurry, jpeg artifacts, extra fingers, ' +
-  'deformed hands, bad anatomy, cute, friendly, modern clothes, nsfw, ugly, distorted';
+/* Emblem style, matching gen-mobs.mjs — and for the same measured reason.
+ * These read as story showpieces, but they only ever RENDER in the combat
+ * stage at ~67px (.fighter.enemy.guardian .fighter-ico is 58px, and the
+ * art is 1.15em of that). That is barely larger than a regular mob, so the
+ * painted style originally specified here would mush out at display size
+ * exactly as the painted mob art did. Guardians keep a richer, more
+ * ornate prompt than the mobs so they still feel like a step up, but the
+ * flat high-contrast fundamentals are shared.
+ *
+ * Keep STYLE short — CLIP truncates prompt + style at 77 tokens together
+ * (see the same note in gen-mobs.mjs). */
+const STYLE = 'bold flat vector emblem, ornate heraldic crest, game boss icon, ' +
+  'high contrast, thick clean shapes, centered, crisp silhouette, ' +
+  'glowing accents, mid-tone background';
+const NEG = 'photorealistic, painterly, blurry, soft focus, realistic texture, text, ' +
+  'watermark, low contrast, dark on dark, cluttered, tiny subject, empty space, ' +
+  'multiple subjects, cute, deformed, bad anatomy, border, frame';
 
 // Prompts keyed to each Guardian's established lore (combat.js GUARDIANS /
 // quests.js order 25-35) — tweak freely, these are just a starting point.
+/* Kept deliberately tight (~25 tokens each): name + prompt + STYLE must
+ * fit CLIP's 77-token window. The original prose versions ran 87-96 tokens
+ * and were being silently truncated, so the style terms never reached the
+ * model at all. Each keeps one strong iconic hook plus its colour identity
+ * — which is all that survives at emblem scale anyway. */
 const GUARDIANS = {
   ledger: {
     name: 'The Ledger',
-    prompt: 'a towering audit-construct made of floating brass ledger-pages and abacus beads, ' +
-      'a faceless scholar-golem wrapped in tally-marked silk ribbons, cold clinical presence, ' +
-      'gold ink numerals glowing across its surface, corporate-bureaucratic dread, dim archive lighting',
+    prompt: 'a faceless brass audit-golem of floating ledger pages and abacus beads, ' +
+      'glowing gold numerals, cold and clerical',
   },
   choir: {
     name: 'The Hollow Choir',
-    prompt: 'a writhing mass of translucent spectral figures all speaking at once, many overlapping ' +
-      'ghostly mouths and reaching hands fused into one silhouette, discordant chorus, pale blue-white glow, ' +
-      'unsettling and mournful, void mist',
+    prompt: 'many overlapping ghostly mouths and reaching hands fused into one ' +
+      'spectral figure, pale blue-white glow, mournful',
   },
   shadow: {
     name: "Su Wan's Shadow",
-    prompt: 'a corrupted doppelganger of an elegant elderly female cultivator, her form fraying into black ' +
-      'smoke and cracked shadow at the edges, wearing the same simple robes and hairpin as a beloved mentor ' +
-      'but with hollow void-black eyes, tragic and eerie, deep indigo tones',
+    prompt: "an elderly woman's silhouette fraying into black smoke, hollow void-black " +
+      'eyes, jade hairpin, deep indigo, tragic',
   },
   cartographer: {
     name: 'The Cartographer',
-    prompt: 'an ancient robed surveyor-entity composed of unfurling star-charts and glowing constellation ' +
-      'lines, a compass-like halo of floating map fragments orbiting its head, vast and ancient, ' +
-      'cartographic gold-and-teal glyphs across dark robes, cosmic surveying instrument aura',
+    prompt: 'a robed figure of unfurling star-charts, halo of floating map fragments, ' +
+      'gold and teal constellation glyphs',
   },
   firstvoice: {
     name: 'The First Voice',
-    prompt: 'a primordial entity of pure resonant light and sound-waves given humanoid form, cracks of ' +
-      'brilliant white-gold radiance across a featureless silhouette, ancient beyond comprehension, ' +
-      'origin-point of all spoken magic, overwhelming serene power, radial light burst background',
+    prompt: 'a featureless humanoid of white-gold light, radiant cracks, concentric ' +
+      'sound waves, radial burst, primordial',
   },
 };
 
