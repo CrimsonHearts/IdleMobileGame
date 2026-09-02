@@ -55,11 +55,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 // Centered single subject on a plain dark backdrop: the combat stage crops
 // these to a circle, so anything in the corners is thrown away.
 const STYLE = 'Chinese xianxia dark fantasy creature art, semi-realistic painted CG, ' +
-  'single centered subject, plain dark misty background, dramatic rim lighting, ' +
-  'glowing spirit particles, menacing, highly detailed, masterpiece';
+  'single centered subject filling the frame, head and shoulders, strong bright rim lighting, ' +
+  'high contrast, subject clearly separated from a soft muted background, ' +
+  'glowing spirit particles, vivid saturated colours, menacing, highly detailed, masterpiece';
 const NEG = 'text, watermark, signature, logo, lowres, blurry, jpeg artifacts, ' +
   'multiple subjects, full body crowd scene, cute, chibi, modern clothes, nsfw, ' +
-  'deformed, extra limbs, bad anatomy, cluttered background, border, frame';
+  'deformed, extra limbs, bad anatomy, cluttered background, border, frame, ' +
+  'very dark, black on black, low contrast, underexposed, silhouette, tiny subject, ' +
+  'distant subject, empty space';
 
 /* Keys match combat.js icon ids minus "ic-mob-". Prompts follow each mob's
  * name and its zone band's flavour (early beasts -> demonic corruption ->
