@@ -958,6 +958,17 @@ derived default, and adding art later is a data change (one catalogue line
 + one `EXTRA_PORTRAITS` prompt in `gen-portraits.mjs`), not a UI change.
 Also fixed the Trial challenge banner, which painted its own dark gradient
 but inherited the light theme's near-black text, leaving it unreadable.
+· R33 generated the art in-session once the egress policy allowed
+civitai.com. Key finding, measured rather than assumed: mob/Guardian art is
+authored as a flat **emblem**, NOT in the painted style used for character
+portraits. Compared like-for-like at the 58-67px these actually render at,
+painted semi-realism collapses into an unreadable dark blob — its
+information lives in fine texture and tonal nuance, all of which a
+512->58px downscale discards — while flat high-contrast shapes survive
+intact. It also sits better beside the game's existing hand-drawn SVG
+generator icons. If these are ever rendered LARGE (a bestiary, a boss
+splash) they should be regenerated painted. 22 mobs + 5 Guardians total
+just **1.1MB**, against 15MB for the 10 painted portraits.
 
 ---
 
@@ -989,6 +1000,14 @@ Local **ComfyUI** at `http://127.0.0.1:8188` with **GuoFeng4 XL**
   832×1216, people-free landscapes → `www/assets/realms/realm-<0..9>.jpg`.
   `--only=N` re-rolls a single realm.
 - **App icon** — `python3 tools/gen-icon.py` (Pillow) → `www/assets/icon-*.png`.
+- **CPU fallback** (Round 32) — `python3 tools/gen-local.py --model X.safetensors --set mobs`
+  For machines with no GPU. Runs a single-file checkpoint through diffusers;
+  pulls its prompts from the .mjs generators' `--dump-prompts` so both
+  runners stay single-sourced. Measured on a 4-core CPU with an **LCM**
+  checkpoint (DreamShaper 8 LCM): ~35s/image at 512x512, 6 steps — the
+  whole 27-image set in ~15 min. A non-LCM checkpoint needs 25-30 steps and
+  is roughly 4x slower. Keep prompts under **77 CLIP tokens** (subject +
+  style combined): over-long prompts are silently truncated, not rejected.
 - **Trials mob art** (Round 32) — `node tools/gen-mobs.mjs`
   22 regular mobs/bosses → `www/assets/mobs/<key>.jpg`, where `<key>` is the
   combat.js icon id minus `ic-mob-`. Square **768×768** (they render at
