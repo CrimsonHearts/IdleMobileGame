@@ -10,3 +10,7 @@ dist/
 # Android signing — never commit these
 android/keystore/
 android/keystore.properties
+
+# Python bytecode (tools/gen-local.py)
+__pycache__/
+*.pyc

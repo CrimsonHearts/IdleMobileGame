@@ -180,6 +180,15 @@ async function genLeonardo(prompt) {
 }
 
 // -- Run ------------------------------------------------------------------
+/* Emit resolved prompts as JSON and exit — see the same flag in
+ * gen-mobs.mjs. Keeps prompts single-sourced across runners. */
+if (args['dump-prompts']) {
+  const prompts = {};
+  for (const id of Object.keys(GUARDIANS)) prompts[id] = promptFor(id);
+  console.log(JSON.stringify({ negative: NEG, width: W, height: H, outDir: OUT_DIR, prompts }, null, 2));
+  process.exit(0);
+}
+
 if (args.list) {
   try { const cks = await comfyInfo(); console.log('ComfyUI checkpoints at ' + COMFY + ':\n  ' + (cks.join('\n  ') || '(none)')); }
   catch (e) { console.log('Could not list ComfyUI models: ' + e.message); }

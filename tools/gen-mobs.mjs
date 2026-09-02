@@ -187,6 +187,16 @@ async function genLeonardo(prompt) {
 }
 
 // -- Run --------------------------------------------------------------------
+/* Emit the resolved prompts as JSON and exit. Lets another runner (e.g. the
+ * CPU/diffusers fallback in tools/gen-local.py) reuse these exact prompts
+ * instead of duplicating them, so there is one source of truth. */
+if (args['dump-prompts']) {
+  const prompts = {};
+  for (const k of Object.keys(MOBS)) prompts[k] = promptFor(k);
+  console.log(JSON.stringify({ negative: NEG, width: W, height: H, outDir: OUT_DIR, prompts }, null, 2));
+  process.exit(0);
+}
+
 if (args.list) {
   try { const cks = await comfyInfo(); console.log('ComfyUI checkpoints at ' + COMFY + ':\n  ' + (cks.join('\n  ') || '(none)')); }
   catch (e) { console.log('Could not list ComfyUI models: ' + e.message); }
